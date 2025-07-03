@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "533072990076",
+    "project_id": "siasu-223bb",
+    "storage_bucket": "siasu-223bb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533072990076:android:cc8ea113ec193384759ef9",
+        "android_client_info": {
+          "package_name": "com.example.inventory_application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcWNqkTB30DTPaNJ3tQSUd0zpN_j9RBj0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
