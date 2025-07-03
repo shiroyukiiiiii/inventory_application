@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,105 +9,98 @@ void main() async {
       apiKey: "AIzaSyCfppfpgtw3zG_ueshLFkecChTpqZTRCos",
       authDomain: "siasu-223bb.firebaseapp.com",
       projectId: "siasu-223bb",
-      storageBucket: "siasu-223bb.firebasestorage.app",
+      storageBucket: "siasu-223bb.appspot.com",
       messagingSenderId: "533072990076",
       appId: "1:533072990076:web:845172bed03cc7e8759ef9",
-      measurementId: "G-1DZFV1CT80",  // optional, you can leave this out
+      measurementId: "G-1DZFV1CT80",
     ),
   );
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Login Screen'),
-        ),
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'LOGIN',
-              style: TextStyle(
-                fontSize: 35,
-                color: Colors.blueGrey,
-                fontWeight: FontWeight.bold
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              child: Form(
-                child: Column(
-                  children: [
-                    
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: TextFormField(
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'email',
-                          hintText: 'Enter Email',
-                          prefixIcon: Icon(Icons.email),
-                          border: OutlineInputBorder()
-                        ),
-                        onChanged: (String value){
-                                      
-                        },
-                        validator: (value) {
-                          return value!.isEmpty ? 'Please Enter Email' : null;
-                        },
-                      ),
-                    ),
-
-                    SizedBox(height: 20,),
-
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 15),
-                      child: TextFormField(
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          hintText: 'Enter Password',
-                          prefixIcon: Icon(Icons.password),
-                          border: OutlineInputBorder()
-                        ),
-                        onChanged: (String value){
-                                      
-                        },
-                        validator: (value) {
-                          return value!.isEmpty ? 'Please Enter Password' : null;
-                        },
-                      ),
-                    ),
-
-                    SizedBox( height: 30,),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 35),
-                      child: MaterialButton(
-                        minWidth: double.infinity,
-                        onPressed: () {},
-                        child: Text('Login'),
-                        color: Colors.grey,
-                        textColor: Colors.white,
-                      ),
-                    )
-                  ],
-                )),
-              )
-          ], 
-        ),
-      )
+      title: 'Google Sign-In Web',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const SignInPage(),
     );
+  }
+}
+
+class SignInPage extends StatefulWidget {
+  const SignInPage({super.key});
+
+  @override
+  State<SignInPage> createState() => _SignInPageState();
+}
+
+class _SignInPageState extends State<SignInPage> {
+  User? _user;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Google Sign-In Web')),
+      body: Center(
+        child: _user == null
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: _signInWithPopup,
+                    child: const Text('Sign in with Google'),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(_user!.photoURL ?? ''),
+                    radius: 40,
+                  ),
+                  Text(_user!.displayName ?? ''),
+                  Text(_user!.email ?? ''),
+                  ElevatedButton(
+                    onPressed: _signOut,
+                    child: const Text('Sign Out'),
+                  )
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _signInWithPopup() async {
+    try {
+      final provider = GoogleAuthProvider();
+      final userCredential =
+          await FirebaseAuth.instance.signInWithPopup(provider);
+
+      setState(() {
+        _user = userCredential.user;
+      });
+
+      _showSnackBar('Signed in as ${_user!.displayName}');
+    } catch (e) {
+      _showSnackBar('Error: $e');
+    }
+  }
+
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    setState(() {
+      _user = null;
+    });
+    _showSnackBar('Signed out');
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
