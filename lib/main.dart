@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'homepage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,50 +48,10 @@ class _SignInPageState extends State<SignInPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Google Sign-In Web')),
       body: Center(
-        child: _user == null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: _signInWithPopup,
-                    child: const Text('Sign in with Google'),
-                  ),
-                ],
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    backgroundImage: NetworkImage(_user!.photoURL ?? ''),
-                    radius: 40,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(_user!.displayName ?? ''),
-                  Text(_user!.email ?? ''),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      // First button action
-                      _showSnackBar('Button 1 Pressed');
-                    },
-                    child: const Text('Button 1'),
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Second button action
-                      _showSnackBar('Button 2 Pressed');
-                    },
-                    child: const Text('Button 2'),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _signOut,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    child: const Text('Sign Out'),
-                  ),
-                ],
-              ),
+        child: ElevatedButton(
+          onPressed: _signInWithPopup,
+          child: const Text('Sign in with Google'),
+        ),
       ),
     );
   }
@@ -105,18 +66,15 @@ class _SignInPageState extends State<SignInPage> {
         _user = userCredential.user;
       });
 
-      _showSnackBar('Signed in as ${_user!.displayName}');
+      if (_user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage(user: _user!)),
+        );
+      }
     } catch (e) {
       _showSnackBar('Error: $e');
     }
-  }
-
-  Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
-    setState(() {
-      _user = null;
-    });
-    _showSnackBar('Signed out');
   }
 
   void _showSnackBar(String message) {
@@ -124,3 +82,4 @@ class _SignInPageState extends State<SignInPage> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 }
+
