@@ -27,6 +27,7 @@ class MyApp extends StatelessWidget {
       title: 'Google Sign-In Web',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const SignInPage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -63,12 +64,31 @@ class _SignInPageState extends State<SignInPage> {
                     backgroundImage: NetworkImage(_user!.photoURL ?? ''),
                     radius: 40,
                   ),
+                  const SizedBox(height: 10),
                   Text(_user!.displayName ?? ''),
                   Text(_user!.email ?? ''),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      // First button action
+                      _showSnackBar('Button 1 Pressed');
+                    },
+                    child: const Text('Button 1'),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Second button action
+                      _showSnackBar('Button 2 Pressed');
+                    },
+                    child: const Text('Button 2'),
+                  ),
+                  const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _signOut,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                     child: const Text('Sign Out'),
-                  )
+                  ),
                 ],
               ),
       ),
