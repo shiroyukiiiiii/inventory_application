@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// Import the male uniform page file
+import 'male_uniform_page.dart';
+import 'female_uniform_page.dart';
+import 'main.dart';
+
 class HomePage extends StatelessWidget {
   final User user;
 
@@ -31,7 +36,10 @@ class HomePage extends StatelessWidget {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacementNamed(context, '/');
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const SignInPage()),
+                (Route<dynamic> route) => false,
+              );
             },
           ),
         ],
@@ -58,8 +66,11 @@ class HomePage extends StatelessWidget {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Male Pressed')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MaleUniformPage(user: user),
+                      ),
                     );
                   },
                   child: const Text('Male'),
@@ -67,8 +78,11 @@ class HomePage extends StatelessWidget {
                 const SizedBox(width: 20),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Female Pressed')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FemaleUniformPage(user: user),
+                      ),
                     );
                   },
                   child: const Text('Female'),
