@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'homepage.dart';
+import 'admin_login_page.dart';
+import 'uniform_list_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +31,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const SignInPage(),
       debugShowCheckedModeBanner: false,
+      routes: {
+        '/admin-login': (context) => const AdminLoginPage(),
+        '/admin-inventory': (context) => const UniformListPage(),
+      },
     );
   }
 }
@@ -48,9 +54,22 @@ class _SignInPageState extends State<SignInPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Google Sign-In Web')),
       body: Center(
-        child: ElevatedButton(
-          onPressed: _signInWithPopup,
-          child: const Text('Sign in with Google'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: _signInWithPopup,
+              child: const Text('Sign in with Google'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.admin_panel_settings),
+              label: const Text('Admin Login'),
+              onPressed: () {
+                Navigator.pushNamed(context, '/admin-login');
+              },
+            ),
+          ],
         ),
       ),
     );

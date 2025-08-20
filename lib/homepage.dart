@@ -4,7 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 // Import the male uniform page file
 import 'male_uniform_page.dart';
 import 'female_uniform_page.dart';
+import 'uniform_list_page.dart';
 import 'main.dart';
+import 'uniform_request_page.dart';
+
 
 class HomePage extends StatelessWidget {
   final User user;
@@ -88,6 +91,19 @@ class HomePage extends StatelessWidget {
                   child: const Text('Female'),
                 ),
               ],
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.request_page),
+              label: const Text('Request Uniform'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UniformRequestPage(user: user),
+                  ),
+                );
+              },
             ),
           ],
         ),
