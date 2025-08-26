@@ -6,8 +6,6 @@ import 'male_uniform_page.dart';
 import 'female_uniform_page.dart';
 import 'uniform_list_page.dart';
 import 'main.dart';
-import 'uniform_request_page.dart';
-
 
 class HomePage extends StatelessWidget {
   final User user;
@@ -19,7 +17,6 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             const Text('Home Page'),
             const SizedBox(width: 10),
@@ -50,60 +47,34 @@ class HomePage extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
+          children: [
             const Text(
-              'Welcome Student!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Please select your gender:',
+              'Welcome! Please select an option:',
               style: TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 20),
-            
-
-            // Two Buttons Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MaleUniformPage(user: user),
-                      ),
-                    );
-                  },
-                  child: const Text('Male'),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FemaleUniformPage(user: user),
-                      ),
-                    );
-                  },
-                  child: const Text('Female'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.request_page),
-              label: const Text('Request Uniform'),
+            ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => UniformRequestPage(user: user),
+                    builder: (context) => MaleUniformPage(user: user),
                   ),
                 );
               },
+              child: const Text('Male Uniform'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FemaleUniformPage(user: user),
+                  ),
+                );
+              },
+              child: const Text('Female Uniform'),
             ),
           ],
         ),

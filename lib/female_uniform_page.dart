@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'main.dart';
+import 'uniform_preview_page.dart';
 
 class FemaleUniformPage extends StatelessWidget {
 	final User user;
@@ -59,32 +60,53 @@ class FemaleUniformPage extends StatelessWidget {
 						Row(
 							mainAxisAlignment: MainAxisAlignment.center,
 							children: [
-								ElevatedButton(
-									onPressed: () {
-										ScaffoldMessenger.of(context).showSnackBar(
-											const SnackBar(content: Text('Crim Selected')),
-										);
-									},
-									child: const Text('Crim'),
-								),
+																ElevatedButton(
+																	onPressed: () {
+																		Navigator.push(
+																			context,
+																			MaterialPageRoute(
+																				builder: (context) => UniformPreviewPage(
+																					gender: 'Female',
+																					course: 'Crim',
+																					user: user,
+																				),
+																			),
+																		);
+																	},
+																	child: const Text('Crim'),
+																),
 								const SizedBox(width: 20),
-								ElevatedButton(
-									onPressed: () {
-										ScaffoldMessenger.of(context).showSnackBar(
-											const SnackBar(content: Text('ABCOM Selected')),
-										);
-									},
-									child: const Text('ABCOM'),
-								),
+																ElevatedButton(
+																	onPressed: () {
+																		Navigator.push(
+																			context,
+																			MaterialPageRoute(
+																				builder: (context) => UniformPreviewPage(
+																					gender: 'Female',
+																					course: 'ABCOM',
+																					user: user,
+																				),
+																			),
+																		);
+																	},
+																	child: const Text('ABCOM'),
+																),
 								const SizedBox(width: 20),
-								ElevatedButton(
-									onPressed: () {
-										ScaffoldMessenger.of(context).showSnackBar(
-											const SnackBar(content: Text('BSCS Selected')),
-										);
-									},
-									child: const Text('BSCS'),
-								),
+																ElevatedButton(
+																	onPressed: () {
+																		Navigator.push(
+																			context,
+																			MaterialPageRoute(
+																				builder: (context) => UniformPreviewPage(
+																					gender: 'Female',
+																					course: 'BSCS',
+																					user: user,
+																				),
+																			),
+																		);
+																	},
+																	child: const Text('BSCS'),
+																),
 							],
 						),
 					],

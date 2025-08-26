@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'main.dart';
+import 'uniform_preview_page.dart';
 
 class MaleUniformPage extends StatelessWidget {
   final User user;
@@ -62,8 +63,15 @@ class MaleUniformPage extends StatelessWidget {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Crim Selected')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UniformPreviewPage(
+                          gender: 'Male',
+                          course: 'Crim',
+                          user: user,
+                        ),
+                      ),
                     );
                   },
                   child: const Text('Crim'),
@@ -71,8 +79,15 @@ class MaleUniformPage extends StatelessWidget {
                 const SizedBox(width: 20),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('ABCOM Selected')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UniformPreviewPage(
+                          gender: 'Male',
+                          course: 'ABCOM',
+                          user: user,
+                        ),
+                      ),
                     );
                   },
                   child: const Text('ABCOM'),
@@ -80,8 +95,15 @@ class MaleUniformPage extends StatelessWidget {
                 const SizedBox(width: 20),
                 ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('BSCS Selected')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UniformPreviewPage(
+                          gender: 'Male',
+                          course: 'BSCS',
+                          user: user,
+                        ),
+                      ),
                     );
                   },
                   child: const Text('BSCS'),

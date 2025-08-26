@@ -114,6 +114,13 @@ class UniformFormPage extends StatefulWidget {
 }
 
 class _UniformFormPageState extends State<UniformFormPage> {
+  Future<void> _deleteUniform() async {
+    if (widget.uniform != null) {
+      final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+      await uniformsRef.doc(widget.uniform!.id).delete();
+      if (mounted) Navigator.pop(context);
+    }
+  }
   final _formKey = GlobalKey<FormState>();
   late String _gender;
   late String _course;
@@ -190,9 +197,27 @@ class _UniformFormPageState extends State<UniformFormPage> {
                 onSaved: (value) => _quantity = int.parse(value!),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _saveUniform,
-                child: Text(widget.uniform == null ? 'Add' : 'Update'),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _saveUniform,
+                      child: Text(widget.uniform == null ? 'Add' : 'Update'),
+                    ),
+                  ),
+                  if (widget.uniform != null) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: _deleteUniform,
+                        child: const Text('Delete'),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
