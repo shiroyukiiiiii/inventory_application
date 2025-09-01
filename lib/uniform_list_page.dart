@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/uniform.dart';
+import 'edit_uniform_request_page.dart';
 
 class UniformListPage extends StatelessWidget {
   const UniformListPage({super.key});
@@ -17,7 +18,7 @@ class UniformListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Uniform Management'),
@@ -25,13 +26,15 @@ class UniformListPage extends StatelessWidget {
             tabs: [
               Tab(text: 'Inventory'),
               Tab(text: 'Requests'),
+              Tab(text: 'Completed Orders'),
             ],
           ),
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: [
             _InventoryTab(),
             UniformRequestsListPage(),
+            CompletedOrdersListPage(),
           ],
         ),
         floatingActionButton: Builder(
@@ -58,6 +61,46 @@ class UniformListPage extends StatelessWidget {
   }
 }
 
+class CompletedOrdersListPage extends StatelessWidget {
+  const CompletedOrdersListPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('completed_orders')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('No completed orders found.'));
+        }
+        final orders = snapshot.data!.docs;
+        return ListView.builder(
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            final data = orders[index].data() as Map<String, dynamic>;
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ListTile(
+                title: Text('${data['userName'] ?? 'Unknown'} (${data['userId']})'),
+                subtitle: Text(
+                  'Gender: ${data['gender'] ?? ''}\n'
+                  'Course: ${data['course'] ?? ''}\n'
+                  'Size: ${data['size'] ?? ''}\n'
+                  'Completed: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}',
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
 class _InventoryTab extends StatelessWidget {
   const _InventoryTab();
 
@@ -88,7 +131,38 @@ class _InventoryTab extends StatelessWidget {
             final uniform = uniforms[index];
             return ListTile(
               title: Text('${uniform.gender} - ${uniform.course} (${uniform.size})'),
-              trailing: Text('Qty: ${uniform.quantity}'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Qty: ${uniform.quantity}'),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    tooltip: 'Delete',
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Delete Uniform'),
+                          content: const Text('Are you sure you want to delete this uniform?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        await FirebaseFirestore.instance.collection('uniforms').doc(uniform.id).delete();
+                      }
+                    },
+                  ),
+                ],
+              ),
               onTap: () {
                 Navigator.push(
                   context,
@@ -252,12 +326,35 @@ class UniformRequestsListPage extends StatelessWidget {
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ListTile(
-                title: Text('${data['userName'] ?? 'Unknown'} (${data['userId']})'),
+                title: Text('${data['userName'] ?? 'Unknown'} '),
                 subtitle: Text(
-                  'Gender: ${data['gender']}\n'
-                  'Course: ${data['course']}\n'
-                  'Size: ${data['size']}\n'
-                  'Requested: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}',
+                  'Gender: ${data['gender'] ?? ''}\n'
+                  'Course: ${data['course'] ?? ''}\n'
+                  'Size: ${data['size'] ?? ''}\n'
+                  'Student number: ${data['studentId'] ?? ''}\n'
+                  'Requested: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}\n'
+                  'Status: ${data['status'] ?? 'Pending'}\n'
+                  'order Id: ${requests[index].id}',
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  tooltip: 'Edit Request',
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditUniformRequestPage(
+                          requestId: requests[index].id,
+                          requestData: data,
+                        ),
+                      ),
+                    );
+                    if (result == true) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Request updated successfully!')),
+                      );
+                    }
+                  },
                 ),
               ),
             );

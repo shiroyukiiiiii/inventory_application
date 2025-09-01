@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 // Import the male uniform page file
 import 'male_uniform_page.dart';
 import 'female_uniform_page.dart';
-import 'uniform_list_page.dart';
 import 'main.dart';
 
 class HomePage extends StatelessWidget {

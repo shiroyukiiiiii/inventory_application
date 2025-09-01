@@ -15,6 +15,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   String _gender = '';
   String _course = '';
   String _size = '';
+  String _studentId = '';
   bool _isSubmitting = false;
   String? _message;
 
@@ -32,6 +33,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         'gender': _gender,
         'course': _course,
         'size': _size,
+        'studentId': _studentId,
         'timestamp': FieldValue.serverTimestamp(),
       });
       setState(() {
@@ -62,21 +64,47 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Gender'),
+                  decoration: const InputDecoration(labelText: 'Student Number'),
                   validator: (value) =>
-                      value == null || value.isEmpty ? 'Enter gender' : null,
+                      value == null || value.isEmpty ? 'Enter Student Number' : null,
+                  onSaved: (value) => _studentId = value ?? '',
+                ),
+                DropdownButtonFormField<String>(
+                  value: _gender.isNotEmpty ? _gender : null,
+                  decoration: const InputDecoration(labelText: 'Gender'),
+                  items: const [
+                    DropdownMenuItem(value: 'Male', child: Text('Male')),
+                    DropdownMenuItem(value: 'Female', child: Text('Female')),
+                  ],
+                  validator: (value) => value == null || value.isEmpty ? 'Select gender' : null,
+                  onChanged: (value) => setState(() => _gender = value ?? ''),
                   onSaved: (value) => _gender = value ?? '',
                 ),
-                TextFormField(
+                DropdownButtonFormField<String>(
+                  value: _course.isNotEmpty ? _course : null,
                   decoration: const InputDecoration(labelText: 'Course'),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Enter course' : null,
+                  items: const [
+                    DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),
+                    DropdownMenuItem(value: 'ABCOM', child: Text('ABCOM')),
+                    DropdownMenuItem(value: 'BSCRIM', child: Text('BSCRIM')),
+                  ],
+                  validator: (value) => value == null || value.isEmpty ? 'Select course' : null,
+                  onChanged: (value) => setState(() => _course = value ?? ''),
                   onSaved: (value) => _course = value ?? '',
                 ),
-                TextFormField(
+                DropdownButtonFormField<String>(
+                  value: _size.isNotEmpty ? _size : null,
                   decoration: const InputDecoration(labelText: 'Size'),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Enter size' : null,
+                  items: const [
+                    DropdownMenuItem(value: 'XS', child: Text('XS')),
+                    DropdownMenuItem(value: 'S', child: Text('S')),
+                    DropdownMenuItem(value: 'M', child: Text('M')),
+                    DropdownMenuItem(value: 'L', child: Text('L')),
+                    DropdownMenuItem(value: 'XL', child: Text('XL')),
+                    DropdownMenuItem(value: 'XXL', child: Text('XXL')),
+                  ],
+                  validator: (value) => value == null || value.isEmpty ? 'Select size' : null,
+                  onChanged: (value) => setState(() => _size = value ?? ''),
                   onSaved: (value) => _size = value ?? '',
                 ),
                 const SizedBox(height: 20),
