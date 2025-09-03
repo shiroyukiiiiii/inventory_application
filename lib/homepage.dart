@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'male_uniform_page.dart';
 import 'female_uniform_page.dart';
 import 'main.dart';
+import 'student_manage_requests_page.dart';
 
 class HomePage extends StatelessWidget {
   final User user;
@@ -33,12 +34,14 @@ class HomePage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const SignInPage()),
-                (Route<dynamic> route) => false,
-              );
+            onPressed: () {
+              FirebaseAuth.instance.signOut().then((_) {
+                // ignore: use_build_context_synchronously
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const SignInPage()),
+                  (Route<dynamic> route) => false,
+                );
+              });
             },
           ),
         ],
@@ -74,6 +77,18 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Female Uniform'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StudentManageRequestsPage(user: user),
+                  ),
+                );
+              },
+              child: const Text('Manage My Requests'),
             ),
           ],
         ),

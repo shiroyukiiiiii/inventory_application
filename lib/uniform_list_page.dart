@@ -336,25 +336,62 @@ class UniformRequestsListPage extends StatelessWidget {
                   'Status: ${data['status'] ?? 'Pending'}\n'
                   'order Id: ${requests[index].id}',
                 ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  tooltip: 'Edit Request',
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditUniformRequestPage(
-                          requestId: requests[index].id,
-                          requestData: data,
-                        ),
-                      ),
-                    );
-                    if (result == true) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Request updated successfully!')),
-                      );
-                    }
-                  },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      tooltip: 'Edit Request',
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditUniformRequestPage(
+                              requestId: requests[index].id,
+                              requestData: data,
+                            ),
+                          ),
+                        );
+                        if (result == true) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Request updated successfully!')),
+                          );
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      tooltip: 'Delete Request',
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete Request'),
+                            content: const Text('Are you sure you want to delete this request?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          await FirebaseFirestore.instance
+                              .collection('uniform_requests')
+                              .doc(requests[index].id)
+                              .delete();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Request deleted.')),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
             );

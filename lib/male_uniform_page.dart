@@ -37,12 +37,13 @@ class MaleUniformPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const SignInPage()),
-                (Route<dynamic> route) => false,
-              );
+            onPressed: () {
+              FirebaseAuth.instance.signOut().then((_) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const SignInPage()),
+                  (Route<dynamic> route) => false,
+                );
+              });
             },
           ),
         ],

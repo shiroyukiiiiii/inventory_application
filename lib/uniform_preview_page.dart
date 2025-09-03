@@ -41,7 +41,11 @@ class UniformPreviewPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => UniformRequestPage(user: user),
+                    builder: (context) => UniformRequestPage(
+                      user: user,
+                      initialGender: gender,
+                      initialCourse: course,
+                    ),
                   ),
                 );
               },
