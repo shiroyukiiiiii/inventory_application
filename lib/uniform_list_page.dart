@@ -240,24 +240,61 @@ class _UniformFormPageState extends State<UniformFormPage> {
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
-                initialValue: _gender,
-                decoration: const InputDecoration(labelText: 'Gender'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter gender' : null,
-                onSaved: (value) => _gender = value!,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Gender', style: TextStyle(fontSize: 16)),
+                    ...['Male', 'Female'].map((gender) => RadioListTile<String>(
+                          title: Text(gender),
+                          value: gender,
+                          groupValue: _gender,
+                          onChanged: (value) {
+                            setState(() {
+                              _gender = value ?? '';
+                            });
+                          },
+                        )),
+                  ],
+                ),
               ),
-              TextFormField(
-                initialValue: _course,
-                decoration: const InputDecoration(labelText: 'Course'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter course' : null,
-                onSaved: (value) => _course = value!,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Course', style: TextStyle(fontSize: 16)),
+                    ...['BSCRIM', 'ABCOM', 'BSCS'].map((course) => RadioListTile<String>(
+                          title: Text(course),
+                          value: course,
+                          groupValue: _course,
+                          onChanged: (value) {
+                            setState(() {
+                              _course = value ?? '';
+                            });
+                          },
+                        )),
+                  ],
+                ),
               ),
-              TextFormField(
-                initialValue: _size,
-                decoration: const InputDecoration(labelText: 'Size'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter size' : null,
-                onSaved: (value) => _size = value!,
-              ),
+                DropdownButtonFormField<String>(
+                  value: _size.isNotEmpty ? _size : null,
+                  decoration: const InputDecoration(labelText: 'Size'),
+                  items: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+                      .map((size) => DropdownMenuItem(
+                            value: size,
+                            child: Text(size),
+                          ))
+                      .toList(),
+                  validator: (value) => value == null || value.isEmpty ? 'Select size' : null,
+                  onChanged: (value) {
+                    setState(() {
+                      _size = value ?? '';
+                    });
+                  },
+                  onSaved: (value) => _size = value ?? '',
+                ),
               TextFormField(
                 initialValue: _quantity.toString(),
                 decoration: const InputDecoration(labelText: 'Quantity'),

@@ -37,12 +37,13 @@ class FemaleUniformPage extends StatelessWidget {
 						actions: [
 							IconButton(
 								icon: const Icon(Icons.logout),
-								onPressed: () async {
-									await FirebaseAuth.instance.signOut();
-									Navigator.of(context).pushAndRemoveUntil(
-										MaterialPageRoute(builder: (context) => const SignInPage()),
-										(Route<dynamic> route) => false,
-									);
+								onPressed: () {
+									FirebaseAuth.instance.signOut().then((_) {
+										Navigator.of(context).pushAndRemoveUntil(
+											MaterialPageRoute(builder: (context) => const SignInPage()),
+											(Route<dynamic> route) => false,
+										);
+									});
 								},
 							),
 						],
@@ -60,21 +61,21 @@ class FemaleUniformPage extends StatelessWidget {
 						Row(
 							mainAxisAlignment: MainAxisAlignment.center,
 							children: [
-																ElevatedButton(
-																	onPressed: () {
-																		Navigator.push(
-																			context,
-																			MaterialPageRoute(
-																				builder: (context) => UniformPreviewPage(
-																					gender: 'Female',
-																					course: 'Crim',
-																					user: user,
-																				),
-																			),
-																		);
-																	},
-																	child: const Text('Crim'),
-																),
+																   ElevatedButton(
+																	   onPressed: () {
+																		   Navigator.push(
+																			   context,
+																			   MaterialPageRoute(
+																				   builder: (context) => UniformPreviewPage(
+																					   gender: 'Female',
+																					   course: 'BSCRIM',
+																					   user: user,
+																				   ),
+																			   ),
+																		   );
+																	   },
+																	   child: const Text('BSCRIM'),
+																   ),
 								const SizedBox(width: 20),
 																ElevatedButton(
 																	onPressed: () {

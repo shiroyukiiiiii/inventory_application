@@ -104,20 +104,49 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                       onChanged: (value) => setState(() => _course = value ?? ''),
                       onSaved: (value) => _course = value ?? '',
                     ),
-                    DropdownButtonFormField<String>(
-                      value: _size.isNotEmpty ? _size : null,
-                      decoration: const InputDecoration(labelText: 'Size'),
-                      items: const [
-                        DropdownMenuItem(value: 'XS', child: Text('XS')),
-                        DropdownMenuItem(value: 'S', child: Text('S')),
-                        DropdownMenuItem(value: 'M', child: Text('M')),
-                        DropdownMenuItem(value: 'L', child: Text('L')),
-                        DropdownMenuItem(value: 'XL', child: Text('XL')),
-                        DropdownMenuItem(value: 'XXL', child: Text('XXL')),
-                      ],
-                      validator: (value) => value == null || value.isEmpty ? 'Select size' : null,
-                      onChanged: (value) => setState(() => _size = value ?? ''),
-                      onSaved: (value) => _size = value ?? '',
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('uniforms')
+                          .where('gender', isEqualTo: _gender)
+                          .where('course', isEqualTo: _course)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Text('No inventory data found for selected gender/course.');
+                        }
+                        final uniformData = snapshot.data!.docs;
+                        // Build a map of size to quantity
+                        final Map<String, int> sizeInventory = {};
+                        for (var doc in uniformData) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          sizeInventory[data['size']] = data['quantity'] ?? 0;
+                        }
+                        final sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Select Size:', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ...sizes.map((size) {
+                              final qty = sizeInventory[size] ?? 0;
+                              return RadioListTile<String>(
+                                title: Text('$size  •  Available: $qty'),
+                                value: size,
+                                groupValue: _size,
+                                onChanged: qty > 0
+                                    ? (value) => setState(() => _size = value ?? '')
+                                    : null,
+                                activeColor: Colors.blue,
+                                secondary: qty == 0
+                                    ? const Icon(Icons.block, color: Colors.red)
+                                    : null,
+                              );
+                            }).toList(),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     _isSubmitting

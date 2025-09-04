@@ -69,13 +69,13 @@ class MaleUniformPage extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => UniformPreviewPage(
                           gender: 'Male',
-                          course: 'Crim',
+                          course: 'BSCRIM',
                           user: user,
                         ),
                       ),
                     );
                   },
-                  child: const Text('Crim'),
+                  child: const Text('BSCRIM'),
                 ),
                 const SizedBox(width: 20),
                 ElevatedButton(
