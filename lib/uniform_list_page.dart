@@ -10,9 +10,12 @@ class UniformListPage extends StatelessWidget {
     return FirebaseFirestore.instance
         .collection('uniforms')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Uniform.fromMap(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => Uniform.fromMap(doc.data(), doc.id))
+                  .toList(),
+        );
   }
 
   @override
@@ -43,16 +46,16 @@ class UniformListPage extends StatelessWidget {
             // Only show the FAB on the Inventory tab
             return tabIndex == 0
                 ? FloatingActionButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const UniformFormPage(),
-                        ),
-                      );
-                    },
-                    child: const Icon(Icons.add),
-                  )
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UniformFormPage(),
+                      ),
+                    );
+                  },
+                  child: const Icon(Icons.add),
+                )
                 : Container();
           },
         ),
@@ -67,10 +70,11 @@ class CompletedOrdersListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('completed_orders')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection('completed_orders')
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -86,7 +90,9 @@ class CompletedOrdersListPage extends StatelessWidget {
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ListTile(
-                title: Text('${data['userName'] ?? 'Unknown'} (${data['userId']})'),
+                title: Text(
+                  '${data['userName'] ?? 'Unknown'} (${data['userId']})',
+                ),
                 subtitle: Text(
                   'Gender: ${data['gender'] ?? ''}\n'
                   'Course: ${data['course'] ?? ''}\n'
@@ -101,6 +107,7 @@ class CompletedOrdersListPage extends StatelessWidget {
     );
   }
 }
+
 class _InventoryTab extends StatelessWidget {
   const _InventoryTab();
 
@@ -108,9 +115,12 @@ class _InventoryTab extends StatelessWidget {
     return FirebaseFirestore.instance
         .collection('uniforms')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Uniform.fromMap(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => Uniform.fromMap(doc.data(), doc.id))
+                  .toList(),
+        );
   }
 
   @override
@@ -130,7 +140,9 @@ class _InventoryTab extends StatelessWidget {
           itemBuilder: (context, index) {
             final uniform = uniforms[index];
             return ListTile(
-              title: Text('${uniform.gender} - ${uniform.course} (${uniform.size})'),
+              title: Text(
+                '${uniform.gender} - ${uniform.course} (${uniform.size})',
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -141,23 +153,33 @@ class _InventoryTab extends StatelessWidget {
                     onPressed: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Delete Uniform'),
-                          content: const Text('Are you sure you want to delete this uniform?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text('Delete Uniform'),
+                              content: const Text(
+                                'Are you sure you want to delete this uniform?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed:
+                                      () => Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
                             ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                            ),
-                          ],
-                        ),
                       );
                       if (confirm == true) {
-                        await FirebaseFirestore.instance.collection('uniforms').doc(uniform.id).delete();
+                        await FirebaseFirestore.instance
+                            .collection('uniforms')
+                            .doc(uniform.id)
+                            .delete();
                       }
                     },
                   ),
@@ -195,6 +217,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
       if (mounted) Navigator.pop(context);
     }
   }
+
   final _formKey = GlobalKey<FormState>();
   late String _gender;
   late String _course;
@@ -233,7 +256,9 @@ class _UniformFormPageState extends State<UniformFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.uniform == null ? 'Add Uniform' : 'Edit Uniform')),
+      appBar: AppBar(
+        title: Text(widget.uniform == null ? 'Add Uniform' : 'Edit Uniform'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -243,19 +268,25 @@ class _UniformFormPageState extends State<UniformFormPage> {
               TextFormField(
                 initialValue: _gender,
                 decoration: const InputDecoration(labelText: 'Gender'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter gender' : null,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Enter gender' : null,
                 onSaved: (value) => _gender = value!,
               ),
               TextFormField(
                 initialValue: _course,
                 decoration: const InputDecoration(labelText: 'Course'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter course' : null,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Enter course' : null,
                 onSaved: (value) => _course = value!,
               ),
               TextFormField(
                 initialValue: _size,
                 decoration: const InputDecoration(labelText: 'Size'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter size' : null,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Enter size' : null,
                 onSaved: (value) => _size = value!,
               ),
               TextFormField(
@@ -307,10 +338,11 @@ class UniformRequestsListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection('uniform_requests')
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -346,15 +378,18 @@ class UniformRequestsListPage extends StatelessWidget {
                         final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => EditUniformRequestPage(
-                              requestId: requests[index].id,
-                              requestData: data,
-                            ),
+                            builder:
+                                (context) => EditUniformRequestPage(
+                                  requestId: requests[index].id,
+                                  requestData: data,
+                                ),
                           ),
                         );
                         if (result == true) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Request updated successfully!')),
+                            const SnackBar(
+                              content: Text('Request updated successfully!'),
+                            ),
                           );
                         }
                       },
@@ -365,20 +400,28 @@ class UniformRequestsListPage extends StatelessWidget {
                       onPressed: () async {
                         final confirm = await showDialog<bool>(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Delete Request'),
-                            content: const Text('Are you sure you want to delete this request?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancel'),
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text('Delete Request'),
+                                content: const Text(
+                                  'Are you sure you want to delete this request?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.pop(context, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.pop(context, true),
+                                    child: const Text(
+                                      'Delete',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                              ),
-                            ],
-                          ),
                         );
                         if (confirm == true) {
                           await FirebaseFirestore.instance

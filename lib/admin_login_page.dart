@@ -26,7 +26,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     await Future.delayed(const Duration(seconds: 1));
     if (_username == _adminUser && _password == _adminPass) {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/admin-inventory');
+        Navigator.pushReplacementNamed(context, '/admin-dashboard');
       }
     } else {
       setState(() {
@@ -51,13 +51,17 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Username'),
                   onChanged: (val) => _username = val,
-                  validator: (val) => val == null || val.isEmpty ? 'Enter username' : null,
+                  validator:
+                      (val) =>
+                          val == null || val.isEmpty ? 'Enter username' : null,
                 ),
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
                   onChanged: (val) => _password = val,
-                  validator: (val) => val == null || val.isEmpty ? 'Enter password' : null,
+                  validator:
+                      (val) =>
+                          val == null || val.isEmpty ? 'Enter password' : null,
                 ),
                 const SizedBox(height: 20),
                 if (_error != null)
@@ -66,13 +70,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 _isLoading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            _login();
-                          }
-                        },
-                        child: const Text('Login'),
-                      ),
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          _login();
+                        }
+                      },
+                      child: const Text('Login'),
+                    ),
               ],
             ),
           ),

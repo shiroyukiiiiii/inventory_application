@@ -25,10 +25,7 @@ class HomePage extends StatelessWidget {
               radius: 15,
             ),
             const SizedBox(width: 5),
-            Text(
-              user.displayName ?? '',
-              style: const TextStyle(fontSize: 16),
-            ),
+            Text(user.displayName ?? '', style: const TextStyle(fontSize: 16)),
           ],
         ),
         actions: [

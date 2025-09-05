@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:inventory_application/admin_dashboard.dart';
+import 'package:inventory_application/student_manage_requests_page.dart';
 import 'homepage.dart';
 import 'admin_login_page.dart';
 import 'uniform_list_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyCfppfpgtw3zG_ueshLFkecChTpqZTRCos",
-      authDomain: "siasu-223bb.firebaseapp.com",
-      projectId: "siasu-223bb",
-      storageBucket: "siasu-223bb.appspot.com",
-      messagingSenderId: "533072990076",
-      appId: "1:533072990076:web:845172bed03cc7e8759ef9",
-      measurementId: "G-1DZFV1CT80",
-    ),
-  );
+  try {
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyCfppfpgtw3zG_ueshLFkecChTpqZTRCos",
+        authDomain: "siasu-223bb.firebaseapp.com",
+        projectId: "siasu-223bb",
+        storageBucket: "siasu-223bb.appspot.com",
+        messagingSenderId: "533072990076",
+        appId: "1:533072990076:web:845172bed03cc7e8759ef9",
+        measurementId: "G-1DZFV1CT80",
+      ),
+    );
+    print('✅ Firebase initialized');
+  } catch (e) {
+    print('❌ Firebase init error: $e');
+  }
   runApp(const MyApp());
 }
 
@@ -34,6 +41,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/admin-login': (context) => const AdminLoginPage(),
         '/admin-inventory': (context) => const UniformListPage(),
+        '/admin-dashboard': (context) => const AdminDashboard(),
       },
     );
   }
@@ -78,8 +86,9 @@ class _SignInPageState extends State<SignInPage> {
   Future<void> _signInWithPopup() async {
     try {
       final provider = GoogleAuthProvider();
-      final userCredential =
-          await FirebaseAuth.instance.signInWithPopup(provider);
+      final userCredential = await FirebaseAuth.instance.signInWithPopup(
+        provider,
+      );
 
       setState(() {
         _user = userCredential.user;
@@ -97,8 +106,8 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
-

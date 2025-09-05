@@ -6,7 +6,12 @@ class UniformRequestPage extends StatefulWidget {
   final User user;
   final String? initialGender;
   final String? initialCourse;
-  const UniformRequestPage({super.key, required this.user, this.initialGender, this.initialCourse});
+  const UniformRequestPage({
+    super.key,
+    required this.user,
+    this.initialGender,
+    this.initialCourse,
+  });
 
   @override
   State<UniformRequestPage> createState() => _UniformRequestPageState();
@@ -76,36 +81,57 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextFormField(
-                      decoration: const InputDecoration(labelText: 'Student Number'),
-                      validator: (value) =>
-                          value == null || value.isEmpty ? 'Enter Student Number' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Student Number',
+                      ),
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? 'Enter Student Number'
+                                  : null,
                       onSaved: (value) => _studentId = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
-                      value: _gender.isNotEmpty ? _gender : null,
+                      initialValue: _gender.isNotEmpty ? _gender : null,
                       decoration: const InputDecoration(labelText: 'Gender'),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
-                        DropdownMenuItem(value: 'Female', child: Text('Female')),
+                        DropdownMenuItem(
+                          value: 'Female',
+                          child: Text('Female'),
+                        ),
                       ],
-                      validator: (value) => value == null || value.isEmpty ? 'Select gender' : null,
-                      onChanged: (value) => setState(() => _gender = value ?? ''),
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? 'Select gender'
+                                  : null,
+                      onChanged:
+                          (value) => setState(() => _gender = value ?? ''),
                       onSaved: (value) => _gender = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
-                      value: _course.isNotEmpty ? _course : null,
+                      initialValue: _course.isNotEmpty ? _course : null,
                       decoration: const InputDecoration(labelText: 'Course'),
                       items: const [
                         DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),
                         DropdownMenuItem(value: 'ABCOM', child: Text('ABCOM')),
-                        DropdownMenuItem(value: 'BSCRIM', child: Text('BSCRIM')),
+                        DropdownMenuItem(
+                          value: 'BSCRIM',
+                          child: Text('BSCRIM'),
+                        ),
                       ],
-                      validator: (value) => value == null || value.isEmpty ? 'Select course' : null,
-                      onChanged: (value) => setState(() => _course = value ?? ''),
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? 'Select course'
+                                  : null,
+                      onChanged:
+                          (value) => setState(() => _course = value ?? ''),
                       onSaved: (value) => _course = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
-                      value: _size.isNotEmpty ? _size : null,
+                      initialValue: _size.isNotEmpty ? _size : null,
                       decoration: const InputDecoration(labelText: 'Size'),
                       items: const [
                         DropdownMenuItem(value: 'XS', child: Text('XS')),
@@ -115,7 +141,11 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                         DropdownMenuItem(value: 'XL', child: Text('XL')),
                         DropdownMenuItem(value: 'XXL', child: Text('XXL')),
                       ],
-                      validator: (value) => value == null || value.isEmpty ? 'Select size' : null,
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? 'Select size'
+                                  : null,
                       onChanged: (value) => setState(() => _size = value ?? ''),
                       onSaved: (value) => _size = value ?? '',
                     ),
@@ -123,17 +153,18 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                     _isSubmitting
                         ? const CircularProgressIndicator()
                         : ElevatedButton(
-                            onPressed: _submitRequest,
-                            child: const Text('Submit Request'),
-                          ),
+                          onPressed: _submitRequest,
+                          child: const Text('Submit Request'),
+                        ),
                     if (_message != null) ...[
                       const SizedBox(height: 20),
                       Text(
                         _message!,
                         style: TextStyle(
-                          color: _message == 'Request submitted!'
-                              ? Colors.green
-                              : Colors.red,
+                          color:
+                              _message == 'Request submitted!'
+                                  ? Colors.green
+                                  : Colors.red,
                         ),
                       ),
                     ],

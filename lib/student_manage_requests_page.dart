@@ -29,18 +29,16 @@ class StudentManageRequestsPage extends StatelessWidget {
             ],
           ),
           bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Orders'),
-              Tab(text: 'Cancelled Orders'),
-            ],
+            tabs: [Tab(text: 'Orders'), Tab(text: 'Cancelled Orders')],
           ),
         ),
         body: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('uniform_requests')
-              .where('userId', isEqualTo: user.uid)
-              .orderBy('timestamp', descending: true)
-              .snapshots(),
+          stream:
+              FirebaseFirestore.instance
+                  .collection('uniform_requests')
+                  .where('userId', isEqualTo: user.uid)
+                  .orderBy('timestamp', descending: true)
+                  .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
@@ -55,15 +53,17 @@ class StudentManageRequestsPage extends StatelessWidget {
             final allRequests = snapshot.data!.docs;
 
             // Split requests
-            final orders = allRequests.where((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return (data['status'] ?? 'Pending') != 'Cancelled';
-            }).toList();
+            final orders =
+                allRequests.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return (data['status'] ?? 'Pending') != 'Cancelled';
+                }).toList();
 
-            final cancelledOrders = allRequests.where((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return (data['status'] ?? '') == 'Cancelled';
-            }).toList();
+            final cancelledOrders =
+                allRequests.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return (data['status'] ?? '') == 'Cancelled';
+                }).toList();
 
             return TabBarView(
               children: [
@@ -71,30 +71,30 @@ class StudentManageRequestsPage extends StatelessWidget {
                 orders.isEmpty
                     ? const Center(child: Text('No active orders.'))
                     : ListView.builder(
-                        itemCount: orders.length,
-                        itemBuilder: (context, index) {
-                          final doc = orders[index];
-                          final data = doc.data() as Map<String, dynamic>;
-                          return _buildRequestCard(context, doc.id, data);
-                        },
-                      ),
+                      itemCount: orders.length,
+                      itemBuilder: (context, index) {
+                        final doc = orders[index];
+                        final data = doc.data() as Map<String, dynamic>;
+                        return _buildRequestCard(context, doc.id, data);
+                      },
+                    ),
 
                 // Cancelled Orders Tab
                 cancelledOrders.isEmpty
                     ? const Center(child: Text('No cancelled orders.'))
                     : ListView.builder(
-                        itemCount: cancelledOrders.length,
-                        itemBuilder: (context, index) {
-                          final doc = cancelledOrders[index];
-                          final data = doc.data() as Map<String, dynamic>;
-                          return _buildRequestCard(
-                            context,
-                            doc.id,
-                            data,
-                            showActions: false, // hide buttons
-                          );
-                        },
-                      ),
+                      itemCount: cancelledOrders.length,
+                      itemBuilder: (context, index) {
+                        final doc = cancelledOrders[index];
+                        final data = doc.data() as Map<String, dynamic>;
+                        return _buildRequestCard(
+                          context,
+                          doc.id,
+                          data,
+                          showActions: false, // hide buttons
+                        );
+                      },
+                    ),
               ],
             );
           },
@@ -104,9 +104,12 @@ class StudentManageRequestsPage extends StatelessWidget {
   }
 
   /// Builds a request card with optional edit/cancel buttons
-  Widget _buildRequestCard(BuildContext context, String docId,
-      Map<String, dynamic> data,
-      {bool showActions = true}) {
+  Widget _buildRequestCard(
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data, {
+    bool showActions = true,
+  }) {
     final status = data['status'] ?? 'Pending';
 
     // Status colors
@@ -146,26 +149,25 @@ class StudentManageRequestsPage extends StatelessWidget {
                 ),
               ],
             ),
-            Text(
-              'Requested: ${_formatTimestamp(data['timestamp'])}',
-            ),
+            Text('Requested: ${_formatTimestamp(data['timestamp'])}'),
           ],
         ),
-        trailing: showActions
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () => _editRequest(context, docId, data),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.cancel, color: Colors.red),
-                    onPressed: () => _cancelRequest(context, docId),
-                  ),
-                ],
-              )
-            : null,
+        trailing:
+            showActions
+                ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      onPressed: () => _editRequest(context, docId, data),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.cancel, color: Colors.red),
+                      onPressed: () => _cancelRequest(context, docId),
+                    ),
+                  ],
+                )
+                : null,
       ),
     );
   }
@@ -177,54 +179,59 @@ class StudentManageRequestsPage extends StatelessWidget {
         .doc(docId)
         .update({'status': 'Cancelled'});
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Request cancelled')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Request cancelled')));
   }
 
   /// Edit request (example: update size)
   void _editRequest(
-      BuildContext context, String docId, Map<String, dynamic> data) {
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+  ) {
     final sizeController = TextEditingController(text: data['size']);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Request'),
-        content: TextField(
-          controller: sizeController,
-          decoration: const InputDecoration(labelText: 'Size'),
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
-          ),
-          TextButton(
-            child: const Text('Save'),
-            onPressed: () async {
-              await FirebaseFirestore.instance
-                  .collection('uniform_requests')
-                  .doc(docId)
-                  .update({'size': sizeController.text});
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Edit Request'),
+            content: TextField(
+              controller: sizeController,
+              decoration: const InputDecoration(labelText: 'Size'),
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              TextButton(
+                child: const Text('Save'),
+                onPressed: () async {
+                  await FirebaseFirestore.instance
+                      .collection('uniform_requests')
+                      .doc(docId)
+                      .update({'size': sizeController.text});
 
-              Navigator.pop(context);
+                  Navigator.pop(context);
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Request updated')),
-              );
-            },
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Request updated')),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return 'N/A';
-    final date = (timestamp is DateTime)
-        ? timestamp
-        : (timestamp is Timestamp)
+    final date =
+        (timestamp is DateTime)
+            ? timestamp
+            : (timestamp is Timestamp)
             ? timestamp.toDate()
             : null;
     if (date == null) return 'N/A';
