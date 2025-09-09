@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:inventory_application/admin_dashboard.dart';
-import 'package:inventory_application/student_manage_requests_page.dart';
 import 'homepage.dart';
 import 'admin_login_page.dart';
 import 'uniform_list_page.dart';
