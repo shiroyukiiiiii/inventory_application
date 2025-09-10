@@ -61,7 +61,7 @@ class DashboardCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          print('Navigating to $routeName');
+          debugPrint('Navigating to $routeName');
           Navigator.pushNamed(context, routeName);
         },
         child: Padding(

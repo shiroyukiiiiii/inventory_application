@@ -1,4 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/flutter_project/uniform_inventory_system/inventory_application/windows",
+    "cmake.sourceDirectory": "C:/flutter_project/uniform_inventory_system/inventory_application/windows/flutter",
     "dotnet.defaultSolution": "disable"
 }
