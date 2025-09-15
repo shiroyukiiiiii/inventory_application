@@ -279,7 +279,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
                 ),
               ),
                 DropdownButtonFormField<String>(
-                  value: _size.isNotEmpty ? _size : null,
+                  initialValue: _size.isNotEmpty ? _size : null,
                   decoration: const InputDecoration(labelText: 'Size'),
                   items: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
                       .map((size) => DropdownMenuItem(

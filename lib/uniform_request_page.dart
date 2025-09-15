@@ -82,7 +82,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                       onSaved: (value) => _studentId = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
-                      value: _gender.isNotEmpty ? _gender : null,
+                      initialValue: _gender.isNotEmpty ? _gender : null,
                       decoration: const InputDecoration(labelText: 'Gender'),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
@@ -93,7 +93,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                       onSaved: (value) => _gender = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
-                      value: _course.isNotEmpty ? _course : null,
+                      initialValue: _course.isNotEmpty ? _course : null,
                       decoration: const InputDecoration(labelText: 'Course'),
                       items: const [
                         DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),
@@ -143,7 +143,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                                     ? const Icon(Icons.block, color: Colors.red)
                                     : null,
                               );
-                            }).toList(),
+                            }),
                           ],
                         );
                       },
