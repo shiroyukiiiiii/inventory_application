@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "533072990076",
+    "project_id": "siasu-223bb",
+    "storage_bucket": "siasu-223bb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533072990076:android:7ee0ee673aa4c86e759ef9",
+        "android_client_info": {
+          "package_name": "com.Swisu.Inventory_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "533072990076-nfglomg8t92tj2s0pb19h30kao7q434c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcWNqkTB30DTPaNJ3tQSUd0zpN_j9RBj0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "533072990076-nfglomg8t92tj2s0pb19h30kao7q434c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533072990076:android:cc8ea113ec193384759ef9",
+        "android_client_info": {
+          "package_name": "com.example.inventory_application"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "533072990076-nfglomg8t92tj2s0pb19h30kao7q434c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcWNqkTB30DTPaNJ3tQSUd0zpN_j9RBj0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "533072990076-nfglomg8t92tj2s0pb19h30kao7q434c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
