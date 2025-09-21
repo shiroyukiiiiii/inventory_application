@@ -9,12 +9,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl: ^0.20.2
+  intl: 0.17.0
   cupertino_icons: ^1.0.5
   firebase_core: ^4.1.0
   cloud_firestore: ^6.0.1
   firebase_auth: ^6.0.2
   shared_preferences: ^2.1.0
+  google_fonts: ^6.2.1  
+  charts_flutter_new: ^0.12.0
+  fl_chart: ^0.68.0
+
+
   
 
 
