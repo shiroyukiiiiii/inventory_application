@@ -8,6 +8,7 @@ import 'admin_login_page.dart';
 import 'admin_dashboard.dart';
 import 'inventory_page.dart';
 import 'salesreport_page.dart';
+import 'admin_registration_form.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -68,12 +69,13 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SalesReportPage(),
+      home: const SignInPage(),
       routes: {
         '/admin-login': (context) => const AdminLoginPage(),
         '/admin-inventory': (context) => const InventoryPage(),
         '/admin-dashboard': (context) => const AdminDashboard(),
         '/sales-report': (context) => const SalesReportPage(),
+        '/admin-registration': (context) => const AdminRegistrationPage(),
       },
     );
   }
