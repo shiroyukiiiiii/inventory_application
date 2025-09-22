@@ -11,7 +11,6 @@ class MaleUniformPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Male Uniform')),
       body: Center(
-<<<<<<< HEAD
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
