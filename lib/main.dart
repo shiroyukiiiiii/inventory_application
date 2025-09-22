@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'homepage.dart';
 import 'admin_login_page.dart';
-import 'uniform_list_page.dart';
+import 'admin_dashboard.dart';
+import 'inventory_page.dart';
+import 'salesreport_page.dart';
+import 'admin_registration_form.dart';
 
-void main() async {
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: const FirebaseOptions(
@@ -26,14 +33,49 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final baseTextTheme = GoogleFonts.poppinsTextTheme();
+
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Google Sign-In Web',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const SignInPage(),
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        textTheme: baseTextTheme,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          primary: Colors.blue,
+          secondary: Colors.green,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.blue.withValues(alpha: 0.95),
+          foregroundColor: Colors.white,
+          centerTitle: true,
+          titleTextStyle: baseTextTheme.titleLarge?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green.withValues(alpha: 0.9),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+            textStyle:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
+      ),
+      home: const SignInPage(),
       routes: {
         '/admin-login': (context) => const AdminLoginPage(),
-        '/admin-inventory': (context) => const UniformListPage(),
+        '/admin-inventory': (context) => const InventoryPage(),
+        '/admin-dashboard': (context) => const AdminDashboard(),
+        '/sales-report': (context) => const SalesReportPage(),
+        '/admin-registration': (context) => const AdminRegistrationPage(),
       },
     );
   }
@@ -52,24 +94,56 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Google Sign-In Web')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: _signInWithPopup,
-              child: const Text('Sign in with Google'),
+      // ✅ full screen gradient background
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blue, Colors.green],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.admin_panel_settings),
-              label: const Text('Admin Login'),
-              onPressed: () {
-                Navigator.pushNamed(context, '/admin-login');
-              },
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_open, size: 64, color: Colors.blue),
+                  const SizedBox(height: 20),
+                  Text(
+                    "Welcome Back!",
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.login),
+                    label: const Text('Sign in with Google'),
+                    onPressed: _signInWithPopup,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.admin_panel_settings),
+                    label: const Text('Admin Login'),
+                    onPressed: () {
+                      navigatorKey.currentState?.pushNamed('/admin-login');
+                    },
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -81,24 +155,25 @@ class _SignInPageState extends State<SignInPage> {
       final userCredential =
           await FirebaseAuth.instance.signInWithPopup(provider);
 
-      setState(() {
-        _user = userCredential.user;
-      });
+      if (!mounted) return;
+
+      _user = userCredential.user;
 
       if (_user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage(user: _user!)),
+        navigatorKey.currentState?.pushReplacement(
+          MaterialPageRoute(builder: (_) => HomePage(user: _user!)),
         );
       }
     } catch (e) {
-      _showSnackBar('Error: $e');
+      if (mounted) {
+        _showSnackBar('Error: $e');
+      }
     }
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }
-

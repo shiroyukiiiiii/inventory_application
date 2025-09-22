@@ -79,7 +79,11 @@ class _WebUniformRequestPageState extends State<WebUniformRequestPage> {
                       onSaved: (value) => _studentId = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
+<<<<<<< HEAD
                       value: _gender.isNotEmpty ? _gender : null,
+=======
+                      initialValue: _gender.isNotEmpty ? _gender : null,
+>>>>>>> mainfeatures
                       decoration: const InputDecoration(labelText: 'Gender'),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
@@ -90,7 +94,11 @@ class _WebUniformRequestPageState extends State<WebUniformRequestPage> {
                       onSaved: (value) => _gender = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
+<<<<<<< HEAD
                       value: _course.isNotEmpty ? _course : null,
+=======
+                      initialValue: _course.isNotEmpty ? _course : null,
+>>>>>>> mainfeatures
                       decoration: const InputDecoration(labelText: 'Course'),
                       items: const [
                         DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),

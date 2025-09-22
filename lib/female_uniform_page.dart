@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'main.dart';
-import 'uniform_preview_page.dart';
 
 class FemaleUniformPage extends StatelessWidget {
-	final User user;
+  final User user;
 
-	const FemaleUniformPage({super.key, required this.user});
+  const FemaleUniformPage({super.key, required this.user});
 
+<<<<<<< HEAD
 	@override
 	Widget build(BuildContext context) {
 		return Scaffold(
@@ -116,3 +115,18 @@ class FemaleUniformPage extends StatelessWidget {
 		);
 	}
 }
+=======
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Female Uniform')),
+      body: Center(
+        child: Text(
+          'Hello, ${user.displayName ?? 'Student'}! This is the Female Uniform Page.',
+          style: const TextStyle(fontSize: 18),
+        ),
+      ),
+    );
+  }
+}
+>>>>>>> mainfeatures

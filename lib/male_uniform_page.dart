@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'main.dart';
-import 'uniform_preview_page.dart';
 
 class MaleUniformPage extends StatelessWidget {
   final User user;
@@ -11,44 +9,9 @@ class MaleUniformPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Home Page'),
-            const SizedBox(width: 10),
-            CircleAvatar(
-              backgroundImage: NetworkImage(user.photoURL ?? ''),
-              radius: 15,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              user.displayName ?? '',
-              style: const TextStyle(fontSize: 16),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              FirebaseAuth.instance.signOut().then((_) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const SignInPage()),
-                  (Route<dynamic> route) => false,
-                );
-              });
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Male Uniform')),
       body: Center(
+<<<<<<< HEAD
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -112,6 +75,11 @@ class MaleUniformPage extends StatelessWidget {
               ],
             ),
           ],
+=======
+        child: Text(
+          'Hello, ${user.displayName ?? 'Student'}! This is the Male Uniform Page.',
+          style: const TextStyle(fontSize: 18),
+>>>>>>> mainfeatures
         ),
       ),
     );

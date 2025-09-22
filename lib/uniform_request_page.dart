@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class UniformRequestPage extends StatefulWidget {
-  final User user;
-  final String? initialGender;
-  final String? initialCourse;
-  const UniformRequestPage({super.key, required this.user, this.initialGender, this.initialCourse});
+  const UniformRequestPage({super.key});
 
   @override
   State<UniformRequestPage> createState() => _UniformRequestPageState();
 }
 
 class _UniformRequestPageState extends State<UniformRequestPage> {
+<<<<<<< HEAD
   final _formKey = GlobalKey<FormState>();
   late String _gender;
   late String _course;
@@ -62,10 +58,15 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       });
     }
   }
+=======
+  String selectedType = 'Male';
+  String selectedSize = 'M';
+>>>>>>> mainfeatures
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       appBar: AppBar(title: const Text('Request Uniform')),
       body: SingleChildScrollView(
         child: Padding(
@@ -207,6 +208,46 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               ),
             ],
           ),
+=======
+      appBar: AppBar(title: const Text('Uniform Request')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Select Uniform Type:'),
+            Wrap(
+              spacing: 10,
+              children: ['Male', 'Female'].map((type) {
+                return ChoiceChip(
+                  label: Text(type),
+                  selected: selectedType == type,
+                  onSelected: (_) {
+                    setState(() {
+                      selectedType = type;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Text('Select Size:'),
+            Wrap(
+              spacing: 10,
+              children: ['S', 'M', 'L'].map((size) {
+                return ChoiceChip(
+                  label: Text(size),
+                  selected: selectedSize == size,
+                  onSelected: (_) {
+                    setState(() {
+                      selectedSize = size;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+>>>>>>> mainfeatures
         ),
       ),
     );
