@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'main.dart';
+import 'uniform_preview_page.dart';
 
 class FemaleUniformPage extends StatelessWidget {
-  final User user;
+	final User user;
 
-  const FemaleUniformPage({super.key, required this.user});
+	const FemaleUniformPage({super.key, required this.user});
 
-<<<<<<< HEAD
 	@override
 	Widget build(BuildContext context) {
 		return Scaffold(
