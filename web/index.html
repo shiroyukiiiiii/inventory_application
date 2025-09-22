@@ -35,6 +35,17 @@
 
   <title>inventory_application</title>
   <link rel="manifest" href="manifest.json">
+
+ <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for (let registration of registrations) {
+        registration.update();
+      }
+    });
+  }
+</script>
+<script src="https://apis.google.com/js/platform.js" async defer></script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

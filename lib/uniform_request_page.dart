@@ -18,6 +18,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   late String _course;
   String _size = '';
   String _studentId = '';
+  String _name = '';
+  String _email = '';
   bool _isSubmitting = false;
   String? _message;
 
@@ -38,7 +40,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     try {
       await FirebaseFirestore.instance.collection('uniform_requests').add({
         'userId': widget.user.uid,
-        'userName': widget.user.displayName ?? '',
+        'name': _name,
+        'email': _email,
         'gender': _gender,
         'course': _course,
         'size': _size,
@@ -75,12 +78,44 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Full Name (letters + spaces only)
+                    TextFormField(
+                      decoration: const InputDecoration(labelText: 'Full Name'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Enter your name';
+                        if (!RegExp(r"^[a-zA-Z\s]+$").hasMatch(value)) {
+                          return 'Name can only contain letters and spaces';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => _name = value!.trim(),
+                    ),
+                    // Email (strict format)
+                    TextFormField(
+                      decoration: const InputDecoration(labelText: 'Email'),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Enter your email';
+                        final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
+                        if (!emailRegex.hasMatch(value)) return 'Enter a valid email address';
+                        return null;
+                      },
+                      onSaved: (value) => _email = value!.trim(),
+                    ),
+                    // Student Number (digits only, 8 length example)
                     TextFormField(
                       decoration: const InputDecoration(labelText: 'Student Number'),
-                      validator: (value) =>
-                          value == null || value.isEmpty ? 'Enter Student Number' : null,
-                      onSaved: (value) => _studentId = value ?? '',
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Enter Student Number';
+                        if (!RegExp(r'^\d{8}$').hasMatch(value)) {
+                          return 'Student Number must be 8 digits';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => _studentId = value!.trim(),
                     ),
+                    // Gender dropdown
                     DropdownButtonFormField<String>(
                       initialValue: _gender.isNotEmpty ? _gender : null,
                       decoration: const InputDecoration(labelText: 'Gender'),
@@ -92,6 +127,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                       onChanged: (value) => setState(() => _gender = value ?? ''),
                       onSaved: (value) => _gender = value ?? '',
                     ),
+                    // Course dropdown
                     DropdownButtonFormField<String>(
                       initialValue: _course.isNotEmpty ? _course : null,
                       decoration: const InputDecoration(labelText: 'Course'),
@@ -104,6 +140,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                       onChanged: (value) => setState(() => _course = value ?? ''),
                       onSaved: (value) => _course = value ?? '',
                     ),
+                    // Uniform size radio buttons
                     StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('uniforms')
@@ -118,7 +155,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                           return const Text('No inventory data found for selected gender/course.');
                         }
                         final uniformData = snapshot.data!.docs;
-                        // Build a map of size to quantity
                         final Map<String, int> sizeInventory = {};
                         for (var doc in uniformData) {
                           final data = doc.data() as Map<String, dynamic>;
