@@ -116,18 +116,5 @@ class FemaleUniformPage extends StatelessWidget {
 		);
 	}
 }
-=======
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Female Uniform')),
-      body: Center(
-        child: Text(
-          'Hello, ${user.displayName ?? 'Student'}! This is the Female Uniform Page.',
-          style: const TextStyle(fontSize: 18),
-        ),
-      ),
-    );
-  }
-}
->>>>>>> mainfeatures
+
+
