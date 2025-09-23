@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'uniform_preview_page.dart';
 
 class MaleUniformPage extends StatelessWidget {
   final User user;
@@ -19,8 +20,6 @@ class MaleUniformPage extends StatelessWidget {
               style: TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 20),
-
-            // Three Buttons Row
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -30,14 +29,14 @@ class MaleUniformPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => UniformPreviewPage(
-                          gender: 'Male',
-                          course: 'BSCRIM',
                           user: user,
+                          initialGender: 'Male',
+                          initialCourse: 'BSCRIM',
                         ),
                       ),
                     );
                   },
-                child: const Text('BSCRIM'),
+                  child: const Text('BSCRIM'),
                 ),
                 const SizedBox(width: 20),
                 ElevatedButton(
@@ -46,9 +45,9 @@ class MaleUniformPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => UniformPreviewPage(
-                          gender: 'Male',
-                          course: 'ABCOM',
                           user: user,
+                          initialGender: 'Male',
+                          initialCourse: 'ABCOM',
                         ),
                       ),
                     );
@@ -62,9 +61,9 @@ class MaleUniformPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => UniformPreviewPage(
-                          gender: 'Male',
-                          course: 'BSCS',
                           user: user,
+                          initialGender: 'Male',
+                          initialCourse: 'BSCS',
                         ),
                       ),
                     );
@@ -73,12 +72,13 @@ class MaleUniformPage extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 30),
+            Text(
+              'Hello, ${user.displayName ?? 'Student'}! '
+              'This is the Male Uniform Page.',
+              style: const TextStyle(fontSize: 18),
+            ),
           ],
-=======
-        child: Text(
-          'Hello, ${user.displayName ?? 'Student'}! This is the Male Uniform Page.',
-          style: const TextStyle(fontSize: 18),
->>>>>>> mainfeatures
         ),
       ),
     );

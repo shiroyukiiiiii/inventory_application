@@ -25,16 +25,10 @@ class _UniformPreviewPageState extends State<UniformPreviewPage> {
   @override
   void initState() {
     super.initState();
-
-    // Initialize controllers with initial values
-    nameController = TextEditingController(
-      text: widget.user?.displayName ?? '',
-    );
-
-    courseController = TextEditingController(
-      text: widget.initialCourse ?? '',
-    );
-
+    nameController =
+        TextEditingController(text: widget.user?.displayName ?? '');
+    courseController =
+        TextEditingController(text: widget.initialCourse ?? '');
     gender = widget.initialGender ?? 'Male';
   }
 
@@ -48,9 +42,7 @@ class _UniformPreviewPageState extends State<UniformPreviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Uniform Preview'),
-      ),
+      appBar: AppBar(title: const Text('Uniform Preview')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -58,16 +50,12 @@ class _UniformPreviewPageState extends State<UniformPreviewPage> {
           children: [
             TextFormField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-              ),
+              decoration: const InputDecoration(labelText: 'Name'),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: courseController,
-              decoration: const InputDecoration(
-                labelText: 'Course',
-              ),
+              decoration: const InputDecoration(labelText: 'Course'),
             ),
             const SizedBox(height: 16),
             Row(
@@ -76,21 +64,11 @@ class _UniformPreviewPageState extends State<UniformPreviewPage> {
                 DropdownButton<String>(
                   value: gender,
                   items: const [
-                    DropdownMenuItem(
-                      value: 'Male',
-                      child: Text('Male'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Female',
-                      child: Text('Female'),
-                    ),
+                    DropdownMenuItem(value: 'Male', child: Text('Male')),
+                    DropdownMenuItem(value: 'Female', child: Text('Female')),
                   ],
                   onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        gender = value;
-                      });
-                    }
+                    if (value != null) setState(() => gender = value);
                   },
                 ),
               ],
@@ -99,7 +77,6 @@ class _UniformPreviewPageState extends State<UniformPreviewPage> {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Example: Show a dialog preview
                   showDialog(
                     context: context,
                     builder: (_) => AlertDialog(
