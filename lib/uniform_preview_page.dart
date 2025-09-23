@@ -1,102 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'uniform_request_page.dart';
 
-class UniformPreviewPage extends StatefulWidget {
-  final User? user;
-  final String? initialGender;
-  final String? initialCourse;
+class UniformPreviewPage extends StatelessWidget {
+  final String gender;
+  final String course;
+  final User user;
 
-  const UniformPreviewPage({
-    super.key,
-    this.user,
-    this.initialGender,
-    this.initialCourse,
-  });
-
-  @override
-  State<UniformPreviewPage> createState() => _UniformPreviewPageState();
-}
-
-class _UniformPreviewPageState extends State<UniformPreviewPage> {
-  late TextEditingController nameController;
-  late TextEditingController courseController;
-  late String gender;
-
-  @override
-  void initState() {
-    super.initState();
-    nameController =
-        TextEditingController(text: widget.user?.displayName ?? '');
-    courseController =
-        TextEditingController(text: widget.initialCourse ?? '');
-    gender = widget.initialGender ?? 'Male';
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    courseController.dispose();
-    super.dispose();
-  }
+  const UniformPreviewPage({super.key, required this.gender, required this.course, required this.user});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Uniform Preview')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      appBar: AppBar(
+        title: Text('$gender Uniform Preview - $course'),
+      ),
+      body: Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextFormField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+            Icon(
+              gender == 'Male' ? Icons.male : Icons.female,
+              size: 100,
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: courseController,
-              decoration: const InputDecoration(labelText: 'Course'),
+            const SizedBox(height: 20),
+            Text(
+              '$gender Uniform for $course',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Text('Gender: '),
-                DropdownButton<String>(
-                  value: gender,
-                  items: const [
-                    DropdownMenuItem(value: 'Male', child: Text('Male')),
-                    DropdownMenuItem(value: 'Female', child: Text('Female')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) setState(() => gender = value);
-                  },
-                ),
-              ],
+            const SizedBox(height: 20),
+            const Text(
+              'Uniform preview and details go here.',
+              style: TextStyle(fontSize: 16),
             ),
-            const SizedBox(height: 32),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Preview'),
-                      content: Text(
-                        'Name: ${nameController.text}\n'
-                        'Course: ${courseController.text}\n'
-                        'Gender: $gender',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Close'),
-                        ),
-                      ],
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.request_page),
+              label: const Text('Request Uniform'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UniformRequestPage(
+                      user: user,
+                      initialGender: gender,
+                      initialCourse: course,
                     ),
-                  );
-                },
-                child: const Text('Preview'),
-              ),
+                  ),
+                );
+              },
             ),
           ],
         ),

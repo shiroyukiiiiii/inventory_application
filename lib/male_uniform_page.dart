@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'main.dart';
 import 'uniform_preview_page.dart';
 
 class MaleUniformPage extends StatelessWidget {
@@ -10,7 +11,43 @@ class MaleUniformPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Male Uniform')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Home Page'),
+            const SizedBox(width: 10),
+            CircleAvatar(
+              backgroundImage: NetworkImage(user.photoURL ?? ''),
+              radius: 15,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              user.displayName ?? '',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              FirebaseAuth.instance.signOut().then((_) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const SignInPage()),
+                  (Route<dynamic> route) => false,
+                );
+              });
+            },
+          ),
+        ],
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -20,6 +57,8 @@ class MaleUniformPage extends StatelessWidget {
               style: TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 20),
+
+            // Three Buttons Row
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -29,9 +68,9 @@ class MaleUniformPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => UniformPreviewPage(
+                          gender: 'Male',
+                          course: 'BSCRIM',
                           user: user,
-                          initialGender: 'Male',
-                          initialCourse: 'BSCRIM',
                         ),
                       ),
                     );
@@ -45,9 +84,9 @@ class MaleUniformPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => UniformPreviewPage(
+                          gender: 'Male',
+                          course: 'ABCOM',
                           user: user,
-                          initialGender: 'Male',
-                          initialCourse: 'ABCOM',
                         ),
                       ),
                     );
@@ -61,9 +100,9 @@ class MaleUniformPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => UniformPreviewPage(
+                          gender: 'Male',
+                          course: 'BSCS',
                           user: user,
-                          initialGender: 'Male',
-                          initialCourse: 'BSCS',
                         ),
                       ),
                     );
@@ -71,12 +110,6 @@ class MaleUniformPage extends StatelessWidget {
                   child: const Text('BSCS'),
                 ),
               ],
-            ),
-            const SizedBox(height: 30),
-            Text(
-              'Hello, ${user.displayName ?? 'Student'}! '
-              'This is the Male Uniform Page.',
-              style: const TextStyle(fontSize: 18),
             ),
           ],
         ),

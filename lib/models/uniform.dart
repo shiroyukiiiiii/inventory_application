@@ -1,8 +1,8 @@
 class Uniform {
   final String id;
-  final String gender;
-  final String course;
-  final String size;
+  final String gender; // 'Male' or 'Female'
+  final String course; // e.g., 'Crim', 'ABCOM', 'BSCS'
+  final String size; // e.g., 'S', 'M', 'L', 'XL'
   final int quantity;
 
   Uniform({
@@ -13,22 +13,25 @@ class Uniform {
     required this.quantity,
   });
 
-  factory Uniform.fromMap(Map<String, dynamic> data, String documentId) {
-    return Uniform(
-      id: documentId,
-      gender: data['gender'] ?? '',
-      course: data['course'] ?? '',
-      size: data['size'] ?? '',
-      quantity: data['quantity'] ?? 0,
-    );
-  }
-
+  // Convert a Uniform object into a Map for Firestore
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'gender': gender,
       'course': course,
       'size': size,
       'quantity': quantity,
     };
+  }
+
+  // Create a Uniform object from a Firestore document
+  factory Uniform.fromMap(Map<String, dynamic> map, String documentId) {
+    return Uniform(
+      id: documentId,
+      gender: map['gender'] ?? '',
+      course: map['course'] ?? '',
+      size: map['size'] ?? '',
+      quantity: map['quantity'] ?? 0,
+    );
   }
 }
