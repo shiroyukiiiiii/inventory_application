@@ -59,92 +59,128 @@ class _InventoryPageState extends State<InventoryPage> {
     return total;
   }
 
+  int getOverallStock() {
+    return getTotalStock(boysUniforms) + getTotalStock(girlsUniforms);
+  }
+
+  int getOverallValue() {
+    return getTotalValue(boysUniforms) + getTotalValue(girlsUniforms);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.green[50],
-      appBar: AppBar(
-        title: const Text('Inventory Management'),
-        backgroundColor: Colors.green,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              showAddDialog();
-            },
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Boys section
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text('Boys Uniforms',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue)),
+            Center(child: _buildOverallCard()), // Centered horizontally
+            const SizedBox(height: 12),
+            _buildSummaryCard(
+              title: 'Boys Uniforms',
+              color: Colors.blue[100]!,
+              uniforms: boysUniforms,
             ),
-            ...boysUniforms.map((item) => Card(
-                  color: Colors.blue[50],
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(item['name']),
-                    subtitle: Text(
-                        'Price: ₱${item['price']}\nSizes & Quantity: ${item['sizes']}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () {
-                        showEditDialog(item);
-                      },
-                    ),
-                  ),
-                )),
-
-            // Girls section
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text('Girls Uniforms',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.pink)),
+            _buildSummaryCard(
+              title: 'Girls Uniforms',
+              color: Colors.green[100]!,
+              uniforms: girlsUniforms,
             ),
-            ...girlsUniforms.map((item) => Card(
-                  color: Colors.pink[50],
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(item['name']),
-                    subtitle: Text(
-                        'Price: ₱${item['price']}\nSizes & Quantity: ${item['sizes']}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () {
-                        showEditDialog(item, isGirls: true);
-                      },
-                    ),
-                  ),
-                )),
           ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        color: Colors.green[100],
-        child: Text(
-          'Boys Total Stock: ${getTotalStock(boysUniforms)} | Boys Total Value: ₱${getTotalValue(boysUniforms)}\n'
-          'Girls Total Stock: ${getTotalStock(girlsUniforms)} | Girls Total Value: ₱${getTotalValue(girlsUniforms)}',
-          style: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
       ),
     );
   }
 
-  void showEditDialog(Map<String, dynamic> item, {bool isGirls = false}) {
+  Widget _buildOverallCard() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.green.shade400, Colors.blue.shade400],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Text(
+            'Overall Inventory Summary',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Total Stock: ${getOverallStock()} | Total Value: ₱${getOverallValue()}',
+            style: const TextStyle(fontSize: 16, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required Color color,
+    required List<Map<String, dynamic>> uniforms,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        color: color,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
+              ),
+              const SizedBox(height: 8),
+              ...uniforms.map(
+                (item) => Card(
+                  color: Colors.white,
+                  child: ListTile(
+                    title: Text(item['name']),
+                    subtitle: Text(
+                        'Price: ₱${item['price']}\nSizes & Quantity: ${item['sizes']}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.black87),
+                      onPressed: () {
+                        showEditDialog(item, uniforms: uniforms);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Total Stock: ${getTotalStock(uniforms)} | Total Value: ₱${getTotalValue(uniforms)}',
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void showEditDialog(Map<String, dynamic> item,
+      {required List<Map<String, dynamic>> uniforms}) {
     final priceController =
         TextEditingController(text: item['price'].toString());
     final Map<String, TextEditingController> sizeControllers = {};
@@ -197,96 +233,6 @@ class _InventoryPageState extends State<InventoryPage> {
                 child: const Text('Save')),
           ],
         );
-      },
-    );
-  }
-
-  void showAddDialog() {
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
-    Map<String, int> sizes = {};
-
-    List<String> uniformSizes = ['Small', 'Medium', 'Large', 'XL', '2XL'];
-    bool isGirls = false;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Add Uniform'),
-            content: SingleChildScrollView(
-              child: Column(
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Uniform Name'),
-                  ),
-                  TextField(
-                    controller: priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Price'),
-                  ),
-                  Row(
-                    children: [
-                      const Text('Gender:'),
-                      const SizedBox(width: 10),
-                      DropdownButton<bool>(
-                        value: isGirls,
-                        items: const [
-                          DropdownMenuItem(value: false, child: Text('Boys')),
-                          DropdownMenuItem(value: true, child: Text('Girls')),
-                        ],
-                        onChanged: (value) {
-                          setStateDialog(() {
-                            isGirls = value!;
-                            uniformSizes = isGirls
-                                ? ['Small', 'XL', '2XL']
-                                : ['Small', 'Medium', 'Large', 'XL', '2XL'];
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  ...uniformSizes.map((size) {
-                    sizes[size] = 0;
-                    return TextField(
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: 'Quantity $size'),
-                      onChanged: (val) {
-                        sizes[size] = int.tryParse(val) ?? 0;
-                      },
-                    );
-                  }),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel')),
-              ElevatedButton(
-                  onPressed: () {
-                    final newUniform = {
-                      'name': nameController.text,
-                      'price': int.tryParse(priceController.text) ?? 0,
-                      'sizes': sizes,
-                    };
-                    setState(() {
-                      if (isGirls) {
-                        girlsUniforms.add(newUniform);
-                      } else {
-                        boysUniforms.add(newUniform);
-                      }
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Add')),
-            ],
-          );
-        });
       },
     );
   }
