@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'homepage.dart';
 import 'admin_login_page.dart';
 import 'uniform_list_page.dart';
+import 'adminregistration.dart'; // ✅ Make sure this file contains AdminRegisterPage
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/admin-login': (context) => const AdminLoginPage(),
         '/admin-inventory': (context) => const UniformListPage(),
+        '/admin-register': (context) => const AdminRegisterPage(), // ✅ NEW ROUTE
       },
     );
   }
@@ -101,4 +103,3 @@ class _SignInPageState extends State<SignInPage> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 }
-

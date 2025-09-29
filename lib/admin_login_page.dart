@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -9,31 +11,56 @@ class AdminLoginPage extends StatefulWidget {
 
 class _AdminLoginPageState extends State<AdminLoginPage> {
   final _formKey = GlobalKey<FormState>();
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
+
   String _username = '';
   String _password = '';
   bool _isLoading = false;
   String? _error;
 
-  // For demo: hardcoded admin credentials
-  final String _adminUser = 'admin';
-  final String _adminPass = 'admin123';
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  void _login() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    await Future.delayed(const Duration(seconds: 1));
-    if (_username == _adminUser && _password == _adminPass) {
+
+    try {
+      // 1️⃣ Look up the admin document by username
+      final query = await _firestore
+          .collection('admins')
+          .where('username', isEqualTo: _username.trim())
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) {
+        throw Exception('Username not found');
+      }
+
+      final email = query.docs.first['email'] as String;
+
+      // 2️⃣ Sign in with email/password
+      await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: _password,
+      );
+
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/admin-inventory');
       }
-    } else {
-      setState(() {
-        _error = 'Invalid credentials';
-        _isLoading = false;
-      });
+    } on FirebaseAuthException catch (e) {
+      setState(() => _error = e.message ?? 'Login failed');
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _goToRegistration() {
+    Navigator.pushNamed(context, '/admin-register');
   }
 
   @override
@@ -51,28 +78,35 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Username'),
                   onChanged: (val) => _username = val,
-                  validator: (val) => val == null || val.isEmpty ? 'Enter username' : null,
+                  validator: (val) =>
+                      val == null || val.isEmpty ? 'Enter username' : null,
                 ),
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
                   onChanged: (val) => _password = val,
-                  validator: (val) => val == null || val.isEmpty ? 'Enter password' : null,
+                  validator: (val) =>
+                      val == null || val.isEmpty ? 'Enter password' : null,
                 ),
                 const SizedBox(height: 20),
                 if (_error != null)
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
                 const SizedBox(height: 10),
                 _isLoading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            _login();
-                          }
-                        },
+                        onPressed: _login,
                         child: const Text('Login'),
                       ),
+                const SizedBox(height: 15),
+                OutlinedButton(
+                  onPressed: _goToRegistration,
+                  child: const Text('Admin Registration'),
+                ),
               ],
             ),
           ),
