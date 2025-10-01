@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       routes: {
         '/admin-login': (context) => const AdminLoginPage(),
-        '/admin-inventory': (context) => const UniformListPage(),
+        '/admin-inventory': (context) => const AdminDashboardPage(),
         '/admin-register': (context) => const AdminRegisterPage(),
       },
     );

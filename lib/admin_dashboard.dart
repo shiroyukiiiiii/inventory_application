@@ -3,7 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:inventory_application/inventory_page.dart';
-
 import 'salesreport_page.dart';
 
 class AdminDashboardApp extends StatefulWidget {
