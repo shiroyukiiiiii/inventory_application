@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+// Make sure you have this file created
 import 'admin_qr_confirmation.dart';
 
 class AdminDashboardPage extends StatefulWidget {
@@ -25,13 +26,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     super.dispose();
   }
 
-  /// Floating Action Button → Opens QR Confirmation Page
+  /// ✅ Added missing FAB builder
   Widget _buildFab() {
     return FloatingActionButton(
       onPressed: () {
+        // Example: Navigate to QR scanner confirmation page
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => AdminQrConfirmationPage()),
+          MaterialPageRoute(builder: (context) => const AdminQrConfirmationPage()),
         );
       },
       child: const Icon(Icons.add),
@@ -50,7 +52,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AdminQrConfirmationPage()),
+                MaterialPageRoute(
+                  builder: (context) => const AdminQrConfirmationPage(),
+                ),
               );
             },
           ),
@@ -86,7 +90,7 @@ class _InventoryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('uniforms').snapshots(),
+      stream: FirebaseFirestore.instance.collection('uniform_inventory').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -143,8 +147,7 @@ class UniformRequestsListPage extends StatelessWidget {
               child: ListTile(
                 title: Text(data['student_name'] ?? 'Unknown'),
                 subtitle: Text(
-                  '${data['course'] ?? ''} - ${data['gender'] ?? ''} (Size: ${data['size'] ?? ''})',
-                ),
+                    '${data['course'] ?? ''} - ${data['gender'] ?? ''} (Size: ${data['size'] ?? ''})'),
                 trailing: ElevatedButton(
                   onPressed: () async {
                     await FirebaseFirestore.instance
@@ -194,8 +197,7 @@ class CompletedOrdersListPage extends StatelessWidget {
               child: ListTile(
                 title: Text(data['student_name'] ?? 'Unknown'),
                 subtitle: Text(
-                  '${data['course'] ?? ''} - ${data['gender'] ?? ''} (Size: ${data['size'] ?? ''})',
-                ),
+                    '${data['course'] ?? ''} - ${data['gender'] ?? ''} (Size: ${data['size'] ?? ''})'),
                 trailing: const Icon(Icons.check, color: Colors.green),
               ),
             );
