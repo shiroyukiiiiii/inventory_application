@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/uniform.dart';
 import 'edit_uniform_request_page.dart';
+import 'admin_qr_confirmation.dart'; // 👈 make sure this file exists
 
 class UniformListPage extends StatelessWidget {
   const UniformListPage({super.key});
@@ -22,6 +23,20 @@ class UniformListPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Uniform Management'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner),
+              tooltip: 'QR Confirmation',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminQrConfirmationPage(),
+                  ),
+                );
+              },
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Inventory'),
@@ -30,7 +45,7 @@ class UniformListPage extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
+        body: const TabBarView(
           children: [
             _InventoryTab(),
             UniformRequestsListPage(),
