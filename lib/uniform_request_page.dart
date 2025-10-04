@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,15 +27,20 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   String _course = '';
   String _size = '';
   String _studentId = '';
+  String _fullName = '';
+  late String _email;
+  late TextEditingController _emailController;
   bool _isSubmitting = false;
   String? _message;
   bool _showQRCode = false;
 
   @override
   void initState() {
-    super.initState();
-    _gender = widget.initialGender ?? '';
-    _course = widget.initialCourse ?? '';
+  super.initState();
+  _gender = widget.initialGender ?? '';
+  _course = widget.initialCourse ?? '';
+  _email = widget.user.email ?? '';
+  _emailController = TextEditingController(text: _email);
   }
 
   void _generateQRPreview() {
@@ -44,8 +50,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   }
 
   Future<void> _submitRequest() async {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+  if (!_formKey.currentState!.validate()) return;
+  _formKey.currentState!.save();
 
     setState(() {
       _isSubmitting = true;
@@ -53,37 +59,41 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     });
 
     try {
-      // Save to Firestore
+      // ✅ Generate QR code bytes first
+      final qrCodeBytes = await QRService.generateQRCodeBytes(_studentId);
+      final qrBase64 = base64Encode(qrCodeBytes);
+
+      // ✅ Save to Firestore (with QR code string)
       await FirebaseFirestore.instance.collection('uniform_requests').add({
         'userId': widget.user.uid,
         'userName': widget.user.displayName ?? '',
+        'fullName': _fullName,
+        'email': _email,
         'gender': _gender,
         'course': _course,
         'size': _size,
         'studentId': _studentId,
+        'qrCode': qrBase64, // 👈 Store QR code here
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // Generate QR code
-      final qrCodeBytes = await QRService.generateQRCodeBytes(_studentId);
-
-      // Send Email
+      // ✅ Send Email (still optional)
       final emailSent = await EmailService.sendUniformRequestEmail(
         studentNumber: _studentId,
-        studentName: widget.user.displayName ?? 'Unknown',
+        studentName: _fullName.isNotEmpty ? _fullName : (widget.user.displayName ?? 'Unknown'),
         gender: _gender,
         course: _course,
         size: _size,
         qrCodeBytes: qrCodeBytes,
-        toEmail: widget.user.email ?? '', // ✅ Added toEmail param
+        toEmail: _email.isNotEmpty ? _email : (widget.user.email ?? ''),
       );
 
       setState(() {
         if (emailSent) {
           _message =
-              'Request submitted and confirmation email sent with QR code!';
+              'Request submitted, QR code saved to Firestore, and email sent!';
         } else {
-          _message = 'Request submitted! (Email sending failed)';
+          _message = 'Request submitted and QR code saved (email failed).';
         }
       });
 
@@ -107,6 +117,34 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Full Name
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'Full Name'),
+                validator: (value) => value == null || value.isEmpty ? 'Enter your full name' : null,
+                onSaved: (value) => _fullName = value ?? '',
+                onChanged: (value) {
+                  setState(() {
+                    _fullName = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+              // Email (auto-filled and read-only)
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'Email'),
+                controller: _emailController,
+                readOnly: true,
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Email not found';
+                  final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+\u0000?');
+                  if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
+                  return null;
+                },
+                onSaved: (value) => _email = value ?? '',
+              ),
+
+              const SizedBox(height: 10),
               // Student ID
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Student Number'),
@@ -215,6 +253,12 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
   }
 
   Widget _buildQRPreview() {

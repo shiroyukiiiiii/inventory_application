@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/uniform.dart';
 import 'admin_qr_confirmation.dart';
+import 'services/emailjs_service.dart';
 
 class UniformListPage extends StatelessWidget {
   const UniformListPage({super.key});
@@ -299,11 +300,30 @@ class _UniformFormPageState extends State<UniformFormPage> {
 class UniformRequestsListPage extends StatelessWidget {
   const UniformRequestsListPage({super.key});
 
-  Future<void> _approveRequest(String id) async {
+  Future<void> _approveRequest(String id, Map<String, dynamic> data, BuildContext context) async {
     await FirebaseFirestore.instance.collection('uniform_requests').doc(id).update({
       'status': 'Approved',
       'approvedAt': Timestamp.now(),
     });
+    try {
+      await EmailJsService.sendApprovalEmail(
+        toEmail: data['email'] ?? '',
+        toName: data['userName'] ?? '',
+        studentNumber: data['studentId'] ?? '',
+        studentName: data['userName'] ?? '',
+        gender: data['gender'] ?? '',
+        course: data['course'] ?? '',
+        size: data['size'] ?? '',
+        qrCode: data['qrCode'] ?? '',
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Approval email sent!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send approval email: $e')),
+      );
+    }
   }
 
   @override
@@ -340,6 +360,7 @@ class UniformRequestsListPage extends StatelessWidget {
               child: ListTile(
                 title: Text('${data['userName'] ?? 'Unknown'}'),
                 subtitle: Text(
+                  'Email: ${data['email'] ?? ''}\n'
                   'Course: ${data['course'] ?? ''}\n'
                   'Size: ${data['size'] ?? ''}\n'
                   'Student ID: ${data['studentId'] ?? ''}\n'
@@ -347,7 +368,7 @@ class UniformRequestsListPage extends StatelessWidget {
                   'Status: ${data['status'] ?? 'Pending'}',
                 ),
                 trailing: ElevatedButton(
-                  onPressed: () => _approveRequest(doc.id),
+                  onPressed: () => _approveRequest(doc.id, data, context),
                   child: const Text("Approve"),
                 ),
               ),
