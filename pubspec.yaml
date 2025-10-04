@@ -26,6 +26,9 @@ dependencies:
   qr_code_scanner: ^1.0.1
   mobile_scanner: ^6.0.2
   zxing2: ^0.2.2
+  image_picker_web: ^3.0.1
+  file_picker: ^8.0.3
+  image: ^4.1.3
   
 
 
