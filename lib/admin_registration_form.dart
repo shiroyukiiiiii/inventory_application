@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'services/emailjs_service.dart';
 
 class AdminRegistrationPage extends StatefulWidget {
   const AdminRegistrationPage({super.key});
@@ -47,11 +48,21 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      // Send email notification with username and password
+      await EmailJsService.sendAdminRegistrationEmail(
+        toEmail: _emailController.text.trim(),
+        toName: _nameController.text.trim(),
+        username: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
       if (!mounted) return;
-      _showSnackBar("✅ Admin registered successfully!");
+      _showSnackBar("✅ Admin registered successfully! Email sent.");
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       _showSnackBar(e.message ?? "Registration failed");
+    } catch (e) {
+      _showSnackBar("Registration succeeded, but failed to send email: $e");
     } finally {
       if (mounted) setState(() => _loading = false);
     }

@@ -51,7 +51,17 @@ class HomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
-              'Welcome! Please select an option:',
+              'Welcome To SIASU!',
+              style: TextStyle(fontSize: 20),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'An inventory management system for school uniforms of college students',
+              style: TextStyle(fontSize: 8),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Please select an option:',
               style: TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 20),
