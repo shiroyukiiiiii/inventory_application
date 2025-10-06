@@ -10,7 +10,7 @@ class StudentManageRequestsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // Orders + Cancelled Orders
+      length: 3, // ✅ Orders + Completed + Cancelled
       child: Scaffold(
         appBar: AppBar(
           title: Row(
@@ -31,6 +31,7 @@ class StudentManageRequestsPage extends StatelessWidget {
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Orders'),
+              Tab(text: 'Completed'),
               Tab(text: 'Cancelled Orders'),
             ],
           ),
@@ -54,20 +55,26 @@ class StudentManageRequestsPage extends StatelessWidget {
 
             final allRequests = snapshot.data!.docs;
 
-            // Split requests
+            // ✅ Separate based on status
             final orders = allRequests.where((doc) {
               final data = doc.data() as Map<String, dynamic>;
-              return (data['status'] ?? 'Pending') != 'Cancelled';
+              final status = (data['status'] ?? 'Pending').toLowerCase();
+              return status != 'cancelled' && status != 'completed';
+            }).toList();
+
+            final completedOrders = allRequests.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              return (data['status'] ?? '').toString().toLowerCase() == 'completed';
             }).toList();
 
             final cancelledOrders = allRequests.where((doc) {
               final data = doc.data() as Map<String, dynamic>;
-              return (data['status'] ?? '') == 'Cancelled';
+              return (data['status'] ?? '').toString().toLowerCase() == 'cancelled';
             }).toList();
 
             return TabBarView(
               children: [
-                // Orders Tab
+                // 🟠 Orders Tab
                 orders.isEmpty
                     ? const Center(child: Text('No active orders.'))
                     : ListView.builder(
@@ -79,7 +86,24 @@ class StudentManageRequestsPage extends StatelessWidget {
                         },
                       ),
 
-                // Cancelled Orders Tab
+                // 🟢 Completed Orders Tab
+                completedOrders.isEmpty
+                    ? const Center(child: Text('No completed orders.'))
+                    : ListView.builder(
+                        itemCount: completedOrders.length,
+                        itemBuilder: (context, index) {
+                          final doc = completedOrders[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          return _buildRequestCard(
+                            context,
+                            doc.id,
+                            data,
+                            showActions: false, // Hide cancel button
+                          );
+                        },
+                      ),
+
+                // 🔴 Cancelled Orders Tab
                 cancelledOrders.isEmpty
                     ? const Center(child: Text('No cancelled orders.'))
                     : ListView.builder(
@@ -91,7 +115,7 @@ class StudentManageRequestsPage extends StatelessWidget {
                             context,
                             doc.id,
                             data,
-                            showActions: false, // hide buttons
+                            showActions: false, // Hide cancel button
                           );
                         },
                       ),
@@ -161,6 +185,17 @@ class StudentManageRequestsPage extends StatelessWidget {
             _buildInfoRow('Size', data['size'] ?? ''),
             _buildInfoRow('Student ID', data['studentId'] ?? ''),
             _buildInfoRow('Requested', requestTime),
+
+            if ((data['status'] ?? '').toString().toLowerCase() == 'cancelled') ...[
+              const SizedBox(height: 4),
+              _buildInfoRow(
+                'Cancelled At',
+                data['cancelledAt'] != null
+                    ? DateFormat('MMM d, yyyy hh:mm a')
+                        .format((data['cancelledAt'] as Timestamp).toDate())
+                    : 'N/A',
+              ),
+            ],
           ],
         ),
       ),
@@ -200,7 +235,7 @@ class StudentManageRequestsPage extends StatelessWidget {
     }
   }
 
-  Future<void> _cancelRequest(BuildContext context, String requestId) async {
+    Future<void> _cancelRequest(BuildContext context, String requestId) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -224,7 +259,10 @@ class StudentManageRequestsPage extends StatelessWidget {
         await FirebaseFirestore.instance
             .collection('uniform_requests')
             .doc(requestId)
-            .update({'status': 'Cancelled'});
+            .update({
+              'status': 'Cancelled',
+              'cancelledAt': Timestamp.now(), // ✅ Add timestamp
+            });
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
