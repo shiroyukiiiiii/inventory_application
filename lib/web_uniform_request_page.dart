@@ -73,38 +73,50 @@ class _WebUniformRequestPageState extends State<WebUniformRequestPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextFormField(
-                      decoration: const InputDecoration(labelText: 'Student Number'),
-                      validator: (value) =>
-                          value == null || value.isEmpty ? 'Enter Student Number' : null,
+                      decoration:
+                          const InputDecoration(labelText: 'Student Number'),
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Enter Student Number'
+                          : null,
                       onSaved: (value) => _studentId = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
-                      value: _gender.isNotEmpty ? _gender : null,
+                      initialValue: _gender.isNotEmpty ? _gender : null,
                       decoration: const InputDecoration(labelText: 'Gender'),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
-                        DropdownMenuItem(value: 'Female', child: Text('Female')),
+                        DropdownMenuItem(
+                            value: 'Female', child: Text('Female')),
                       ],
-                      validator: (value) => value == null || value.isEmpty ? 'Select gender' : null,
-                      onChanged: (value) => setState(() => _gender = value ?? ''),
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Select gender'
+                          : null,
+                      onChanged: (value) =>
+                          setState(() => _gender = value ?? ''),
                       onSaved: (value) => _gender = value ?? '',
                     ),
                     DropdownButtonFormField<String>(
-                      value: _course.isNotEmpty ? _course : null,
+                      initialValue: _course.isNotEmpty ? _course : null,
                       decoration: const InputDecoration(labelText: 'Course'),
                       items: const [
                         DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),
                         DropdownMenuItem(value: 'ABCOM', child: Text('ABCOM')),
-                        DropdownMenuItem(value: 'BSCRIM', child: Text('BSCRIM')),
+                        DropdownMenuItem(
+                            value: 'BSCRIM', child: Text('BSCRIM')),
                       ],
-                      validator: (value) => value == null || value.isEmpty ? 'Select course' : null,
-                      onChanged: (value) => setState(() => _course = value ?? ''),
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Select course'
+                          : null,
+                      onChanged: (value) =>
+                          setState(() => _course = value ?? ''),
                       onSaved: (value) => _course = value ?? '',
                     ),
                     // You can add size selection and inventory logic here if needed
                     TextFormField(
-                      decoration: const InputDecoration(labelText: 'Size (e.g. M, L, XL)'),
-                      validator: (value) => value == null || value.isEmpty ? 'Enter size' : null,
+                      decoration: const InputDecoration(
+                          labelText: 'Size (e.g. M, L, XL)'),
+                      validator: (value) =>
+                          value == null || value.isEmpty ? 'Enter size' : null,
                       onSaved: (value) => _size = value ?? '',
                     ),
                     const SizedBox(height: 20),

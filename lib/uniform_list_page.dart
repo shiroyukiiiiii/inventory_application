@@ -75,11 +75,10 @@ class _InventoryTab extends StatelessWidget {
   const _InventoryTab();
 
   Stream<List<Uniform>> getUniforms() {
-    return FirebaseFirestore.instance
-        .collection('uniforms')
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Uniform.fromMap(doc.data(), doc.id)).toList());
+    return FirebaseFirestore.instance.collection('uniforms').snapshots().map(
+        (snapshot) => snapshot.docs
+            .map((doc) => Uniform.fromMap(doc.data(), doc.id))
+            .toList());
   }
 
   @override
@@ -99,7 +98,8 @@ class _InventoryTab extends StatelessWidget {
           itemBuilder: (context, index) {
             final uniform = uniforms[index];
             return ListTile(
-              title: Text('${uniform.gender} - ${uniform.course} (${uniform.size})'),
+              title: Text(
+                  '${uniform.gender} - ${uniform.course} (${uniform.size})'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -203,8 +203,8 @@ class _UniformFormPageState extends State<UniformFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-          AppBar(title: Text(widget.uniform == null ? 'Add Uniform' : 'Edit Uniform')),
+      appBar: AppBar(
+          title: Text(widget.uniform == null ? 'Add Uniform' : 'Edit Uniform')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -223,18 +223,19 @@ class _UniformFormPageState extends State<UniformFormPage> {
                     },
                   )),
               const Text('Course', style: TextStyle(fontSize: 16)),
-              ...['BSCRIM', 'ABCOM', 'BSCS'].map((course) => RadioListTile<String>(
-                    title: Text(course),
-                    value: course,
-                    groupValue: _course,
-                    onChanged: (value) {
-                      setState(() {
-                        _course = value ?? '';
-                      });
-                    },
-                  )),
+              ...['BSCRIM', 'ABCOM', 'BSCS']
+                  .map((course) => RadioListTile<String>(
+                        title: Text(course),
+                        value: course,
+                        groupValue: _course,
+                        onChanged: (value) {
+                          setState(() {
+                            _course = value ?? '';
+                          });
+                        },
+                      )),
               DropdownButtonFormField<String>(
-                value: _size.isNotEmpty ? _size : null,
+                initialValue: _size.isNotEmpty ? _size : null,
                 decoration: const InputDecoration(labelText: 'Size'),
                 items: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
                     .map((size) => DropdownMenuItem(
@@ -300,8 +301,12 @@ class _UniformFormPageState extends State<UniformFormPage> {
 class UniformRequestsListPage extends StatelessWidget {
   const UniformRequestsListPage({super.key});
 
-  Future<void> _approveRequest(String id, Map<String, dynamic> data, BuildContext context) async {
-    await FirebaseFirestore.instance.collection('uniform_requests').doc(id).update({
+  Future<void> _approveRequest(
+      String id, Map<String, dynamic> data, BuildContext context) async {
+    await FirebaseFirestore.instance
+        .collection('uniform_requests')
+        .doc(id)
+        .update({
       'status': 'Approved',
       'approvedAt': Timestamp.now(),
     });
@@ -469,8 +474,8 @@ class CompletedOrdersListPage extends StatelessWidget {
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ListTile(
-                title:
-                    Text('${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})'),
+                title: Text(
+                    '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})'),
                 subtitle: Text(
                   'Course: ${data['course'] ?? ''}\n'
                   'Size: ${data['size'] ?? ''}\n'

@@ -39,7 +39,10 @@ class _EditUniformRequestPageState extends State<EditUniformRequestPage> {
     final firestore = FirebaseFirestore.instance;
 
     // Update the request document
-    await firestore.collection('uniform_requests').doc(widget.requestId).update({
+    await firestore
+        .collection('uniform_requests')
+        .doc(widget.requestId)
+        .update({
       'gender': _gender,
       'course': _course,
       'size': _size,
@@ -125,7 +128,7 @@ class _EditUniformRequestPageState extends State<EditUniformRequestPage> {
                 onSaved: (value) => _studentId = value ?? '',
               ),
               DropdownButtonFormField<String>(
-                value: _status,
+                initialValue: _status,
                 decoration: const InputDecoration(labelText: 'Status'),
                 items: const [
                   DropdownMenuItem(value: 'Pending', child: Text('Pending')),

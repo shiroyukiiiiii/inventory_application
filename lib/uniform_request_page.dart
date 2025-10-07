@@ -36,11 +36,11 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
 
   @override
   void initState() {
-  super.initState();
-  _gender = widget.initialGender ?? '';
-  _course = widget.initialCourse ?? '';
-  _email = widget.user.email ?? '';
-  _emailController = TextEditingController(text: _email);
+    super.initState();
+    _gender = widget.initialGender ?? '';
+    _course = widget.initialCourse ?? '';
+    _email = widget.user.email ?? '';
+    _emailController = TextEditingController(text: _email);
   }
 
   void _generateQRPreview() {
@@ -50,8 +50,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   }
 
   Future<void> _submitRequest() async {
-  if (!_formKey.currentState!.validate()) return;
-  _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
 
     setState(() {
       _isSubmitting = true;
@@ -80,7 +80,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       // ✅ Send Email (still optional)
       final emailSent = await EmailService.sendUniformRequestEmail(
         studentNumber: _studentId,
-        studentName: _fullName.isNotEmpty ? _fullName : (widget.user.displayName ?? 'Unknown'),
+        studentName: _fullName.isNotEmpty
+            ? _fullName
+            : (widget.user.displayName ?? 'Unknown'),
         gender: _gender,
         course: _course,
         size: _size,
@@ -120,7 +122,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               // Full Name
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter your full name' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Enter your full name'
+                    : null,
                 onSaved: (value) => _fullName = value ?? '',
                 onChanged: (value) {
                   setState(() {
@@ -137,7 +141,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Email not found';
-                  final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+\u0000?');
+                  final emailRegex =
+                      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+\u0000?');
                   if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
                   return null;
                 },
@@ -148,8 +153,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               // Student ID
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Student Number'),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Enter Student Number' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Enter Student Number'
+                    : null,
                 onSaved: (value) => _studentId = value ?? '',
                 onChanged: (value) {
                   setState(() {
@@ -180,7 +186,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               // Course Dropdown
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _course.isNotEmpty ? _course : null,
+                initialValue: _course.isNotEmpty ? _course : null,
                 decoration: const InputDecoration(labelText: 'Course'),
                 items: const [
                   DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),
@@ -202,7 +208,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               // Gender Dropdown
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _gender.isNotEmpty ? _gender : null,
+                initialValue: _gender.isNotEmpty ? _gender : null,
                 decoration: const InputDecoration(labelText: 'Gender'),
                 items: const [
                   DropdownMenuItem(value: 'Male', child: Text('Male')),
@@ -298,7 +304,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Text('No inventory data found for selected gender/course.');
+          return const Text(
+              'No inventory data found for selected gender/course.');
         }
 
         final uniformData = snapshot.data!.docs;
@@ -328,8 +335,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                     ? (value) => setState(() => _size = value ?? '')
                     : null,
                 activeColor: Colors.blue,
-                secondary:
-                    qty == 0 ? const Icon(Icons.block, color: Colors.red) : null,
+                secondary: qty == 0
+                    ? const Icon(Icons.block, color: Colors.red)
+                    : null,
               );
             }),
           ],

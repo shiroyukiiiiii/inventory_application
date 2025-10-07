@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'homepage.dart';
 import 'admin_login_page.dart';
 import 'uniform_list_page.dart';
-import 'adminregistration.dart'; // ✅ Make sure this file contains AdminRegisterPage
+import 'adminregistration.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,14 +29,20 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Google Sign-In Web',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        useMaterial3: true,
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(fontFamily: 'Poppins'),
+        ),
+      ),
       home: const SignInPage(),
       debugShowCheckedModeBanner: false,
       routes: {
-  '/admin-login': (context) => const AdminLoginPage(),
-  '/admin-inventory': (context) => const UniformListPage(),
-  '/admin-register': (context) => const AdminRegisterPage(),
-  '/admin-dashboard': (context) => const UniformListPage(),
+        '/admin-login': (context) => const AdminLoginPage(),
+        '/admin-inventory': (context) => const UniformListPage(),
+        '/admin-register': (context) => const AdminRegisterPage(),
+        '/admin-dashboard': (context) => const UniformListPage(),
       },
     );
   }
@@ -55,29 +61,120 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Google Sign-In Web')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: _signInWithPopup,
-              child: const Text('Sign in with Google'),
+      appBar: AppBar(
+        title: const Text(
+          'Uniform Management System',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.blue.shade700,
+        foregroundColor: Colors.white,
+        elevation: 3,
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.green.shade300, Colors.blue.shade400],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: Card(
+            elevation: 10,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(25),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.admin_panel_settings),
-              label: const Text('Admin Login'),
-              onPressed: () {
-                Navigator.pushNamed(context, '/admin-login');
-              },
+            color: Colors.white.withOpacity(0.97),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 45, horizontal: 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 🔹 Logo Image (Make sure your image path is correct)
+                  ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: Image.asset('assets/images/eclaroacademy.png')),
+                  const SizedBox(height: 25),
+
+                  const Text(
+                    'Welcome to SIASU System',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Please sign in to continue',
+                    style: TextStyle(color: Colors.black54, fontSize: 15),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 35),
+
+                  // 🔹 Google Sign-In Button
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.login, color: Colors.white),
+                    label: const Text(
+                      'Sign in with Google',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 25),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 3,
+                    ),
+                    onPressed: _signInWithPopup,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 🔹 Admin Login Button (Fixed syntax)
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.green.shade400, width: 2),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 25),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/admin-login');
+                    },
+                    child: const Text(
+                      'Admin Login',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
+  // 🔹 Firebase Google Sign-In Function
   Future<void> _signInWithPopup() async {
     try {
       final provider = GoogleAuthProvider();
@@ -104,4 +201,3 @@ class _SignInPageState extends State<SignInPage> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 }
-
