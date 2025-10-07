@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'admin_registration_form.dart';
+
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -60,8 +62,12 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   }
 
   void _goToRegistration() {
-    Navigator.pushNamed(context, '/admin-register');
-  }
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const AdminRegistrationPage()),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {

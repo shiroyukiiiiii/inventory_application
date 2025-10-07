@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'services/emailjs_service.dart';
+import 'services/brevo_email_service.dart';
 
 class AdminRegistrationPage extends StatefulWidget {
   const AdminRegistrationPage({super.key});
@@ -14,6 +14,7 @@ class AdminRegistrationPage extends StatefulWidget {
 class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController(); // ✅ Added
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -31,28 +32,29 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
     try {
       setState(() => _loading = true);
 
-      // Create admin account in Firebase Authentication
+      // ✅ Create admin in Firebase Authentication
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // Save admin details to Firestore
+      // ✅ Save admin details to Firestore
       await FirebaseFirestore.instance
           .collection('admins')
           .doc(userCredential.user!.uid)
           .set({
         'name': _nameController.text.trim(),
+        'username': _usernameController.text.trim(), // ✅ Added
         'email': _emailController.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Send email notification with username and password
-      await EmailJsService.sendAdminRegistrationEmail(
+      // ✅ Send registration email with proper username
+      await BrevoEmailService.sendAdminRegistrationEmail(
         toEmail: _emailController.text.trim(),
         toName: _nameController.text.trim(),
-        username: _emailController.text.trim(),
+        username: _usernameController.text.trim(), // ✅ Fixed
         password: _passwordController.text.trim(),
       );
 
@@ -69,8 +71,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   InputDecoration _inputDecoration(String label, IconData icon, Color color) {
@@ -130,7 +131,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                     ),
                     const SizedBox(height: 30),
 
-                    // Full Name
+                    // ✅ Full Name
                     TextFormField(
                       controller: _nameController,
                       decoration: _inputDecoration(
@@ -140,17 +141,27 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Email
+                    // ✅ Username
+                    TextFormField(
+                      controller: _usernameController,
+                      decoration: _inputDecoration(
+                          "Username", Icons.person_outline, Colors.orange),
+                      validator: (value) =>
+                          value!.isEmpty ? "Enter username" : null,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ✅ Email
                     TextFormField(
                       controller: _emailController,
-                      decoration:
-                          _inputDecoration("Email", Icons.email, Colors.blue),
+                      decoration: _inputDecoration(
+                          "Email", Icons.email, Colors.blue),
                       validator: (value) =>
                           value!.isEmpty ? "Enter an email" : null,
                     ),
                     const SizedBox(height: 20),
 
-                    // Password
+                    // ✅ Password
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
@@ -162,18 +173,18 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Confirm Password
+                    // ✅ Confirm Password
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: true,
-                      decoration: _inputDecoration(
-                          "Confirm Password", Icons.lock_outline, Colors.blue),
+                      decoration: _inputDecoration("Confirm Password",
+                          Icons.lock_outline, Colors.blue),
                       validator: (value) =>
                           value!.isEmpty ? "Confirm your password" : null,
                     ),
                     const SizedBox(height: 30),
 
-                    // Register button
+                    // ✅ Register Button
                     _loading
                         ? const CircularProgressIndicator()
                         : Container(
