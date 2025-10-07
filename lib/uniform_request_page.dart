@@ -50,8 +50,10 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   }
 
   Future<void> _submitRequest() async {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+    final form = _formKey.currentState;
+    if (form == null || !form.validate()) return;
+
+    form.save();
 
     setState(() {
       _isSubmitting = true;
@@ -59,11 +61,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     });
 
     try {
-      // ✅ Generate QR code bytes first
       final qrCodeBytes = await QRService.generateQRCodeBytes(_studentId);
       final qrBase64 = base64Encode(qrCodeBytes);
 
-      // ✅ Save to Firestore (with QR code string)
       await FirebaseFirestore.instance.collection('uniform_requests').add({
         'userId': widget.user.uid,
         'userName': widget.user.displayName ?? '',
@@ -73,11 +73,10 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         'course': _course,
         'size': _size,
         'studentId': _studentId,
-        'qrCode': qrBase64, // 👈 Store QR code here
+        'qrCode': qrBase64,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // ✅ Send Email (still optional)
       final emailSent = await EmailService.sendUniformRequestEmail(
         studentNumber: _studentId,
         studentName: _fullName.isNotEmpty
@@ -91,15 +90,12 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       );
 
       setState(() {
-        if (emailSent) {
-          _message =
-              'Request submitted, QR code saved to Firestore, and email sent!';
-        } else {
-          _message = 'Request submitted and QR code saved (email failed).';
-        }
+        _message = emailSent
+            ? 'Request submitted, QR code saved to Firestore, and email sent!'
+            : 'Request submitted and QR code saved (email failed).';
       });
 
-      _formKey.currentState?.reset();
+      form.reset();
       _showQRCode = false;
     } catch (e) {
       setState(() => _message = 'Error: $e');
@@ -125,15 +121,11 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 validator: (value) => value == null || value.isEmpty
                     ? 'Enter your full name'
                     : null,
-                onSaved: (value) => _fullName = value ?? '',
-                onChanged: (value) {
-                  setState(() {
-                    _fullName = value;
-                  });
-                },
+                onSaved: (String? value) => _fullName = value ?? '',
+                onChanged: (value) => setState(() => _fullName = value),
               ),
               const SizedBox(height: 10),
-              // Email (auto-filled and read-only)
+              // Email
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Email'),
                 controller: _emailController,
@@ -141,28 +133,24 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Email not found';
-                  final emailRegex =
-                      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+\u0000?');
+                  final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
                   if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
                   return null;
                 },
-                onSaved: (value) => _email = value ?? '',
+                onSaved: (String? value) => _email = value ?? '',
               ),
-
               const SizedBox(height: 10),
-              // Student ID
+              // Student Number
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Student Number'),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Enter Student Number'
                     : null,
-                onSaved: (value) => _studentId = value ?? '',
-                onChanged: (value) {
-                  setState(() {
-                    _studentId = value;
-                    _showQRCode = false;
-                  });
-                },
+                onSaved: (String? value) => _studentId = value ?? '',
+                onChanged: (value) => setState(() {
+                  _studentId = value;
+                  _showQRCode = false;
+                }),
               ),
 
               if (_studentId.isNotEmpty) ...[
@@ -195,14 +183,16 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 ],
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Select course' : null,
-                onChanged: (value) {
-                  setState(() {
-                    _course = value ?? '';
-                    _gender = '';
-                    _size = '';
-                  });
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _course = value;
+                      _gender = '';
+                      _size = '';
+                    });
+                  }
                 },
-                onSaved: (value) => _course = value ?? '',
+                onSaved: (String? value) => _course = value ?? '',
               ),
 
               // Gender Dropdown
@@ -216,13 +206,15 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 ],
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Select gender' : null,
-                onChanged: (value) {
-                  setState(() {
-                    _gender = value ?? '';
-                    _size = '';
-                  });
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _gender = value;
+                      _size = '';
+                    });
+                  }
                 },
-                onSaved: (value) => _gender = value ?? '',
+                onSaved: (String? value) => _gender = value ?? '',
               ),
 
               const SizedBox(height: 20),
@@ -332,7 +324,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 value: size,
                 groupValue: _size,
                 onChanged: qty > 0
-                    ? (value) => setState(() => _size = value ?? '')
+                    ? (String? value) => setState(() => _size = value ?? '')
                     : null,
                 activeColor: Colors.blue,
                 secondary: qty == 0
