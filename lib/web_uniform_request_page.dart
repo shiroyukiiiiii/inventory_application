@@ -60,81 +60,29 @@ class _WebUniformRequestPageState extends State<WebUniformRequestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F2FF), // light blue background
-      appBar: AppBar(
-        title: const Text('Uniform Request Form'),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF3A9D23), Color(0xFF00B4FF)], // green to blue
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Web Uniform Request')),
       body: SingleChildScrollView(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
-              width: 600, // central fixed width for readability
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Form(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Form(
                 key: _formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Uniform Request Form',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
                     TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Student Number',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                      ),
-                      style: const TextStyle(fontSize: 18),
+                      decoration:
+                          const InputDecoration(labelText: 'Student Number'),
                       validator: (value) => value == null || value.isEmpty
                           ? 'Enter Student Number'
                           : null,
                       onSaved: (value) => _studentId = value ?? '',
                     ),
-                    const SizedBox(height: 20),
                     DropdownButtonFormField<String>(
-                      value: _gender.isNotEmpty ? _gender : null,
-                      decoration: InputDecoration(
-                        labelText: 'Gender',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                      ),
-                      style:
-                          const TextStyle(fontSize: 18, color: Colors.black87),
+                      initialValue: _gender.isNotEmpty ? _gender : null,
+                      decoration: const InputDecoration(labelText: 'Gender'),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
                         DropdownMenuItem(
@@ -147,19 +95,9 @@ class _WebUniformRequestPageState extends State<WebUniformRequestPage> {
                           setState(() => _gender = value ?? ''),
                       onSaved: (value) => _gender = value ?? '',
                     ),
-                    const SizedBox(height: 20),
                     DropdownButtonFormField<String>(
-                      value: _course.isNotEmpty ? _course : null,
-                      decoration: InputDecoration(
-                        labelText: 'Course',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                      ),
-                      style:
-                          const TextStyle(fontSize: 18, color: Colors.black87),
+                      initialValue: _course.isNotEmpty ? _course : null,
+                      decoration: const InputDecoration(labelText: 'Course'),
                       items: const [
                         DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),
                         DropdownMenuItem(value: 'ABCOM', child: Text('ABCOM')),
@@ -173,56 +111,26 @@ class _WebUniformRequestPageState extends State<WebUniformRequestPage> {
                           setState(() => _course = value ?? ''),
                       onSaved: (value) => _course = value ?? '',
                     ),
-                    const SizedBox(height: 20),
+                    // You can add size selection and inventory logic here if needed
                     TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Size (e.g. M, L, XL)',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                      ),
-                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(
+                          labelText: 'Size (e.g. M, L, XL)'),
                       validator: (value) =>
                           value == null || value.isEmpty ? 'Enter size' : null,
                       onSaved: (value) => _size = value ?? '',
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
                     _isSubmitting
-                        ? const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF3A9D23)),
-                          )
-                        : SizedBox(
-                            width: double.infinity,
-                            height: 55,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF3A9D23),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                elevation: 5,
-                              ),
-                              onPressed: _submitRequest,
-                              child: const Text(
-                                'Submit Request',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
+                            onPressed: _submitRequest,
+                            child: const Text('Submit Request'),
                           ),
                     if (_message != null) ...[
-                      const SizedBox(height: 25),
+                      const SizedBox(height: 20),
                       Text(
                         _message!,
-                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
                           color: _message == 'Request submitted!'
                               ? Colors.green
                               : Colors.red,
@@ -232,7 +140,7 @@ class _WebUniformRequestPageState extends State<WebUniformRequestPage> {
                   ],
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
