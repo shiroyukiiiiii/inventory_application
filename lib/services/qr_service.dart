@@ -1,31 +1,28 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
 class QRService {
-  /// Generates a QR code image from student number and saves it to a file
   static Future<File> generateQRCodeFile(String studentNumber) async {
     try {
-      // Create QR painter
+      final cleanData = studentNumber.trim();
       final painter = QrPainter(
-        data: studentNumber,
+        data: cleanData,
         version: QrVersions.auto,
+        eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square),
+        dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square),
         color: const Color(0xFF000000),
         emptyColor: const Color(0xFFFFFFFF),
         gapless: false,
       );
 
-      // Create a picture recorder
-      final picData = await painter.toImageData(200);
+      final picData = await painter.toImageData(600); // 🔼 higher resolution
       final pngBytes = picData!.buffer.asUint8List();
 
-      // Get temporary directory
       final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/qr_code_$studentNumber.png');
+      final file = File('${tempDir.path}/qr_code_$cleanData.png');
       await file.writeAsBytes(pngBytes);
 
       return file;
@@ -34,35 +31,34 @@ class QRService {
     }
   }
 
-  /// Generates QR code as bytes for email attachment
   static Future<Uint8List> generateQRCodeBytes(String studentNumber) async {
     try {
-      // Create QR painter
+      final cleanData = studentNumber.trim();
       final painter = QrPainter(
-        data: studentNumber,
+        data: cleanData,
         version: QrVersions.auto,
         color: const Color(0xFF000000),
         emptyColor: const Color(0xFFFFFFFF),
         gapless: false,
       );
-
-      // Create a picture recorder
-      final picData = await painter.toImageData(200);
-      
+      final picData = await painter.toImageData(600);
       return picData!.buffer.asUint8List();
     } catch (e) {
       throw Exception('Failed to generate QR code bytes: $e');
     }
   }
 
-  /// Creates a QR code widget for display
-  static Widget createQRCodeWidget(String studentNumber, {double size = 200}) {
-    return QrImageView(
-      data: studentNumber,
-      version: QrVersions.auto,
-      size: size,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+  static Widget createQRCodeWidget(String studentNumber, {double size = 220}) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(10),
+      child: QrImageView(
+        data: studentNumber.trim(),
+        version: QrVersions.auto,
+        size: size,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
     );
   }
 }
