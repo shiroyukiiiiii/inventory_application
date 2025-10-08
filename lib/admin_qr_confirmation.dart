@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class AdminQrConfirmationPage extends StatefulWidget {
   const AdminQrConfirmationPage({super.key});
@@ -12,26 +11,6 @@ class AdminQrConfirmationPage extends StatefulWidget {
 }
 
 class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
-  final String _webInfo = 'For best results, use Google Chrome and allow camera access. Use a large, clear QR code and ensure good lighting.';
-  String? _cameraError;
-  @override
-  void initState() {
-    super.initState();
-    _requestCameraPermission();
-  }
-
-  Future<void> _requestCameraPermission() async {
-    final status = await Permission.camera.request();
-    if (!status.isGranted) {
-      setState(() {
-        _cameraError = 'Camera permission denied. Please enable camera access in settings.';
-      });
-    } else {
-      setState(() {
-        _cameraError = null;
-      });
-    }
-  }
   bool _isProcessing = false;
   String? _lastScannedValue;
   bool _detected = false;
@@ -133,75 +112,57 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
       appBar: AppBar(title: const Text("QR Confirmation")),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              _webInfo,
-              style: const TextStyle(color: Colors.blueGrey, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ),
           // QR Scanner Section
           Expanded(
             flex: 3,
-            child: _cameraError != null
-                ? Center(
-                    child: Text(
-                      _cameraError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                : Stack(
-                    children: [
-                      MobileScanner(
-                        onDetect: (capture) async {
-                          if (_isProcessing) return;
-                          final barcode = capture.barcodes.isNotEmpty ? capture.barcodes.first : null;
-                          final String? studentNumber = barcode?.rawValue;
-                          if (studentNumber != null && studentNumber.trim().isNotEmpty) {
-                            setState(() => _isProcessing = true);
-                            await _handleScan(studentNumber, method: "qr");
-                            setState(() => _isProcessing = false);
-                          }
-                        },
-                      ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          color: Colors.black.withOpacity(0.7),
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Debug Overlay',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Last scanned: \\${_lastScannedValue ?? "(none)"}',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              Text(
-                                'Detected: \\${_detected ? "Yes" : "No"}',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              Text(
-                                'Processing: \\${_isProcessing ? "Yes" : "No"}',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          ),
+            child: Stack(
+              children: [
+                MobileScanner(
+                  onDetect: (capture) async {
+                    if (_isProcessing) return;
+                    for (final barcode in capture.barcodes) {
+                      final String? studentNumber = barcode.rawValue;
+                      _handleScan(studentNumber, method: "qr");
+                      break;
+                    }
+                  },
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    color: Colors.black.withOpacity(0.7),
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Debug Overlay',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Last scanned: ${_lastScannedValue ?? "(none)"}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        Text(
+                          'Detected: ${_detected ? "Yes" : "No"}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        Text(
+                          'Processing: ${_isProcessing ? "Yes" : "No"}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+              ],
+            ),
           ),
 
           // Manual Entry Section
