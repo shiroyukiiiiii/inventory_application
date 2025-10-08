@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'services/brevo_email_service.dart';
 
 class AdminRegisterPage extends StatefulWidget {
   const AdminRegisterPage({super.key});
@@ -14,10 +15,12 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
 
-  String _name = '';
-  String _username = '';     // ✅ NEW: Username
-  String _email = '';
-  String _password = '';
+  // Text controllers instead of plain strings (for consistency)
+  final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
   bool _isLoading = false;
   String? _error;
 
@@ -30,38 +33,67 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
     });
 
     try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      // 🔹 Check if email is already registered
+      final methods = await _auth.fetchSignInMethodsForEmail(email);
+      if (methods.isNotEmpty) {
+        setState(() {
+          _error = 'Email already exists. Please use another one.';
+          _isLoading = false;
+        });
+        return;
+      }
+
       // 🔹 Create Firebase Auth user
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-        email: _email.trim(),
-        password: _password,
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
 
       // 🔹 Save admin details in Firestore
       await _firestore.collection('admins').doc(userCredential.user!.uid).set({
-        'name': _name,
-        'username': _username, // ✅ save username
-        'email': _email,
+        'name': _nameController.text.trim(),
+        'username': _usernameController.text.trim(),
+        'email': email,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      // 🔹 Send email notification using Brevo
+      await BrevoEmailService.sendAdminRegistrationEmail(
+        toEmail: email,
+        toName: _nameController.text.trim(),
+        username: _usernameController.text.trim(),
+        password: password,
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Admin registered successfully!')),
+          const SnackBar(content: Text('✅ Admin registered successfully! Email sent.')),
         );
-        Navigator.pop(context); // back to login
+        Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _error = e.message ?? 'Registration failed';
+        _error = 'Firebase Error (${e.code}): ${e.message}';
       });
     } catch (e) {
       setState(() {
-        _error = 'An unexpected error occurred: $e';
+        _error = 'Unexpected error: $e';
       });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -77,21 +109,19 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
+                  controller: _nameController,
                   decoration: const InputDecoration(labelText: 'Full Name'),
-                  onChanged: (val) => _name = val,
-                  validator: (val) =>
-                      val == null || val.isEmpty ? 'Enter name' : null,
+                  validator: (val) => val == null || val.isEmpty ? 'Enter name' : null,
                 ),
                 TextFormField(
+                  controller: _usernameController,
                   decoration: const InputDecoration(labelText: 'Username'),
-                  onChanged: (val) => _username = val,
-                  validator: (val) =>
-                      val == null || val.isEmpty ? 'Enter username' : null,
+                  validator: (val) => val == null || val.isEmpty ? 'Enter username' : null,
                 ),
                 TextFormField(
+                  controller: _emailController,
                   decoration: const InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
-                  onChanged: (val) => _email = val,
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'Enter email';
                     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(val)) {
@@ -101,13 +131,12 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                   },
                 ),
                 TextFormField(
+                  controller: _passwordController,
                   decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
-                  onChanged: (val) => _password = val,
-                  validator: (val) =>
-                      val != null && val.length < 6
-                          ? 'Password must be at least 6 chars'
-                          : null,
+                  validator: (val) => val != null && val.length < 6
+                      ? 'Password must be at least 6 chars'
+                      : null,
                 ),
                 const SizedBox(height: 20),
                 if (_error != null)

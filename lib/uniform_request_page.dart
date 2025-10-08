@@ -122,15 +122,16 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               // Full Name
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Enter your full name'
-                    : null,
-                onSaved: (value) => _fullName = value ?? '',
-                onChanged: (value) {
-                  setState(() {
-                    _fullName = value;
-                  });
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Enter your full name';
+                  final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
+                  if (!nameRegExp.hasMatch(value)) {
+                    return 'Full name must only contain letters and spaces';
+                  }
+                  return null;
                 },
+                onSaved: (value) => _fullName = value ?? '',
+                onChanged: (value) => setState(() => _fullName = value),
               ),
               const SizedBox(height: 10),
               // Email (auto-filled and read-only)
@@ -148,14 +149,32 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 },
                 onSaved: (value) => _email = value ?? '',
               ),
-
               const SizedBox(height: 10),
-              // Student ID
+              // Student Number
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Student Number'),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Enter Student Number'
-                    : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Enter Student Number';
+
+                  final currentYear = DateTime.now().year;
+                  final pattern = RegExp(r'^(20\d{2})([-]?\d+)?$');
+                  final match = pattern.firstMatch(value);
+
+                  if (match == null) {
+                    return 'Invalid student number format. Use format like 2022-12345';
+                  }
+
+                  final enteredYear = int.tryParse(match.group(1) ?? '');
+                  if (enteredYear == null) {
+                    return 'Invalid year in student number';
+                  }
+                  if (enteredYear > currentYear) {
+                    return 'Year in student number cannot be in the future ($currentYear or below only)';
+                  }
+                  // Optionally restrict lower years
+                  // if (enteredYear < 2020) return 'Student number too old. Use year 2020 or later.';
+                  return null;
+                },
                 onSaved: (value) => _studentId = value ?? '',
                 onChanged: (value) {
                   setState(() {
@@ -164,7 +183,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                   });
                 },
               ),
-
               if (_studentId.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
@@ -177,12 +195,10 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                   ),
                 ),
               ],
-
               if (_showQRCode && _studentId.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 _buildQRPreview(),
               ],
-
               // Course Dropdown
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -204,7 +220,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 },
                 onSaved: (value) => _course = value ?? '',
               ),
-
               // Gender Dropdown
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -224,17 +239,13 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 },
                 onSaved: (value) => _gender = value ?? '',
               ),
-
               const SizedBox(height: 20),
-
               // Inventory Sizes
               if (_course.isNotEmpty && _gender.isNotEmpty)
                 _buildSizeInventory()
               else if (_course.isNotEmpty && _gender.isEmpty)
                 _buildGenderReminder(),
-
               const SizedBox(height: 20),
-
               // Submit Button
               _isSubmitting
                   ? const Center(child: CircularProgressIndicator())
@@ -242,7 +253,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                       onPressed: _submitRequest,
                       child: const Text('Submit Request'),
                     ),
-
               if (_message != null) ...[
                 const SizedBox(height: 20),
                 Text(

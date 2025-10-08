@@ -10,7 +10,7 @@ class UniformListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4, // ✅ 4 tabs
+      length: 5, // ✅ Now 5 tabs total
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Uniform Management'),
@@ -34,6 +34,7 @@ class UniformListPage extends StatelessWidget {
               Tab(text: 'Requests'),
               Tab(text: 'Approved'),
               Tab(text: 'Completed Orders'),
+              Tab(text: 'Cancelled Orders'), // ✅ new tab
             ],
           ),
         ),
@@ -43,11 +44,13 @@ class UniformListPage extends StatelessWidget {
             UniformRequestsListPage(),
             ApprovedOrdersListPage(),
             CompletedOrdersListPage(),
+            CancelledOrdersListPage(), // ✅ new tab view
           ],
         ),
         floatingActionButton: Builder(
           builder: (context) {
-            final tabIndex = DefaultTabController.of(context).index;
+            final tabController = DefaultTabController.of(context);
+            final tabIndex = tabController?.index ?? 0;
             return tabIndex == 0
                 ? FloatingActionButton(
                     onPressed: () {
@@ -67,6 +70,67 @@ class UniformListPage extends StatelessWidget {
     );
   }
 }
+
+/// ============================
+/// Cancelled Orders Tab
+/// ============================
+class CancelledOrdersListPage extends StatelessWidget {
+  const CancelledOrdersListPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('uniform_requests')
+          .orderBy('cancelledAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('No cancelled orders found.'));
+        }
+
+        final cancelled = snapshot.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['status'] == 'Cancelled';
+        }).toList();
+
+        if (cancelled.isEmpty) {
+          return const Center(child: Text('No cancelled orders.'));
+        }
+
+        return ListView.builder(
+          itemCount: cancelled.length,
+          itemBuilder: (context, index) {
+            final data = cancelled[index].data() as Map<String, dynamic>;
+            final cancelledAt = data['cancelledAt'] != null
+                ? (data['cancelledAt'] as Timestamp).toDate()
+                : null;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.red[50],
+              child: ListTile(
+                title: Text(
+                  '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  'Course: ${data['course'] ?? ''}\n'
+                  'Size: ${data['size'] ?? ''}\n'
+                  'Cancelled: ${cancelledAt != null ? cancelledAt.toString() : 'N/A'}',
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
 
 /// ============================
 /// Inventory Tab

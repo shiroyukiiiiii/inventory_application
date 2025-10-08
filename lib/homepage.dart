@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'male_uniform_page.dart';
 import 'female_uniform_page.dart';
 import 'main.dart';
