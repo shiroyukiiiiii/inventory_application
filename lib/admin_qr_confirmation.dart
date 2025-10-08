@@ -14,19 +14,23 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
   bool _isProcessing = false;
   String? _lastScannedValue;
   bool _detected = false;
+  bool _cameraError = false;
 
   final TextEditingController _manualController = TextEditingController();
+  final MobileScannerController _cameraController = MobileScannerController();
 
-  /// Common handler for QR and manual input
+  /// Handles both QR and manual input
   Future<void> _handleScan(String? studentNumber,
       {String method = "qr"}) async {
+    if (studentNumber == null || studentNumber.trim().isEmpty) return;
+
     setState(() {
       _lastScannedValue = studentNumber;
-      _detected = studentNumber != null && studentNumber.trim().isNotEmpty;
+      _detected = true;
       _isProcessing = true;
     });
 
-    if (studentNumber != null && studentNumber.trim().isNotEmpty) {
+    try {
       final query = await FirebaseFirestore.instance
           .collection('uniform_requests')
           .where('studentId', isEqualTo: studentNumber.trim())
@@ -42,20 +46,18 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
 
         // ✅ Already completed
         if (data['status'] == 'Completed') {
-          statusMessage =
-              "ℹ️ Request for $studentNumber is already Completed";
+          statusMessage = "ℹ️ Request for $studentNumber is already Completed";
           statusColor = Colors.blue;
         } else {
-          // ✅ Use course + size from the request
           final String? course = data['course'] as String?;
           final String? size = data['size'] as String?;
 
           if (course == null || size == null) {
             statusMessage =
-                "⚠️ Request data is incomplete for $studentNumber (missing course/size)";
+                "⚠️ Request data incomplete for $studentNumber (missing course/size)";
             statusColor = Colors.orange;
           } else {
-            // 🔹 Find the uniform doc by course + size
+            // 🔹 Find uniform entry
             final inventoryQuery = await FirebaseFirestore.instance
                 .collection('uniforms')
                 .where('course', isEqualTo: course)
@@ -68,11 +70,8 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
               final currentCount = inventoryDoc['quantity'] ?? 0;
 
               if (currentCount > 0) {
-                // Deduct stock
                 await inventoryDoc.reference
                     .update({'quantity': currentCount - 1});
-
-                // Mark request completed
                 await doc.reference.update({'status': 'Completed'});
 
                 statusMessage =
@@ -84,8 +83,7 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
                 statusColor = Colors.orange;
               }
             } else {
-              statusMessage =
-                  "❌ No inventory found for $course ($size)";
+              statusMessage = "❌ No inventory found for $course ($size)";
               statusColor = Colors.red;
             }
           }
@@ -99,11 +97,35 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(statusMessage), backgroundColor: statusColor),
         );
-        Navigator.pop(context); // ✅ Close after processing
+        Navigator.pop(context);
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    } finally {
+      setState(() => _isProcessing = false);
     }
+  }
 
-    setState(() => _isProcessing = false);
+  /// Retry camera manually
+  Future<void> _retryCamera() async {
+    setState(() {
+      _cameraError = false;
+    });
+    try {
+      await _cameraController.stop();
+      await _cameraController.start();
+    } catch (e) {
+      setState(() => _cameraError = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _manualController.dispose();
+    _cameraController.dispose();
+    super.dispose();
   }
 
   @override
@@ -112,60 +134,89 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
       appBar: AppBar(title: const Text("QR Confirmation")),
       body: Column(
         children: [
-          // QR Scanner Section
+          // 🟢 QR Scanner section
           Expanded(
             flex: 3,
-            child: Stack(
-              children: [
-                MobileScanner(
-                  onDetect: (capture) async {
-                    if (_isProcessing) return;
-                    for (final barcode in capture.barcodes) {
-                      final String? studentNumber = barcode.rawValue;
-                      _handleScan(studentNumber, method: "qr");
-                      break;
-                    }
-                  },
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    color: Colors.black.withOpacity(0.7),
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Debug Overlay',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Last scanned: ${_lastScannedValue ?? "(none)"}',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        Text(
-                          'Detected: ${_detected ? "Yes" : "No"}',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        Text(
-                          'Processing: ${_isProcessing ? "Yes" : "No"}',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ],
+            child: FutureBuilder(
+              future: _cameraController.start(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError || _cameraError) {
+                  return Container(
+                    color: Colors.black,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.warning,
+                              color: Colors.orange, size: 48),
+                          const SizedBox(height: 12),
+                          const Text(
+                            "Camera not accessible",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            onPressed: _retryCamera,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text("Retry Camera"),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                return Stack(
+                  children: [
+                    MobileScanner(
+                      controller: _cameraController,
+                      fit: BoxFit.cover,
+                      onDetect: (capture) async {
+                        if (_isProcessing) return;
+                        for (final barcode in capture.barcodes) {
+                          final String? studentNumber = barcode.rawValue;
+                          _handleScan(studentNumber, method: "qr");
+                          break;
+                        }
+                      },
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        color: Colors.black.withOpacity(0.7),
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Debug Overlay',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                            Text(
+                                'Last scanned: ${_lastScannedValue ?? "(none)"}',
+                                style: const TextStyle(color: Colors.white)),
+                            Text('Detected: ${_detected ? "Yes" : "No"}',
+                                style: const TextStyle(color: Colors.white)),
+                            Text('Processing: ${_isProcessing ? "Yes" : "No"}',
+                                style: const TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
 
-          // Manual Entry Section
+          // 🟡 Manual Entry Section
           Expanded(
             flex: 1,
             child: Padding(
@@ -175,8 +226,8 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
                 children: [
                   const Text(
                     "Manual Student ID Entry",
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   TextField(
