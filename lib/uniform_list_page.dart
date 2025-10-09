@@ -7,64 +7,99 @@ import 'services/emailjs_service.dart';
 class UniformListPage extends StatelessWidget {
   const UniformListPage({super.key});
 
+  Future<bool> _onWillPop(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout Confirmation'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // If the user confirmed (true), allow pop
+    if (shouldLogout == true) {
+      // TODO: Add your actual logout logic here, like clearing session or navigating to login page
+      Navigator.of(context).pop(); // Go back to login
+      return true;
+    }
+
+    return false; // Prevent back navigation
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 5, // ✅ Now 5 tabs total
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Uniform Management'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.qr_code_scanner),
-              tooltip: 'QR Confirmation',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdminQrConfirmationPage(),
-                  ),
-                );
-              },
+    return WillPopScope(
+      onWillPop: () => _onWillPop(context),
+      child: DefaultTabController(
+        length: 5,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Uniform Management'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.qr_code_scanner),
+                tooltip: 'QR Confirmation',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminQrConfirmationPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: 'Inventory'),
+                Tab(text: 'Requests'),
+                Tab(text: 'Approved'),
+                Tab(text: 'Completed Orders'),
+                Tab(text: 'Cancelled Orders'),
+              ],
             ),
-          ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Inventory'),
-              Tab(text: 'Requests'),
-              Tab(text: 'Approved'),
-              Tab(text: 'Completed Orders'),
-              Tab(text: 'Cancelled Orders'), // ✅ new tab
+          ),
+          body: const TabBarView(
+            children: [
+              _InventoryTab(),
+              UniformRequestsListPage(),
+              ApprovedOrdersListPage(),
+              CompletedOrdersListPage(),
+              CancelledOrdersListPage(),
             ],
           ),
-        ),
-        body: const TabBarView(
-          children: [
-            _InventoryTab(),
-            UniformRequestsListPage(),
-            ApprovedOrdersListPage(),
-            CompletedOrdersListPage(),
-            CancelledOrdersListPage(), // ✅ new tab view
-          ],
-        ),
-        floatingActionButton: Builder(
-          builder: (context) {
-            final tabController = DefaultTabController.of(context);
-            final tabIndex = tabController?.index ?? 0;
-            return tabIndex == 0
-                ? FloatingActionButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const UniformFormPage(),
-                        ),
-                      );
-                    },
-                    child: const Icon(Icons.add),
-                  )
-                : Container();
-          },
+          floatingActionButton: Builder(
+            builder: (context) {
+              final tabController = DefaultTabController.of(context);
+              final tabIndex = tabController?.index ?? 0;
+              return tabIndex == 0
+                  ? FloatingActionButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const UniformFormPage(),
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.add),
+                    )
+                  : Container();
+            },
+          ),
         ),
       ),
     );
