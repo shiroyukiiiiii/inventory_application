@@ -33,6 +33,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   bool _isSubmitting = false;
   String? _message;
   bool _showQRCode = false;
+  bool _sizeSelected = false;
 
   @override
   void initState() {
@@ -51,6 +52,16 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
 
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_size.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a uniform size before submitting.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     _formKey.currentState!.save();
 
     setState(() {
@@ -95,6 +106,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
 
       _formKey.currentState?.reset();
       _showQRCode = false;
+      _size = '';
     } catch (e) {
       setState(() => _message = 'Error: $e');
     } finally {
@@ -115,8 +127,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 4,
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -125,7 +136,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Center(
                     child: Column(
                       children: [
@@ -151,15 +161,22 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                       prefixIcon: Icon(Icons.person_outline),
                       border: OutlineInputBorder(),
                     ),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Enter your full name'
-                        : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Enter your full name';
+                      }
+                      final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
+                      if (!nameRegExp.hasMatch(value)) {
+                        return 'Full name must only contain letters and spaces';
+                      }
+                      return null;
+                    },
                     onSaved: (value) => _fullName = value ?? '',
                     onChanged: (value) => setState(() => _fullName = value),
                   ),
                   const SizedBox(height: 15),
 
-                  // Email
+                  // Email (readonly)
                   TextFormField(
                     decoration: const InputDecoration(
                       labelText: 'Email',
@@ -168,19 +185,49 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                     ),
                     controller: _emailController,
                     readOnly: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email not found';
+                      }
+                      final emailRegex =
+                          RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                      if (!emailRegex.hasMatch(value)) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 15),
 
-                  // Student ID
+                  // Student Number
                   TextFormField(
                     decoration: const InputDecoration(
                       labelText: 'Student Number',
                       prefixIcon: Icon(Icons.badge_outlined),
                       border: OutlineInputBorder(),
                     ),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Enter Student Number'
-                        : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Enter Student Number';
+                      }
+
+                      final currentYear = DateTime.now().year;
+                      final pattern = RegExp(r'^(20\d{2})([-]?\d+)?$');
+                      final match = pattern.firstMatch(value);
+
+                      if (match == null) {
+                        return 'Invalid student number format. Use format like 2022-12345';
+                      }
+
+                      final enteredYear = int.tryParse(match.group(1) ?? '');
+                      if (enteredYear == null) {
+                        return 'Invalid year in student number';
+                      }
+                      if (enteredYear > currentYear) {
+                        return 'Year in student number cannot be in the future ($currentYear or below only)';
+                      }
+                      return null;
+                    },
                     onSaved: (value) => _studentId = value ?? '',
                     onChanged: (value) {
                       setState(() {
@@ -236,7 +283,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Inventory Sizes
+                  // Size selection (with validation)
                   if (_course.isNotEmpty && _gender.isNotEmpty)
                     _buildSizeInventory()
                   else if (_course.isNotEmpty && _gender.isEmpty)
@@ -244,7 +291,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
 
                   const SizedBox(height: 25),
 
-                  // Submit Button
                   _isSubmitting
                       ? const Center(child: CircularProgressIndicator())
                       : SizedBox(
@@ -287,12 +333,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     );
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
-
   Widget _buildQRPreview() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -331,8 +371,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Text(
-              'No inventory data found for selected gender/course.');
+          return const Text('No inventory data found for selected gender/course.');
         }
 
         final uniformData = snapshot.data!.docs;
@@ -359,7 +398,10 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 value: size,
                 groupValue: _size,
                 onChanged: qty > 0
-                    ? (value) => setState(() => _size = value ?? '')
+                    ? (value) => setState(() {
+                          _size = value ?? '';
+                          _sizeSelected = true;
+                        })
                     : null,
                 activeColor: Colors.teal,
                 secondary: qty == 0
@@ -386,5 +428,11 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
   }
 }
