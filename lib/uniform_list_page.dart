@@ -324,7 +324,7 @@ class _InventoryTab extends StatelessWidget {
                                   const SizedBox(height: 18),
                                 ],
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       );
@@ -585,10 +585,18 @@ class _UniformFormPageState extends State<UniformFormPage> {
 }
 
 /// ============================
-/// Requests Tab
+/// Requests Tab with Search
 /// ============================
-class UniformRequestsListPage extends StatelessWidget {
+class UniformRequestsListPage extends StatefulWidget {
   const UniformRequestsListPage({super.key});
+
+  @override
+  State<UniformRequestsListPage> createState() =>
+      _UniformRequestsListPageState();
+}
+
+class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
+  String searchQuery = '';
 
   Future<void> _approveRequest(
       String id, Map<String, dynamic> data, BuildContext context) async {
@@ -622,159 +630,260 @@ class UniformRequestsListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No uniform requests found.'));
-        }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search by name or student ID...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+            ),
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('uniform_requests')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('No uniform requests found.'));
+              }
 
-        final requests = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['status'] != 'Approved' && data['status'] != 'Completed';
-        }).toList();
+              final requests = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final status = data['status'] ?? '';
+                final name = (data['userName'] ?? '').toString().toLowerCase();
+                final id = (data['studentId'] ?? '').toString().toLowerCase();
+                final matchesSearch =
+                    name.contains(searchQuery) || id.contains(searchQuery);
+                return status != 'Approved' &&
+                    status != 'Completed' &&
+                    matchesSearch;
+              }).toList();
 
-        if (requests.isEmpty) {
-          return const Center(child: Text('No pending requests.'));
-        }
+              if (requests.isEmpty) {
+                return const Center(child: Text('No pending requests.'));
+              }
 
-        return ListView.builder(
-          itemCount: requests.length,
-          itemBuilder: (context, index) {
-            final doc = requests[index];
-            final data = doc.data() as Map<String, dynamic>;
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text('${data['userName'] ?? 'Unknown'}'),
-                subtitle: Text(
-                  'Email: ${data['email'] ?? ''}\n'
-                  'Course: ${data['course'] ?? ''}\n'
-                  'Size: ${data['size'] ?? ''}\n'
-                  'Student ID: ${data['studentId'] ?? ''}\n'
-                  'Requested: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}\n'
-                  'Status: ${data['status'] ?? 'Pending'}',
-                ),
-                trailing: ElevatedButton(
-                  onPressed: () => _approveRequest(doc.id, data, context),
-                  child: const Text("Approve"),
-                ),
-              ),
-            );
-          },
-        );
-      },
+              return ListView.builder(
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final doc = requests[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      title: Text('${data['userName'] ?? 'Unknown'}'),
+                      subtitle: Text(
+                        'Email: ${data['email'] ?? ''}\n'
+                        'Course: ${data['course'] ?? ''}\n'
+                        'Size: ${data['size'] ?? ''}\n'
+                        'Student ID: ${data['studentId'] ?? ''}\n'
+                        'Requested: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}\n'
+                        'Status: ${data['status'] ?? 'Pending'}',
+                      ),
+                      trailing: ElevatedButton(
+                        onPressed: () => _approveRequest(doc.id, data, context),
+                        child: const Text("Approve"),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
 /// ============================
-/// Approved Orders Tab
+/// Approved Orders Tab with Search
 /// ============================
-class ApprovedOrdersListPage extends StatelessWidget {
+class ApprovedOrdersListPage extends StatefulWidget {
   const ApprovedOrdersListPage({super.key});
 
   @override
+  State<ApprovedOrdersListPage> createState() => _ApprovedOrdersListPageState();
+}
+
+class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
+  String searchQuery = '';
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .orderBy('approvedAt', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No approved requests.'));
-        }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search by name or student ID...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+            ),
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('uniform_requests')
+                .orderBy('approvedAt', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('No approved requests.'));
+              }
 
-        final approved = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['status'] == 'Approved';
-        }).toList();
+              final approved = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final status = data['status'] ?? '';
+                final name = (data['userName'] ?? '').toString().toLowerCase();
+                final id = (data['studentId'] ?? '').toString().toLowerCase();
+                final matchesSearch =
+                    name.contains(searchQuery) || id.contains(searchQuery);
+                return status == 'Approved' && matchesSearch;
+              }).toList();
 
-        if (approved.isEmpty) {
-          return const Center(child: Text('No approved requests.'));
-        }
+              if (approved.isEmpty) {
+                return const Center(child: Text('No approved requests.'));
+              }
 
-        return ListView.builder(
-          itemCount: approved.length,
-          itemBuilder: (context, index) {
-            final data = approved[index].data() as Map<String, dynamic>;
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text('${data['userName'] ?? 'Unknown'}'),
-                subtitle: Text(
-                  'Course: ${data['course'] ?? ''}\n'
-                  'Size: ${data['size'] ?? ''}\n'
-                  'Approved: ${data['approvedAt'] != null ? (data['approvedAt'] as Timestamp).toDate().toString() : 'N/A'}',
-                ),
-              ),
-            );
-          },
-        );
-      },
+              return ListView.builder(
+                itemCount: approved.length,
+                itemBuilder: (context, index) {
+                  final data = approved[index].data() as Map<String, dynamic>;
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      title: Text('${data['userName'] ?? 'Unknown'}'),
+                      subtitle: Text(
+                        'Course: ${data['course'] ?? ''}\n'
+                        'Size: ${data['size'] ?? ''}\n'
+                        'Approved: ${data['approvedAt'] != null ? (data['approvedAt'] as Timestamp).toDate().toString() : 'N/A'}',
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
 /// ============================
-/// Completed Orders Tab
+/// Completed Orders Tab with Search
 /// ============================
-class CompletedOrdersListPage extends StatelessWidget {
+class CompletedOrdersListPage extends StatefulWidget {
   const CompletedOrdersListPage({super.key});
 
   @override
+  State<CompletedOrdersListPage> createState() =>
+      _CompletedOrdersListPageState();
+}
+
+class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
+  String searchQuery = '';
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No completed orders found.'));
-        }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search by name or student ID...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+            ),
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('uniform_requests')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('No completed orders found.'));
+              }
 
-        final orders = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['status'] == 'Completed';
-        }).toList();
+              final orders = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final status = data['status'] ?? '';
+                final name = (data['userName'] ?? '').toString().toLowerCase();
+                final id = (data['studentId'] ?? '').toString().toLowerCase();
+                final matchesSearch =
+                    name.contains(searchQuery) || id.contains(searchQuery);
+                return status == 'Completed' && matchesSearch;
+              }).toList();
 
-        if (orders.isEmpty) {
-          return const Center(child: Text('No completed orders.'));
-        }
+              if (orders.isEmpty) {
+                return const Center(child: Text('No completed orders.'));
+              }
 
-        return ListView.builder(
-          itemCount: orders.length,
-          itemBuilder: (context, index) {
-            final data = orders[index].data() as Map<String, dynamic>;
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text(
-                    '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})'),
-                subtitle: Text(
-                  'Course: ${data['course'] ?? ''}\n'
-                  'Size: ${data['size'] ?? ''}\n'
-                  'Completed: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}',
-                ),
-              ),
-            );
-          },
-        );
-      },
+              return ListView.builder(
+                itemCount: orders.length,
+                itemBuilder: (context, index) {
+                  final data = orders[index].data() as Map<String, dynamic>;
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      title: Text(
+                          '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})'),
+                      subtitle: Text(
+                        'Course: ${data['course'] ?? ''}\n'
+                        'Size: ${data['size'] ?? ''}\n'
+                        'Completed: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}',
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

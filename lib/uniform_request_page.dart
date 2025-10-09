@@ -257,8 +257,14 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               prefixIcon: Icon(Icons.person_outline),
               border: OutlineInputBorder(),
             ),
-            validator: (value) =>
-                value == null || value.isEmpty ? 'Enter your full name' : null,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Enter your full name';
+              final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
+              if (!nameRegExp.hasMatch(value)) {
+                return 'Full name must only contain letters and spaces';
+              }
+              return null;
+            },
             onSaved: (value) => _fullName = value ?? '',
             onChanged: (value) => setState(() => _fullName = value),
           ),
@@ -272,6 +278,13 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             ),
             controller: _emailController,
             readOnly: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Email not found';
+              final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+              if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
+              return null;
+            },
+            onSaved: (value) => _email = value ?? '',
           ),
           const SizedBox(height: 15),
           // Student ID
@@ -281,8 +294,21 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               prefixIcon: Icon(Icons.badge_outlined),
               border: OutlineInputBorder(),
             ),
-            validator: (value) =>
-                value == null || value.isEmpty ? 'Enter Student Number' : null,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Enter Student Number';
+              final currentYear = DateTime.now().year;
+              final pattern = RegExp(r'^(20\d{2})([-]?\d+)?$');
+              final match = pattern.firstMatch(value);
+              if (match == null) {
+                return 'Invalid student number format. Use format like 2022-12345';
+              }
+              final enteredYear = int.tryParse(match.group(1) ?? '');
+              if (enteredYear == null) return 'Invalid year in student number';
+              if (enteredYear > currentYear) {
+                return 'Year cannot be in the future';
+              }
+              return null;
+            },
             onSaved: (value) => _studentId = value ?? '',
             onChanged: (value) {
               setState(() {
@@ -310,6 +336,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             _buildQRPreview(),
           ],
           const SizedBox(height: 20),
+          // Course
           TextFormField(
             readOnly: true,
             initialValue: _course,
@@ -320,6 +347,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             ),
           ),
           const SizedBox(height: 15),
+          // Gender
           TextFormField(
             readOnly: true,
             initialValue: _gender,

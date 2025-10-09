@@ -22,15 +22,14 @@ class FemaleUniformPage extends StatelessWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.female, color: Colors.white),
+            const Icon(Icons.male, color: Colors.white),
             const SizedBox(width: 10),
             const Text(
               'Female Uniform',
               style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 20,
-              ),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 20),
             ),
             const SizedBox(width: 10),
             CircleAvatar(
@@ -89,11 +88,11 @@ class FemaleUniformPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Banner or school logo
+                    // Top banner
                     ClipRRect(
                       borderRadius: BorderRadius.circular(15),
                       child: Image.asset(
-                        'assets/images/eclaroacademy.png', // You can also use a small logo here
+                        'assets/images/eclaroacademy.png',
                         width: 160,
                         height: 50,
                         fit: BoxFit.contain,
@@ -110,14 +109,15 @@ class FemaleUniformPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 35),
 
-                    // Courses layout
+                    // Courses Wrap (BSCS centered)
                     Wrap(
                       alignment: WrapAlignment.center,
                       spacing: 25,
                       runSpacing: 25,
                       children: [
                         _buildCourseItem(context, 'BSCRIM', Colors.green, user),
-                        _buildCourseItem(context, 'BACOM', Colors.blue, user),
+                        _buildCourseItem(context, 'ABCOM', Colors.blue, user),
+                        // Center the last item
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -143,7 +143,7 @@ class FemaleUniformPage extends StatelessWidget {
       width: 160,
       child: Column(
         children: [
-          // Uniform image with shadow
+          // Image container with shadow
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
