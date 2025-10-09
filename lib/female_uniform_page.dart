@@ -143,33 +143,7 @@ class FemaleUniformPage extends StatelessWidget {
       width: 160,
       child: Column(
         children: [
-          // Image container with shadow
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.asset(
-                course == 'BSCRIM'
-                    ? 'assets/images/femalecrim.png'
-                    : 'assets/images/femaleabbs.png',
-                fit: BoxFit.contain,
-                width: double.infinity,
-                height: 160,
-              ),
-            ),
-          ),
-          const SizedBox(height: 15),
+          // 🔹 Removed the image container
           SizedBox(
             width: double.infinity,
             height: 55,

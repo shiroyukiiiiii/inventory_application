@@ -34,8 +34,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   String? _message;
   bool _showQRCode = false;
 
-  String _searchQuery = '';
-
   @override
   void initState() {
     super.initState();
@@ -104,97 +102,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     }
   }
 
-  void _showSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final controller = TextEditingController();
-        return AlertDialog(
-          title: const Text("Search Requests"),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: 'Enter student name or course',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _searchQuery = controller.text;
-                });
-                Navigator.pop(context);
-                _showSearchResults();
-              },
-              child: const Text("Search"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showSearchResults() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('uniform_requests')
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(
-                  child: CircularProgressIndicator(color: Colors.teal));
-            }
-
-            final docs = snapshot.data!.docs.where((doc) {
-              final name = doc['fullName']?.toString().toLowerCase() ?? '';
-              final course = doc['course']?.toString().toLowerCase() ?? '';
-              return name.contains(_searchQuery.toLowerCase()) ||
-                  course.contains(_searchQuery.toLowerCase());
-            }).toList();
-
-            if (docs.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    "No matching requests found.",
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
-                  ),
-                ),
-              );
-            }
-
-            return ListView.builder(
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final doc = docs[index];
-                return ListTile(
-                  leading: const Icon(Icons.person, color: Colors.teal),
-                  title: Text(
-                    doc['fullName'] ?? 'Unknown Name',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '${doc['course'] ?? ''} • ${doc['gender'] ?? ''} • ${doc['size'] ?? ''}',
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -204,13 +111,6 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         elevation: 2,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: "Search Requests",
-            onPressed: _showSearchDialog,
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -460,6 +360,43 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Size Chart Button (always visible for BSCS & ABCOM)
+            if (_course == 'BSCS' || _course == 'ABCOM')
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Size Chart'),
+                        content: Image.asset(
+                          _gender == 'Female'
+                              ? 'assets/images/femalesz.png'
+                              : 'assets/images/malesz.png',
+                          fit: BoxFit.contain,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.info_outline),
+                  label: const Text('Size Chart'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 45),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(12),

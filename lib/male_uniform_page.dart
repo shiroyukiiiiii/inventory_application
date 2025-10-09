@@ -89,15 +89,13 @@ class MaleUniformPage extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Top banner
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.asset(
-                        'assets/images/eclaroacademy.png',
-                        width: 160,
-                        height: 50,
-                        fit: BoxFit.contain,
-                      ),
+                    // 🔹 Replace logo with an icon
+                    Icon(
+                      Icons.school_sharp, // Choose any icon you like
+                      size: 60, // Adjust width/height as needed
+                      color: Colors.green.shade700,
                     ),
+
                     const SizedBox(height: 25),
                     const Text(
                       'Select Your Course',
@@ -143,33 +141,7 @@ class MaleUniformPage extends StatelessWidget {
       width: 160,
       child: Column(
         children: [
-          // Image container with shadow
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.asset(
-                course == 'BSCRIM'
-                    ? 'assets/images/malecrim.png'
-                    : 'assets/images/maleabbs.png',
-                fit: BoxFit.contain,
-                width: double.infinity,
-                height: 160,
-              ),
-            ),
-          ),
-          const SizedBox(height: 15),
+          // 🔹 Removed the image container
           SizedBox(
             width: double.infinity,
             height: 55,

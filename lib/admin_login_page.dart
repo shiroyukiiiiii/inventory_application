@@ -106,15 +106,15 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // 🏫 Eclaro Academy Logo
-                        Image.asset(
-                          'assets/images/eclaroacademy.png',
-                          height: 100,
-                          fit: BoxFit.contain,
+                        // 🔹 Replace logo with an icon
+                        Icon(
+                          Icons.school_sharp, // Choose any icon you like
+                          size: 60, // Adjust width/height as needed
+                          color: Colors.green.shade700,
                         ),
-                        const SizedBox(height: 15),
 
                         const Text(
-                          "Admin Login",
+                          "ADMIN LOGIN",
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
