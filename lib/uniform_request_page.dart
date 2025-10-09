@@ -59,11 +59,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     });
 
     try {
-      // ✅ Generate QR code bytes first
       final qrCodeBytes = await QRService.generateQRCodeBytes(_studentId);
       final qrBase64 = base64Encode(qrCodeBytes);
 
-      // ✅ Save to Firestore (with QR code string)
       await FirebaseFirestore.instance.collection('uniform_requests').add({
         'userId': widget.user.uid,
         'userName': widget.user.displayName ?? '',
@@ -73,11 +71,10 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         'course': _course,
         'size': _size,
         'studentId': _studentId,
-        'qrCode': qrBase64, // 👈 Store QR code here
+        'qrCode': qrBase64,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // ✅ Send Email (still optional)
       final emailSent = await EmailService.sendUniformRequestEmail(
         studentNumber: _studentId,
         studentName: _fullName.isNotEmpty
@@ -91,12 +88,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       );
 
       setState(() {
-        if (emailSent) {
-          _message =
-              'Request submitted, QR code saved to Firestore, and email sent!';
-        } else {
-          _message = 'Request submitted and QR code saved (email failed).';
-        }
+        _message = emailSent
+            ? 'Request submitted, QR code saved to Firestore, and email sent!'
+            : 'Request submitted and QR code saved (email failed).';
       });
 
       _formKey.currentState?.reset();
@@ -111,150 +105,182 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Request Uniform')),
+      backgroundColor: Colors.blueGrey[50],
+      appBar: AppBar(
+        title: const Text('Request Uniform'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+        elevation: 2,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Full Name
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Enter your full name'
-                    : null,
-                onSaved: (value) => _fullName = value ?? '',
-                onChanged: (value) {
-                  setState(() {
-                    _fullName = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 10),
-              // Email (auto-filled and read-only)
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Email'),
-                controller: _emailController,
-                readOnly: true,
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Email not found';
-                  final emailRegex =
-                      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+\u0000?');
-                  if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
-                  return null;
-                },
-                onSaved: (value) => _email = value ?? '',
-              ),
-
-              const SizedBox(height: 10),
-              // Student ID
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Student Number'),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Enter Student Number'
-                    : null,
-                onSaved: (value) => _studentId = value ?? '',
-                onChanged: (value) {
-                  setState(() {
-                    _studentId = value;
-                    _showQRCode = false;
-                  });
-                },
-              ),
-
-              if (_studentId.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: _generateQRPreview,
-                  icon: const Icon(Icons.qr_code),
-                  label: const Text('Preview QR Code'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+        padding: const EdgeInsets.all(20.0),
+        child: Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.checkroom, color: Colors.teal, size: 80),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Uniform Request Form',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
-                ),
-              ],
 
-              if (_showQRCode && _studentId.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                _buildQRPreview(),
-              ],
+                  // Full Name
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      prefixIcon: Icon(Icons.person_outline),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Enter your full name'
+                        : null,
+                    onSaved: (value) => _fullName = value ?? '',
+                    onChanged: (value) => setState(() => _fullName = value),
+                  ),
+                  const SizedBox(height: 15),
 
-              // Course Dropdown
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _course.isNotEmpty ? _course : null,
-                decoration: const InputDecoration(labelText: 'Course'),
-                items: const [
-                  DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),
-                  DropdownMenuItem(value: 'ABCOM', child: Text('ABCOM')),
-                  DropdownMenuItem(value: 'BSCRIM', child: Text('BSCRIM')),
-                ],
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Select course' : null,
-                onChanged: (value) {
-                  setState(() {
-                    _course = value ?? '';
-                    _gender = '';
-                    _size = '';
-                  });
-                },
-                onSaved: (value) => _course = value ?? '',
-              ),
+                  // Email
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    controller: _emailController,
+                    readOnly: true,
+                  ),
+                  const SizedBox(height: 15),
 
-              // Gender Dropdown
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _gender.isNotEmpty ? _gender : null,
-                decoration: const InputDecoration(labelText: 'Gender'),
-                items: const [
-                  DropdownMenuItem(value: 'Male', child: Text('Male')),
-                  DropdownMenuItem(value: 'Female', child: Text('Female')),
-                ],
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Select gender' : null,
-                onChanged: (value) {
-                  setState(() {
-                    _gender = value ?? '';
-                    _size = '';
-                  });
-                },
-                onSaved: (value) => _gender = value ?? '',
-              ),
+                  // Student ID
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Student Number',
+                      prefixIcon: Icon(Icons.badge_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Enter Student Number'
+                        : null,
+                    onSaved: (value) => _studentId = value ?? '',
+                    onChanged: (value) {
+                      setState(() {
+                        _studentId = value;
+                        _showQRCode = false;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
 
-              const SizedBox(height: 20),
-
-              // Inventory Sizes
-              if (_course.isNotEmpty && _gender.isNotEmpty)
-                _buildSizeInventory()
-              else if (_course.isNotEmpty && _gender.isEmpty)
-                _buildGenderReminder(),
-
-              const SizedBox(height: 20),
-
-              // Submit Button
-              _isSubmitting
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                      onPressed: _submitRequest,
-                      child: const Text('Submit Request'),
+                  if (_studentId.isNotEmpty)
+                    ElevatedButton.icon(
+                      onPressed: _generateQRPreview,
+                      icon: const Icon(Icons.qr_code),
+                      label: const Text('Preview QR Code'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 45),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
 
-              if (_message != null) ...[
-                const SizedBox(height: 20),
-                Text(
-                  _message!,
-                  style: TextStyle(
-                    color: _message!.startsWith('Request submitted')
-                        ? Colors.green
-                        : Colors.red,
+                  if (_showQRCode && _studentId.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _buildQRPreview(),
+                  ],
+
+                  const SizedBox(height: 20),
+
+                  // Non-editable Course
+                  TextFormField(
+                    readOnly: true,
+                    initialValue: _course,
+                    decoration: const InputDecoration(
+                      labelText: 'Course',
+                      prefixIcon: Icon(Icons.school_outlined),
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-              ],
-            ],
+                  const SizedBox(height: 15),
+
+                  // Non-editable Gender
+                  TextFormField(
+                    readOnly: true,
+                    initialValue: _gender,
+                    decoration: const InputDecoration(
+                      labelText: 'Gender',
+                      prefixIcon: Icon(Icons.people_alt_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Inventory Sizes
+                  if (_course.isNotEmpty && _gender.isNotEmpty)
+                    _buildSizeInventory()
+                  else if (_course.isNotEmpty && _gender.isEmpty)
+                    _buildGenderReminder(),
+
+                  const SizedBox(height: 25),
+
+                  // Submit Button
+                  _isSubmitting
+                      ? const Center(child: CircularProgressIndicator())
+                      : SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.send),
+                            label: const Text(
+                              'Submit Request',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            onPressed: _submitRequest,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueAccent,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                  if (_message != null) ...[
+                    const SizedBox(height: 20),
+                    Text(
+                      _message!,
+                      style: TextStyle(
+                        color: _message!.startsWith('Request submitted')
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -271,8 +297,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.teal.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.teal),
       ),
       child: Column(
         children: [
@@ -334,7 +361,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 onChanged: qty > 0
                     ? (value) => setState(() => _size = value ?? '')
                     : null,
-                activeColor: Colors.blue,
+                activeColor: Colors.teal,
                 secondary: qty == 0
                     ? const Icon(Icons.block, color: Colors.red)
                     : null,

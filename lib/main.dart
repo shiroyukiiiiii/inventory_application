@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:inventory_application/admin_dashboard.dart';
 import 'homepage.dart';
 import 'admin_login_page.dart';
 import 'uniform_list_page.dart';
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
         '/admin-login': (context) => const AdminLoginPage(),
         '/admin-inventory': (context) => const UniformListPage(),
         '/admin-register': (context) => const AdminRegisterPage(),
-        '/admin-dashboard': (context) => const UniformListPage(),
+        '/admin-dashboard': (context) => const AdminDashboardApp(),
       },
     );
   }
@@ -99,7 +100,7 @@ class _SignInPageState extends State<SignInPage> {
                 children: [
                   // 🔹 Logo Image (Make sure your image path is correct)
                   ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
+                      borderRadius: BorderRadius.circular(0),
                       child: Image.asset('assets/images/eclaroacademy.png')),
                   const SizedBox(height: 25),
 

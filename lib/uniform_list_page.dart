@@ -10,13 +10,18 @@ class UniformListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4, // ✅ 4 tabs
+      length: 4,
       child: Scaffold(
+        backgroundColor: Colors.grey[100],
         appBar: AppBar(
-          title: const Text('Uniform Management'),
+          backgroundColor: const Color.fromARGB(255, 2, 167, 30),
+          title: const Text(
+            'Uniform Management',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.qr_code_scanner),
+              icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
               tooltip: 'QR Confirmation',
               onPressed: () {
                 Navigator.push(
@@ -29,16 +34,17 @@ class UniformListPage extends StatelessWidget {
             ),
           ],
           bottom: const TabBar(
+            indicatorColor: Color.fromARGB(255, 0, 136, 255),
             tabs: [
               Tab(text: 'Inventory'),
               Tab(text: 'Requests'),
               Tab(text: 'Approved'),
-              Tab(text: 'Completed Orders'),
+              Tab(text: 'Completed'),
             ],
           ),
         ),
-        body: const TabBarView(
-          children: [
+        body: TabBarView(
+          children: const [
             _InventoryTab(),
             UniformRequestsListPage(),
             ApprovedOrdersListPage(),
@@ -47,9 +53,11 @@ class UniformListPage extends StatelessWidget {
         ),
         floatingActionButton: Builder(
           builder: (context) {
-            final tabIndex = DefaultTabController.of(context).index;
+            final tabController = DefaultTabController.of(context);
+            final tabIndex = tabController?.index ?? 0;
             return tabIndex == 0
                 ? FloatingActionButton(
+                    backgroundColor: const Color.fromARGB(255, 0, 145, 255),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -58,7 +66,7 @@ class UniformListPage extends StatelessWidget {
                         ),
                       );
                     },
-                    child: const Icon(Icons.add),
+                    child: const Icon(Icons.add, color: Colors.white),
                   )
                 : Container();
           },
@@ -69,7 +77,7 @@ class UniformListPage extends StatelessWidget {
 }
 
 /// ============================
-/// Inventory Tab
+/// Inventory Tab (Fixed Courses Summary)
 /// ============================
 class _InventoryTab extends StatelessWidget {
   const _InventoryTab();
@@ -83,64 +91,276 @@ class _InventoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Uniform>>(
-      stream: getUniforms(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('No uniforms found.'));
-        }
-        final uniforms = snapshot.data!;
-        return ListView.builder(
-          itemCount: uniforms.length,
-          itemBuilder: (context, index) {
-            final uniform = uniforms[index];
-            return ListTile(
-              title: Text(
-                  '${uniform.gender} - ${uniform.course} (${uniform.size})'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+    return Container(
+      color: Colors.white,
+      child: StreamBuilder<List<Uniform>>(
+        stream: getUniforms(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00B4FF)),
+            );
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text(
+                'No uniforms found.',
+                style: TextStyle(color: Colors.black54, fontSize: 18),
+              ),
+            );
+          }
+
+          final uniforms = snapshot.data!;
+          final totalStock = uniforms.fold<int>(0, (a, u) => a + u.quantity);
+
+          final List<String> courses = ['BSCS', 'BSCRIM', 'ABCOM'];
+
+          final Map<String, Map<String, int>> summary = {
+            for (var course in courses)
+              course: {'S': 0, 'M': 0, 'L': 0, 'XL': 0, 'Total': 0}
+          };
+
+          for (var uniform in uniforms) {
+            final course = uniform.course.toUpperCase().trim();
+            final size = uniform.size.toUpperCase().trim();
+            final qty = uniform.quantity;
+            if (summary.containsKey(course)) {
+              if (summary[course]!.containsKey(size)) {
+                summary[course]![size] = (summary[course]![size] ?? 0) + qty;
+              }
+              summary[course]!['Total'] =
+                  (summary[course]!['Total'] ?? 0) + qty;
+            }
+          }
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text('Qty: ${uniform.quantity}'),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    tooltip: 'Delete',
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Delete Uniform'),
-                          content: const Text(
-                              'Are you sure you want to delete this uniform?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
+                  const Text(
+                    "Inventory Summary",
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00A86B), // bright green
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _SummaryCard(
+                        title: "Total Uniforms",
+                        value: uniforms.length.toString(),
+                        icon: Icons.inventory_2_outlined,
+                        color: const Color(0xFF00A86B), // green
+                      ),
+                      const SizedBox(width: 12),
+                      _SummaryCard(
+                        title: "Total Stock",
+                        value: totalStock.toString(),
+                        icon: Icons.check_circle_outline,
+                        color: const Color(0xFF00B4FF), // blue
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    "Per Course Summary",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00A86B),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Column(
+                    children: summary.entries.map((entry) {
+                      final course = entry.key;
+                      final data = entry.value;
+
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 25, vertical: 20),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFB2EBF2)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.15),
+                              blurRadius: 10,
+                              offset: const Offset(0, 6),
                             ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Delete',
-                                  style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              course,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF00A86B),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Total Stock: ${data['Total']}",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text(
+                              "By Size",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF00B4FF),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: ['S', 'M', 'L', 'XL']
+                                  .map(
+                                    (size) => Column(
+                                      children: [
+                                        Text(
+                                          size,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          data[size].toString(),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  .toList(),
                             ),
                           ],
                         ),
                       );
-                      if (confirm == true) {
-                        await FirebaseFirestore.instance
-                            .collection('uniforms')
-                            .doc(uniform.id)
-                            .delete();
-                      }
-                    },
+                    }).toList(),
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Summary Card Widget
+class _SummaryCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _SummaryCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Card(
+        color: color,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Icon(icon, size: 30, color: Colors.white),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Summary Section for Course & Size
+class _SummarySection extends StatelessWidget {
+  final String title;
+  final Map<String, int> data;
+
+  const _SummarySection({required this.title, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal)),
+            const SizedBox(height: 6),
+            if (data.isEmpty)
+              const Text('No data available',
+                  style: TextStyle(color: Colors.grey)),
+            ...data.entries.map((entry) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(entry.key,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w500, fontSize: 14)),
+                      Text(entry.value.toString(),
+                          style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
     );
   }
 }
