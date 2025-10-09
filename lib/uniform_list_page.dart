@@ -64,11 +64,78 @@ class _UniformListPageState extends State<UniformListPage>
       // ✅ The content of each tab
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          _InventoryTab(),
+        children: [
+          const _InventoryTab(),
           UniformRequestsListPage(),
           ApprovedOrdersListPage(),
           CompletedOrdersListPage(),
+          // More tab content
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // Open Add Uniform form
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const UniformFormPage()),
+                      );
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Inventory'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 15),
+                      backgroundColor: Colors.teal,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: Add Export action
+                    },
+                    icon: const Icon(Icons.file_download),
+                    label: const Text('Export Inventory'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 15),
+                      backgroundColor: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: Add Reports or other app features
+                    },
+                    icon: const Icon(Icons.analytics),
+                    label: const Text('Reports'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 15),
+                      backgroundColor: Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: Add Settings or other apps
+                    },
+                    icon: const Icon(Icons.settings),
+                    label: const Text('Settings'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 15),
+                      backgroundColor: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
 
@@ -87,10 +154,10 @@ class _UniformListPageState extends State<UniformListPage>
             Tab(icon: Icon(Icons.pending_actions), text: 'Requests'),
             Tab(icon: Icon(Icons.check_circle), text: 'Approved'),
             Tab(icon: Icon(Icons.done_all), text: 'Completed'),
+            Tab(icon: Icon(Icons.more_horiz), text: 'More'),
           ],
         ),
       ),
-
       // ✅ Floating Add Button (only for Inventory tab)
       floatingActionButton: _tabController.index == 0
           ? FloatingActionButton(
@@ -151,7 +218,6 @@ class _InventoryTab extends StatelessWidget {
           final List<String> courses = ['BSCS', 'BSCRIM', 'ABCOM'];
           final genders = ['Male', 'Female'];
 
-          // Course → Gender → Size counts
           final Map<String, Map<String, Map<String, int>>> summary = {
             for (var course in courses)
               course: {
@@ -220,13 +286,11 @@ class _InventoryTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 15),
-
-                  // Render each course
+                  // Render summary as before
                   Column(
                     children: summary.entries.map((entry) {
                       final course = entry.key;
                       final genderData = entry.value;
-
                       return Container(
                         margin: const EdgeInsets.symmetric(vertical: 10),
                         padding: const EdgeInsets.symmetric(
@@ -256,15 +320,12 @@ class _InventoryTab extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 15),
-
-                            // Separate Male & Female sections
                             ...genderData.entries.map((g) {
                               final gender = g.key;
                               final data = g.value;
                               final color = gender == 'Male'
                                   ? const Color(0xFF00A86B)
                                   : const Color(0xFF00B4FF);
-
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
@@ -324,11 +385,109 @@ class _InventoryTab extends StatelessWidget {
                                   const SizedBox(height: 18),
                                 ],
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       );
                     }).toList(),
+                  ),
+
+                  const SizedBox(height: 25),
+                  const Text(
+                    "Detailed Inventory List",
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal),
+                  ),
+                  const SizedBox(height: 10),
+                  ListView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: uniforms.length,
+                    itemBuilder: (context, index) {
+                      final uniform = uniforms[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 3,
+                        child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Header Row: Course + Gender
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${uniform.course}',
+                                        style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.teal),
+                                      ),
+                                      Text(
+                                        '${uniform.gender}',
+                                        style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black87),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Size & Quantity Row
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Size: ${uniform.size}',
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                      Text(
+                                        'Qty: ${uniform.quantity}',
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  // Action Buttons
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit,
+                                            color: Colors.teal),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => UniformFormPage(
+                                                  uniform: uniform),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete,
+                                            color: Colors.red),
+                                        onPressed: () async {
+                                          await FirebaseFirestore.instance
+                                              .collection('uniforms')
+                                              .doc(uniform.id)
+                                              .delete();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ])),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -463,8 +622,10 @@ class _UniformFormPageState extends State<UniformFormPage> {
 
   Future<void> _deleteUniform() async {
     if (widget.uniform != null) {
-      final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
-      await uniformsRef.doc(widget.uniform!.id).delete();
+      await FirebaseFirestore.instance
+          .collection('uniforms')
+          .doc(widget.uniform!.id)
+          .delete();
       if (mounted) Navigator.pop(context);
     }
   }
@@ -489,88 +650,173 @@ class _UniformFormPageState extends State<UniformFormPage> {
     }
   }
 
+  Widget _sectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.teal),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRadioOptions(
+      {required String title,
+      required List<String> options,
+      required String groupValue,
+      required ValueChanged<String?> onChanged}) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ...options.map((opt) => RadioListTile<String>(
+                  title: Text(opt),
+                  value: opt,
+                  groupValue: groupValue,
+                  onChanged: onChanged,
+                  activeColor: Colors.teal,
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(widget.uniform == null ? 'Add Uniform' : 'Edit Uniform')),
+        title: Text(widget.uniform == null ? 'Add Uniform' : 'Edit Uniform'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              const Text('Gender', style: TextStyle(fontSize: 16)),
-              ...['Male', 'Female'].map((gender) => RadioListTile<String>(
-                    title: Text(gender),
-                    value: gender,
-                    groupValue: _gender,
-                    onChanged: (value) {
-                      setState(() {
-                        _gender = value ?? '';
-                      });
+              // Gender Section
+              _buildRadioOptions(
+                  title: 'Gender',
+                  options: ['Male', 'Female'],
+                  groupValue: _gender,
+                  onChanged: (val) => setState(() => _gender = val ?? '')),
+
+              // Course Section
+              _buildRadioOptions(
+                  title: 'Course',
+                  options: ['BSCRIM', 'ABCOM', 'BSCS'],
+                  groupValue: _course,
+                  onChanged: (val) => setState(() => _course = val ?? '')),
+
+              // Size Dropdown
+              Card(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: DropdownButtonFormField<String>(
+                    value: _size.isNotEmpty ? _size : null,
+                    decoration: InputDecoration(
+                      labelText: 'Size',
+                      prefixIcon:
+                          const Icon(Icons.straighten, color: Colors.teal),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+                        .map((size) => DropdownMenuItem(
+                              value: size,
+                              child: Text(size),
+                            ))
+                        .toList(),
+                    validator: (value) =>
+                        value == null || value.isEmpty ? 'Select size' : null,
+                    onChanged: (val) => setState(() => _size = val ?? ''),
+                    onSaved: (val) => _size = val ?? '',
+                  ),
+                ),
+              ),
+
+              // Quantity
+              Card(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: TextFormField(
+                    initialValue: _quantity.toString(),
+                    decoration: InputDecoration(
+                      labelText: 'Quantity',
+                      prefixIcon: const Icon(Icons.confirmation_num,
+                          color: Colors.teal),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return 'Enter quantity';
+                      final n = int.tryParse(val);
+                      if (n == null || n < 0) return 'Enter a valid quantity';
+                      return null;
                     },
-                  )),
-              const Text('Course', style: TextStyle(fontSize: 16)),
-              ...['BSCRIM', 'ABCOM', 'BSCS']
-                  .map((course) => RadioListTile<String>(
-                        title: Text(course),
-                        value: course,
-                        groupValue: _course,
-                        onChanged: (value) {
-                          setState(() {
-                            _course = value ?? '';
-                          });
-                        },
-                      )),
-              DropdownButtonFormField<String>(
-                initialValue: _size.isNotEmpty ? _size : null,
-                decoration: const InputDecoration(labelText: 'Size'),
-                items: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-                    .map((size) => DropdownMenuItem(
-                          value: size,
-                          child: Text(size),
-                        ))
-                    .toList(),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Select size' : null,
-                onChanged: (value) {
-                  setState(() {
-                    _size = value ?? '';
-                  });
-                },
-                onSaved: (value) => _size = value ?? '',
+                    onSaved: (val) => _quantity = int.parse(val!),
+                  ),
+                ),
               ),
-              TextFormField(
-                initialValue: _quantity.toString(),
-                decoration: const InputDecoration(labelText: 'Quantity'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Enter quantity';
-                  final n = int.tryParse(value);
-                  if (n == null || n < 0) return 'Enter a valid quantity';
-                  return null;
-                },
-                onSaved: (value) => _quantity = int.parse(value!),
-              ),
+
               const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
+                    child: ElevatedButton.icon(
                       onPressed: _saveUniform,
-                      child: Text(widget.uniform == null ? 'Add' : 'Update'),
+                      icon: const Icon(Icons.save,
+                          color: Colors.white), // icon color
+                      label: Text(
+                        widget.uniform == null ? 'Add Stock' : 'Update Stock',
+                        style:
+                            const TextStyle(color: Colors.white), // text color
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                   if (widget.uniform != null) ...[
                     const SizedBox(width: 10),
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
+                      child: ElevatedButton.icon(
                         onPressed: _deleteUniform,
-                        child: const Text('Delete'),
+                        icon: const Icon(Icons.delete),
+                        label: const Text('Delete Stock'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
                       ),
                     ),
                   ],
@@ -585,10 +831,18 @@ class _UniformFormPageState extends State<UniformFormPage> {
 }
 
 /// ============================
-/// Requests Tab
+/// Requests Tab with Search
 /// ============================
-class UniformRequestsListPage extends StatelessWidget {
+class UniformRequestsListPage extends StatefulWidget {
   const UniformRequestsListPage({super.key});
+
+  @override
+  State<UniformRequestsListPage> createState() =>
+      _UniformRequestsListPageState();
+}
+
+class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
+  String searchQuery = '';
 
   Future<void> _approveRequest(
       String id, Map<String, dynamic> data, BuildContext context) async {
@@ -622,159 +876,260 @@ class UniformRequestsListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No uniform requests found.'));
-        }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search by name or student ID...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+            ),
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('uniform_requests')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('No uniform requests found.'));
+              }
 
-        final requests = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['status'] != 'Approved' && data['status'] != 'Completed';
-        }).toList();
+              final requests = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final status = data['status'] ?? '';
+                final name = (data['userName'] ?? '').toString().toLowerCase();
+                final id = (data['studentId'] ?? '').toString().toLowerCase();
+                final matchesSearch =
+                    name.contains(searchQuery) || id.contains(searchQuery);
+                return status != 'Approved' &&
+                    status != 'Completed' &&
+                    matchesSearch;
+              }).toList();
 
-        if (requests.isEmpty) {
-          return const Center(child: Text('No pending requests.'));
-        }
+              if (requests.isEmpty) {
+                return const Center(child: Text('No pending requests.'));
+              }
 
-        return ListView.builder(
-          itemCount: requests.length,
-          itemBuilder: (context, index) {
-            final doc = requests[index];
-            final data = doc.data() as Map<String, dynamic>;
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text('${data['userName'] ?? 'Unknown'}'),
-                subtitle: Text(
-                  'Email: ${data['email'] ?? ''}\n'
-                  'Course: ${data['course'] ?? ''}\n'
-                  'Size: ${data['size'] ?? ''}\n'
-                  'Student ID: ${data['studentId'] ?? ''}\n'
-                  'Requested: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}\n'
-                  'Status: ${data['status'] ?? 'Pending'}',
-                ),
-                trailing: ElevatedButton(
-                  onPressed: () => _approveRequest(doc.id, data, context),
-                  child: const Text("Approve"),
-                ),
-              ),
-            );
-          },
-        );
-      },
+              return ListView.builder(
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final doc = requests[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      title: Text('${data['userName'] ?? 'Unknown'}'),
+                      subtitle: Text(
+                        'Email: ${data['email'] ?? ''}\n'
+                        'Course: ${data['course'] ?? ''}\n'
+                        'Size: ${data['size'] ?? ''}\n'
+                        'Student ID: ${data['studentId'] ?? ''}\n'
+                        'Requested: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}\n'
+                        'Status: ${data['status'] ?? 'Pending'}',
+                      ),
+                      trailing: ElevatedButton(
+                        onPressed: () => _approveRequest(doc.id, data, context),
+                        child: const Text("Approve"),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
 /// ============================
-/// Approved Orders Tab
+/// Approved Orders Tab with Search
 /// ============================
-class ApprovedOrdersListPage extends StatelessWidget {
+class ApprovedOrdersListPage extends StatefulWidget {
   const ApprovedOrdersListPage({super.key});
 
   @override
+  State<ApprovedOrdersListPage> createState() => _ApprovedOrdersListPageState();
+}
+
+class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
+  String searchQuery = '';
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .orderBy('approvedAt', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No approved requests.'));
-        }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search by name or student ID...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+            ),
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('uniform_requests')
+                .orderBy('approvedAt', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('No approved requests.'));
+              }
 
-        final approved = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['status'] == 'Approved';
-        }).toList();
+              final approved = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final status = data['status'] ?? '';
+                final name = (data['userName'] ?? '').toString().toLowerCase();
+                final id = (data['studentId'] ?? '').toString().toLowerCase();
+                final matchesSearch =
+                    name.contains(searchQuery) || id.contains(searchQuery);
+                return status == 'Approved' && matchesSearch;
+              }).toList();
 
-        if (approved.isEmpty) {
-          return const Center(child: Text('No approved requests.'));
-        }
+              if (approved.isEmpty) {
+                return const Center(child: Text('No approved requests.'));
+              }
 
-        return ListView.builder(
-          itemCount: approved.length,
-          itemBuilder: (context, index) {
-            final data = approved[index].data() as Map<String, dynamic>;
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text('${data['userName'] ?? 'Unknown'}'),
-                subtitle: Text(
-                  'Course: ${data['course'] ?? ''}\n'
-                  'Size: ${data['size'] ?? ''}\n'
-                  'Approved: ${data['approvedAt'] != null ? (data['approvedAt'] as Timestamp).toDate().toString() : 'N/A'}',
-                ),
-              ),
-            );
-          },
-        );
-      },
+              return ListView.builder(
+                itemCount: approved.length,
+                itemBuilder: (context, index) {
+                  final data = approved[index].data() as Map<String, dynamic>;
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      title: Text('${data['userName'] ?? 'Unknown'}'),
+                      subtitle: Text(
+                        'Course: ${data['course'] ?? ''}\n'
+                        'Size: ${data['size'] ?? ''}\n'
+                        'Approved: ${data['approvedAt'] != null ? (data['approvedAt'] as Timestamp).toDate().toString() : 'N/A'}',
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
 /// ============================
-/// Completed Orders Tab
+/// Completed Orders Tab with Search
 /// ============================
-class CompletedOrdersListPage extends StatelessWidget {
+class CompletedOrdersListPage extends StatefulWidget {
   const CompletedOrdersListPage({super.key});
 
   @override
+  State<CompletedOrdersListPage> createState() =>
+      _CompletedOrdersListPageState();
+}
+
+class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
+  String searchQuery = '';
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No completed orders found.'));
-        }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Search by name or student ID...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+            ),
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('uniform_requests')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('No completed orders found.'));
+              }
 
-        final orders = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['status'] == 'Completed';
-        }).toList();
+              final orders = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final status = data['status'] ?? '';
+                final name = (data['userName'] ?? '').toString().toLowerCase();
+                final id = (data['studentId'] ?? '').toString().toLowerCase();
+                final matchesSearch =
+                    name.contains(searchQuery) || id.contains(searchQuery);
+                return status == 'Completed' && matchesSearch;
+              }).toList();
 
-        if (orders.isEmpty) {
-          return const Center(child: Text('No completed orders.'));
-        }
+              if (orders.isEmpty) {
+                return const Center(child: Text('No completed orders.'));
+              }
 
-        return ListView.builder(
-          itemCount: orders.length,
-          itemBuilder: (context, index) {
-            final data = orders[index].data() as Map<String, dynamic>;
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text(
-                    '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})'),
-                subtitle: Text(
-                  'Course: ${data['course'] ?? ''}\n'
-                  'Size: ${data['size'] ?? ''}\n'
-                  'Completed: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}',
-                ),
-              ),
-            );
-          },
-        );
-      },
+              return ListView.builder(
+                itemCount: orders.length,
+                itemBuilder: (context, index) {
+                  final data = orders[index].data() as Map<String, dynamic>;
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      title: Text(
+                          '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})'),
+                      subtitle: Text(
+                        'Course: ${data['course'] ?? ''}\n'
+                        'Size: ${data['size'] ?? ''}\n'
+                        'Completed: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}',
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

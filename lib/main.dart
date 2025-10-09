@@ -99,10 +99,11 @@ class _SignInPageState extends State<SignInPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // 🔹 Logo Image (Make sure your image path is correct)
-                  ClipRRect(
-                      borderRadius: BorderRadius.circular(0),
-                      child: Image.asset('assets/images/eclaroacademy.png')),
-                  const SizedBox(height: 25),
+                  Icon(
+                    Icons.school_sharp,
+                    size: 100, // Adjust the size
+                    color: Colors.blue.shade700, // Adjust color
+                  ),
 
                   const Text(
                     'Welcome to SIASU System',
