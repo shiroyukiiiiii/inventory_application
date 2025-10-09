@@ -250,20 +250,31 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               ],
             ),
           ),
-          // Full Name
+
+          // 🔒 FULL NAME VALIDATION
           TextFormField(
             decoration: const InputDecoration(
               labelText: 'Full Name',
               prefixIcon: Icon(Icons.person_outline),
               border: OutlineInputBorder(),
             ),
-            validator: (value) =>
-                value == null || value.isEmpty ? 'Enter your full name' : null,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Enter your full name';
+              }
+              final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
+              if (!nameRegExp.hasMatch(value)) {
+                return 'Full name must only contain letters and spaces';
+              }
+              return null;
+            },
             onSaved: (value) => _fullName = value ?? '',
             onChanged: (value) => setState(() => _fullName = value),
           ),
+
           const SizedBox(height: 15),
-          // Email
+
+          // 🔒 EMAIL VALIDATION
           TextFormField(
             decoration: const InputDecoration(
               labelText: 'Email',
@@ -272,17 +283,43 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             ),
             controller: _emailController,
             readOnly: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Email not found';
+              final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+              if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
+              return null;
+            },
+            onSaved: (value) => _email = value ?? '',
           ),
+
           const SizedBox(height: 15),
-          // Student ID
+
+          // 🔒 STUDENT NUMBER VALIDATION
           TextFormField(
             decoration: const InputDecoration(
               labelText: 'Student Number',
               prefixIcon: Icon(Icons.badge_outlined),
               border: OutlineInputBorder(),
             ),
-            validator: (value) =>
-                value == null || value.isEmpty ? 'Enter Student Number' : null,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Enter Student Number';
+              }
+              final currentYear = DateTime.now().year;
+              final pattern = RegExp(r'^(20\d{2})([-]?\d+)?$');
+              final match = pattern.firstMatch(value);
+              if (match == null) {
+                return 'Invalid format. Use like 2022-12345';
+              }
+              final enteredYear = int.tryParse(match.group(1) ?? '');
+              if (enteredYear == null) {
+                return 'Invalid year in student number';
+              }
+              if (enteredYear > currentYear) {
+                return 'Year in student number cannot be in the future';
+              }
+              return null;
+            },
             onSaved: (value) => _studentId = value ?? '',
             onChanged: (value) {
               setState(() {
@@ -291,7 +328,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               });
             },
           ),
+
           const SizedBox(height: 10),
+
           if (_studentId.isNotEmpty)
             ElevatedButton.icon(
               onPressed: _generateQRPreview,
@@ -305,11 +344,14 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                     borderRadius: BorderRadius.circular(12)),
               ),
             ),
+
           if (_showQRCode && _studentId.isNotEmpty) ...[
             const SizedBox(height: 20),
             _buildQRPreview(),
           ],
+
           const SizedBox(height: 20),
+
           TextFormField(
             readOnly: true,
             initialValue: _course,
@@ -318,8 +360,12 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               prefixIcon: Icon(Icons.school_outlined),
               border: OutlineInputBorder(),
             ),
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Select course' : null,
           ),
+
           const SizedBox(height: 15),
+
           TextFormField(
             readOnly: true,
             initialValue: _gender,
@@ -328,13 +374,19 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               prefixIcon: Icon(Icons.people_alt_outlined),
               border: OutlineInputBorder(),
             ),
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Select gender' : null,
           ),
+
           const SizedBox(height: 20),
+
           if (_course.isNotEmpty && _gender.isNotEmpty)
             _buildSizeInventory()
           else if (_course.isNotEmpty && _gender.isEmpty)
             _buildGenderReminder(),
+
           const SizedBox(height: 25),
+
           _isSubmitting
               ? const Center(child: CircularProgressIndicator())
               : SizedBox(
@@ -356,6 +408,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                     ),
                   ),
                 ),
+
           if (_message != null) ...[
             const SizedBox(height: 20),
             Text(

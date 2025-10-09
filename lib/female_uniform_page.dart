@@ -117,7 +117,7 @@ class FemaleUniformPage extends StatelessWidget {
                       runSpacing: 25,
                       children: [
                         _buildCourseItem(context, 'BSCRIM', Colors.green, user),
-                        _buildCourseItem(context, 'BACOM', Colors.blue, user),
+                        _buildCourseItem(context, 'ABCOM', Colors.blue, user),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
