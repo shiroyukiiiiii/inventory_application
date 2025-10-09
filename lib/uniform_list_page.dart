@@ -4,80 +4,115 @@ import '../models/uniform.dart';
 import 'admin_qr_confirmation.dart';
 import 'services/emailjs_service.dart';
 
-class UniformListPage extends StatelessWidget {
+class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
 
   @override
+  State<UniformListPage> createState() => _UniformListPageState();
+}
+
+class _UniformListPageState extends State<UniformListPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      setState(() {}); // rebuild when tab changes to show/hide FAB
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        appBar: AppBar(
-          backgroundColor: const Color.fromARGB(255, 2, 167, 30),
-          title: const Text(
-            'Uniform Management',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 2, 167, 30),
+        title: const Text(
+          'Uniform Management',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-              tooltip: 'QR Confirmation',
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+            tooltip: 'QR Confirmation',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminQrConfirmationPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+
+      // ✅ The content of each tab
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          _InventoryTab(),
+          UniformRequestsListPage(),
+          ApprovedOrdersListPage(),
+          CompletedOrdersListPage(),
+        ],
+      ),
+
+      // ✅ Bottom Tabs with icons
+      bottomNavigationBar: Container(
+        color: const Color.fromARGB(255, 2, 167, 30),
+        child: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: const Color.fromARGB(255, 0, 136, 255),
+          unselectedLabelColor: Colors.white,
+          labelStyle:
+              const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          tabs: const [
+            Tab(icon: Icon(Icons.inventory), text: 'Inventory'),
+            Tab(icon: Icon(Icons.pending_actions), text: 'Requests'),
+            Tab(icon: Icon(Icons.check_circle), text: 'Approved'),
+            Tab(icon: Icon(Icons.done_all), text: 'Completed'),
+          ],
+        ),
+      ),
+
+      // ✅ Floating Add Button (only for Inventory tab)
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton(
+              backgroundColor: const Color.fromARGB(255, 0, 145, 255),
+              tooltip: 'Add Uniform',
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AdminQrConfirmationPage(),
+                    builder: (context) => const UniformFormPage(),
                   ),
                 );
               },
-            ),
-          ],
-          bottom: const TabBar(
-            indicatorColor: Color.fromARGB(255, 0, 136, 255),
-            tabs: [
-              Tab(text: 'Inventory'),
-              Tab(text: 'Requests'),
-              Tab(text: 'Approved'),
-              Tab(text: 'Completed'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: const [
-            _InventoryTab(),
-            UniformRequestsListPage(),
-            ApprovedOrdersListPage(),
-            CompletedOrdersListPage(),
-          ],
-        ),
-        floatingActionButton: Builder(
-          builder: (context) {
-            final tabController = DefaultTabController.of(context);
-            final tabIndex = tabController?.index ?? 0;
-            return tabIndex == 0
-                ? FloatingActionButton(
-                    backgroundColor: const Color.fromARGB(255, 0, 145, 255),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const UniformFormPage(),
-                        ),
-                      );
-                    },
-                    child: const Icon(Icons.add, color: Colors.white),
-                  )
-                : Container();
-          },
-        ),
-      ),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 }
 
 /// ============================
-/// Inventory Tab (Fixed Courses Summary)
+/// Inventory Tab (Gender-separated summary)
 /// ============================
 class _InventoryTab extends StatelessWidget {
   const _InventoryTab();
@@ -114,22 +149,31 @@ class _InventoryTab extends StatelessWidget {
           final totalStock = uniforms.fold<int>(0, (a, u) => a + u.quantity);
 
           final List<String> courses = ['BSCS', 'BSCRIM', 'ABCOM'];
+          final genders = ['Male', 'Female'];
 
-          final Map<String, Map<String, int>> summary = {
+          // Course → Gender → Size counts
+          final Map<String, Map<String, Map<String, int>>> summary = {
             for (var course in courses)
-              course: {'S': 0, 'M': 0, 'L': 0, 'XL': 0, 'Total': 0}
+              course: {
+                for (var gender in genders)
+                  gender: {'S': 0, 'M': 0, 'L': 0, 'XL': 0, 'Total': 0},
+              }
           };
 
           for (var uniform in uniforms) {
             final course = uniform.course.toUpperCase().trim();
+            final gender = uniform.gender.toUpperCase().trim();
             final size = uniform.size.toUpperCase().trim();
             final qty = uniform.quantity;
+
             if (summary.containsKey(course)) {
-              if (summary[course]!.containsKey(size)) {
-                summary[course]![size] = (summary[course]![size] ?? 0) + qty;
+              final genderKey = gender == 'FEMALE' ? 'Female' : 'Male';
+              if (summary[course]![genderKey]!.containsKey(size)) {
+                summary[course]![genderKey]![size] =
+                    (summary[course]![genderKey]![size] ?? 0) + qty;
               }
-              summary[course]!['Total'] =
-                  (summary[course]!['Total'] ?? 0) + qty;
+              summary[course]![genderKey]!['Total'] =
+                  (summary[course]![genderKey]!['Total'] ?? 0) + qty;
             }
           }
 
@@ -144,7 +188,7 @@ class _InventoryTab extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF00A86B), // bright green
+                      color: Color(0xFF00A86B),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -155,20 +199,20 @@ class _InventoryTab extends StatelessWidget {
                         title: "Total Uniforms",
                         value: uniforms.length.toString(),
                         icon: Icons.inventory_2_outlined,
-                        color: const Color(0xFF00A86B), // green
+                        color: const Color(0xFF00A86B),
                       ),
                       const SizedBox(width: 12),
                       _SummaryCard(
                         title: "Total Stock",
                         value: totalStock.toString(),
                         icon: Icons.check_circle_outline,
-                        color: const Color(0xFF00B4FF), // blue
+                        color: const Color(0xFF00B4FF),
                       ),
                     ],
                   ),
                   const SizedBox(height: 30),
                   const Text(
-                    "Per Course Summary",
+                    "Per Course Summary (by Gender)",
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -176,10 +220,12 @@ class _InventoryTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 15),
+
+                  // Render each course
                   Column(
                     children: summary.entries.map((entry) {
                       final course = entry.key;
-                      final data = entry.value;
+                      final genderData = entry.value;
 
                       return Container(
                         margin: const EdgeInsets.symmetric(vertical: 10),
@@ -209,53 +255,76 @@ class _InventoryTab extends StatelessWidget {
                                 color: Color(0xFF00A86B),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Total Stock: ${data['Total']}",
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              "By Size",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF00B4FF),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: ['S', 'M', 'L', 'XL']
-                                  .map(
-                                    (size) => Column(
-                                      children: [
-                                        Text(
-                                          size,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          data[size].toString(),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
+                            const SizedBox(height: 15),
+
+                            // Separate Male & Female sections
+                            ...genderData.entries.map((g) {
+                              final gender = g.key;
+                              final data = g.value;
+                              final color = gender == 'Male'
+                                  ? const Color(0xFF00A86B)
+                                  : const Color(0xFF00B4FF);
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    gender,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: color,
                                     ),
-                                  )
-                                  .toList(),
-                            ),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    "Total Stock: ${data['Total']}",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Text(
+                                    "By Size",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    alignment: WrapAlignment.center,
+                                    spacing: 20,
+                                    children: ['S', 'M', 'L', 'XL'].map((size) {
+                                      return Column(
+                                        children: [
+                                          Text(
+                                            size,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            data[size].toString(),
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                                  const SizedBox(height: 18),
+                                ],
+                              );
+                            }).toList(),
                           ],
                         ),
                       );
