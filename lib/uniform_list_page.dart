@@ -18,6 +18,7 @@ class _UniformListPageState extends State<UniformListPage>
   @override
   void initState() {
     super.initState();
+    // 4 tabs: Requests, Inventory (Summary), Approved, Completed
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       setState(() {}); // rebuild when tab changes to show/hide FAB
@@ -30,10 +31,99 @@ class _UniformListPageState extends State<UniformListPage>
     super.dispose();
   }
 
+  void _openDrawerOption(BuildContext context, String option) {
+    Navigator.pop(context); // close drawer
+    switch (option) {
+      case 'add':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const UniformFormPage()));
+        break;
+      case 'export':
+        // TODO: Implement export
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Export Inventory (not implemented)')));
+        break;
+      case 'reports':
+        // TODO: Implement reports
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Reports (not implemented)')));
+        break;
+      case 'settings':
+        // TODO: Implement settings
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Settings (not implemented)')));
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
+
+      // Drawer for More menu (desktop-friendly)
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DrawerHeader(
+                decoration: const BoxDecoration(color: Color(0xFF00A86B)),
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'More Menu',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.add, color: Colors.teal),
+                title: const Text('Add Inventory'),
+                onTap: () => _openDrawerOption(context, 'add'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.file_download, color: Colors.blue),
+                title: const Text('Export Inventory'),
+                onTap: () => _openDrawerOption(context, 'export'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.analytics, color: Colors.orange),
+                title: const Text('Reports'),
+                onTap: () => _openDrawerOption(context, 'reports'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings, color: Colors.grey),
+                title: const Text('Settings'),
+                onTap: () => _openDrawerOption(context, 'settings'),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.check_circle, color: Colors.green),
+                title: const Text('Approved Orders'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Switch to Approved tab
+                  _tabController.index = 2;
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.done_all, color: Colors.blue),
+                title: const Text('Completed Orders'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Switch to Completed tab
+                  _tabController.index = 3;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
 
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 2, 167, 30),
@@ -61,100 +151,38 @@ class _UniformListPageState extends State<UniformListPage>
         ],
       ),
 
-      // ✅ The content of each tab
+      // The content of each tab: Requests first as requested
       body: TabBarView(
         controller: _tabController,
         children: [
-          const UniformRequestsListPage(),
-          _InventoryTab(),
-          // "More" tab — with access to hidden sections
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'More Options',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => ApprovedOrdersListPage()),
-                      );
-                    },
-                    icon: const Icon(Icons.check_circle),
-                    label: const Text('Approved Orders'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 15),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => CompletedOrdersListPage()),
-                      );
-                    },
-                    icon: const Icon(Icons.done_all),
-                    label: const Text('Completed Orders'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 15),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      // Add your other actions here (e.g. Reports, Settings, etc.)
-                    },
-                    icon: const Icon(Icons.more_horiz),
-                    label: const Text('Other Options'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 15),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          const UniformRequestsListPage(), // index 0
+          const _InventoryTab(), // index 1
+          const ApprovedOrdersListPage(), // index 2
+          const CompletedOrdersListPage(), // index 3
         ],
       ),
 
-// ✅ Bottom Navigation Bar — centered and limited to 3 tabs
+      // Bottom Tabs (4 visible)
       bottomNavigationBar: Container(
         color: const Color.fromARGB(255, 2, 167, 30),
         child: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          labelColor: Colors.yellowAccent,
+          labelColor: const Color.fromARGB(255, 0, 136, 255),
           unselectedLabelColor: Colors.white,
           labelStyle:
               const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           tabs: const [
             Tab(icon: Icon(Icons.pending_actions), text: 'Requests'),
             Tab(icon: Icon(Icons.inventory), text: 'Summary'),
-            Tab(icon: Icon(Icons.more_horiz), text: 'More'),
+            Tab(icon: Icon(Icons.check_circle), text: 'Approved'),
+            Tab(icon: Icon(Icons.done_all), text: 'Completed'),
           ],
         ),
       ),
-      // ✅ Floating Add Button (only for Inventory tab)
-      floatingActionButton: _tabController.index == 0
+
+      // Floating Add Button: visible when Inventory (Summary) tab is selected (index == 1)
+      floatingActionButton: _tabController.index == 1
           ? FloatingActionButton(
               backgroundColor: const Color.fromARGB(255, 0, 145, 255),
               tooltip: 'Add Uniform',
@@ -280,40 +308,6 @@ class _InventoryTab extends StatelessWidget {
                               ),
                             ],
                           ),
-                          // Add this right after the Wrap() showing Total Uniforms and Total Stock
-                          const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 255, 255, 255)
-                                  .withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "SIZE",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                Text("S - SMALL",
-                                    style: TextStyle(fontSize: 16)),
-                                Text("M - MEDIUM",
-                                    style: TextStyle(fontSize: 16)),
-                                Text("L - LARGE",
-                                    style: TextStyle(fontSize: 16)),
-                                Text("XL - DOUBLE XL",
-                                    style: TextStyle(fontSize: 16)),
-                              ],
-                            ),
-                          ),
-
                           const SizedBox(height: 30),
                           const Text(
                             "Per Course Summary (by Gender)",
@@ -404,7 +398,7 @@ class _InventoryTab extends StatelessWidget {
                                               return Column(
                                                 children: [
                                                   Text(
-                                                    size, // just the letter
+                                                    size,
                                                     style: const TextStyle(
                                                       fontSize: 15,
                                                       fontWeight:
@@ -427,11 +421,45 @@ class _InventoryTab extends StatelessWidget {
                                           const SizedBox(height: 18),
                                         ],
                                       );
-                                    }),
+                                    }).toList(),
                                   ],
                                 ),
                               );
                             }).toList(),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // SIZE box placed at the BOTTOM of Inventory Summary as requested
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 255, 255, 255)
+                                  .withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: const [
+                                Text(
+                                  "SIZE",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text("S - SMALL",
+                                    style: TextStyle(fontSize: 16)),
+                                Text("M - MEDIUM",
+                                    style: TextStyle(fontSize: 16)),
+                                Text("L - LARGE",
+                                    style: TextStyle(fontSize: 16)),
+                                Text("XL - DOUBLE XL",
+                                    style: TextStyle(fontSize: 16)),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -463,29 +491,27 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Card(
-        color: color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Icon(icon, size: 30, color: Colors.white),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold),
-              ),
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-            ],
-          ),
+    return Card(
+      color: color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Icon(icon, size: 30, color: Colors.white),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold),
+            ),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ],
         ),
       ),
     );
@@ -736,12 +762,10 @@ class _UniformFormPageState extends State<UniformFormPage> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: _saveUniform,
-                      icon: const Icon(Icons.save,
-                          color: Colors.white), // icon color
+                      icon: const Icon(Icons.save, color: Colors.white),
                       label: Text(
                         widget.uniform == null ? 'Add Stock' : 'Update Stock',
-                        style:
-                            const TextStyle(color: Colors.white), // text color
+                        style: const TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
