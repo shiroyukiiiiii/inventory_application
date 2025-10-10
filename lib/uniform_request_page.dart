@@ -89,7 +89,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
 
       setState(() {
         _message = emailSent
-            ? 'Request submitted, QR code saved to Firestore, and email sent!'
+            ? 'Request submitted, QR code saved to Firestore, and email sent! Note: Kindly wait for the email approval before payment.'
             : 'Request submitted and QR code saved (email failed).';
       });
 

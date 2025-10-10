@@ -17,110 +17,59 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
 
   final TextEditingController _manualController = TextEditingController();
 
-  /// Common handler for QR and manual input
   Future<void> _handleScan(String? studentNumber, {String method = "qr"}) async {
-  setState(() {
-    _lastScannedValue = studentNumber;
-    _detected = studentNumber != null && studentNumber.trim().isNotEmpty;
-    _isProcessing = true;
-  });
+    setState(() {
+      _lastScannedValue = studentNumber;
+      _detected = studentNumber != null && studentNumber.trim().isNotEmpty;
+      _isProcessing = true;
+    });
 
-  if (studentNumber != null && studentNumber.trim().isNotEmpty) {
-    final query = await FirebaseFirestore.instance
-        .collection('uniform_requests')
-        .where('studentId', isEqualTo: studentNumber.trim())
-        .limit(1)
-        .get();
+    if (studentNumber != null && studentNumber.trim().isNotEmpty) {
+      final query = await FirebaseFirestore.instance
+          .collection('uniform_requests')
+          .where('studentId', isEqualTo: studentNumber.trim())
+          .limit(1)
+          .get();
 
-    String statusMessage;
-    Color statusColor = Colors.red;
+      String statusMessage;
+      Color statusColor = Colors.red;
 
-    if (query.docs.isNotEmpty) {
-      final doc = query.docs.first;
-      final data = doc.data();
+      if (query.docs.isNotEmpty) {
+        final doc = query.docs.first;
+        final data = doc.data();
 
-      // ✅ Already completed
-      if (data['status'] == 'Completed') {
-        statusMessage =
-            "ℹ️ Request for $studentNumber is already Completed";
-        statusColor = Colors.blue;
-      } else {
-        // ✅ Extract course, size, gender
-        final String? course = data['course'] as String?;
-        final String? size = data['size'] as String?;
-        final String? gender = data['gender'] as String?;
-
-        if (course == null || size == null || gender == null) {
-          statusMessage =
-              "⚠️ Request data is incomplete for $studentNumber (missing course/size/gender)";
-          statusColor = Colors.orange;
+        if (data['status'] == 'Completed') {
+          statusMessage = "ℹ️ Request for $studentNumber is already Completed";
+          statusColor = Colors.blue;
         } else {
-          // 🔹 Find the uniform doc based on course + size + gender
-          final inventoryQuery = await FirebaseFirestore.instance
-              .collection('uniforms')
-              .where('course', isEqualTo: course)
-              .where('size', isEqualTo: size)
-              .where('gender', isEqualTo: gender)
-              .limit(1)
-              .get();
+          try {
+            await doc.reference.update({
+              'status': 'Completed',
+              'completedAt': FieldValue.serverTimestamp(),
+            });
 
-          if (inventoryQuery.docs.isNotEmpty) {
-            final inventoryDoc = inventoryQuery.docs.first;
-
-            // ✅ Perform both updates atomically in a transaction
-            try {
-              await FirebaseFirestore.instance
-                  .runTransaction((transaction) async {
-                final snapshot = await transaction.get(inventoryDoc.reference);
-                final int currentCount =
-                    (snapshot['quantity'] ?? 0).toInt();
-
-                if (currentCount <= 0) {
-                  throw Exception(
-                      'No stock left for $course ($size, $gender)');
-                }
-
-                // Deduct 1 from stock
-                transaction.update(inventoryDoc.reference, {
-                  'quantity': currentCount - 1,
-                });
-
-                // Mark request as completed
-                transaction.update(doc.reference, {
-                  'status': 'Completed',
-                });
-              });
-
-              statusMessage =
-                  "✅ Request for $studentNumber marked as Completed — 1 stock deducted for $course ($size, $gender)";
-              statusColor = Colors.green;
-            } catch (e) {
-              statusMessage = "⚠️ Stock deduction failed: ${e.toString()}";
-              statusColor = Colors.orange;
-            }
-          } else {
-            statusMessage =
-                "❌ No inventory found for $course ($size, $gender)";
-            statusColor = Colors.red;
+            statusMessage = "✅ Request for $studentNumber marked as Completed";
+            statusColor = Colors.green;
+          } catch (e) {
+            statusMessage = "⚠️ Failed to update request: ${e.toString()}";
+            statusColor = Colors.orange;
           }
         }
+      } else {
+        statusMessage = "❌ No request found for $studentNumber";
+        statusColor = Colors.red;
       }
-    } else {
-      statusMessage = "❌ No request found for $studentNumber";
-      statusColor = Colors.red;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(statusMessage), backgroundColor: statusColor),
+        );
+        Navigator.pop(context); // ✅ Close page after processing
+      }
     }
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(statusMessage), backgroundColor: statusColor),
-      );
-      Navigator.pop(context); // ✅ Close page after processing
-    }
+    setState(() => _isProcessing = false);
   }
-
-  setState(() => _isProcessing = false);
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -191,8 +140,8 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
                 children: [
                   const Text(
                     "Manual Student ID Entry",
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   TextField(

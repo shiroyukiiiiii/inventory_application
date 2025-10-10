@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/uniform.dart';
 import 'admin_qr_confirmation.dart';
 import 'services/emailjs_service.dart';
+import 'package:intl/intl.dart';
 
 class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
@@ -310,7 +311,7 @@ class _InventoryTab extends StatelessWidget {
                           ),
                           const SizedBox(height: 30),
                           const Text(
-                            "Per Course Summary (by Gender)",
+                            "Per Course Summary (by Sex)",
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -817,39 +818,88 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
   String searchQuery = '';
 
   Future<void> _approveRequest(
-      String id, Map<String, dynamic> data, BuildContext context) async {
-    await FirebaseFirestore.instance
-        .collection('uniform_requests')
-        .doc(id)
-        .update({
-      'status': 'Approved',
-      'approvedAt': Timestamp.now(),
-    });
-    try {
-      await EmailJsService.sendApprovalEmail(
-        toEmail: data['email'] ?? '',
-        toName: data['userName'] ?? '',
-        studentNumber: data['studentId'] ?? '',
-        studentName: data['userName'] ?? '',
-        gender: data['gender'] ?? '',
-        course: data['course'] ?? '',
-        size: data['size'] ?? '',
-        qrCode: data['qrCode'] ?? '',
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Approval email sent!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send approval email: $e')),
-      );
+  String id,
+  Map<String, dynamic> data,
+  BuildContext context,
+) async {
+  final firestore = FirebaseFirestore.instance;
+
+  try {
+    final String course = (data['course'] ?? '').toString().trim();
+    final String size = (data['size'] ?? '').toString().trim();
+    final String gender = (data['gender'] ?? '').toString().trim();
+
+    if (course.isEmpty || size.isEmpty || gender.isEmpty) {
+      throw Exception('Invalid course, size, or gender values. Cannot proceed.');
     }
+
+    // 🔍 Find the matching uniform document (course + gender + size)
+    final uniformQuery = await firestore
+        .collection('uniforms')
+        .where('course', isEqualTo: course)
+        .where('gender', isEqualTo: gender)
+        .where('size', isEqualTo: size)
+        .limit(1)
+        .get();
+
+    if (uniformQuery.docs.isEmpty) {
+      throw Exception('No uniform found for $course - $gender - $size');
+    }
+
+    final uniformDoc = uniformQuery.docs.first.reference;
+    final requestRef = firestore.collection('uniform_requests').doc(id);
+
+    // 🔁 Perform the transaction
+    await firestore.runTransaction((transaction) async {
+      final uniformSnap = await transaction.get(uniformDoc);
+      final uData = uniformSnap.data() as Map<String, dynamic>? ?? {};
+      int currentStock = (uData['quantity'] ?? 0) as int;
+
+      if (currentStock <= 0) {
+        throw Exception('No stock available for $course - $gender - $size.');
+      }
+
+      // Deduct 1 stock
+      transaction.update(uniformDoc, {'quantity': currentStock - 1});
+
+      // Mark request as approved
+      transaction.update(requestRef, {
+        'status': 'Approved',
+        'approvedAt': FieldValue.serverTimestamp(),
+      });
+    });
+
+    // ✉️ Send approval email
+    await EmailJsService.sendApprovalEmail(
+      toEmail: (data['email'] ?? '').toString(),
+      toName: (data['userName'] ?? '').toString(),
+      studentNumber: (data['studentId'] ?? '').toString(),
+      studentName: (data['userName'] ?? '').toString(),
+      gender: gender,
+      course: course,
+      size: size,
+      qrCode: (data['qrCode'] ?? '').toString(),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('✅ Approved $course - $gender - $size (stock deducted)')),
+    );
+  } catch (e, stack) {
+    print('❌ APPROVE REQUEST ERROR TYPE: ${e.runtimeType}');
+    print('❌ APPROVE REQUEST ERROR MESSAGE: $e');
+    print('❌ STACK TRACE: $stack');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('❌ Error approving request: $e')),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // 🔹 Search bar
         Padding(
           padding: const EdgeInsets.all(12),
           child: TextField(
@@ -857,7 +907,8 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
               hintText: 'Search by name or student ID...',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12))),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
             ),
             onChanged: (value) {
               setState(() {
@@ -866,6 +917,8 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
             },
           ),
         ),
+
+        // 🔹 List of requests
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -916,6 +969,9 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                       ),
                       trailing: ElevatedButton(
                         onPressed: () => _approveRequest(doc.id, data, context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
                         child: const Text("Approve"),
                       ),
                     ),
@@ -947,6 +1003,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // 🔹 Search Bar
         Padding(
           padding: const EdgeInsets.all(12),
           child: TextField(
@@ -954,7 +1011,8 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
               hintText: 'Search by name or student ID...',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12))),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
             ),
             onChanged: (value) {
               setState(() {
@@ -963,6 +1021,8 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
             },
           ),
         ),
+
+        // 🔹 Firestore Stream
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -973,6 +1033,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
+
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return const Center(child: Text('No approved requests.'));
               }
@@ -980,10 +1041,13 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
               final approved = snapshot.data!.docs.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final status = data['status'] ?? '';
-                final name = (data['userName'] ?? '').toString().toLowerCase();
-                final id = (data['studentId'] ?? '').toString().toLowerCase();
+                final name =
+                    (data['userName'] ?? '').toString().toLowerCase();
+                final id =
+                    (data['studentId'] ?? '').toString().toLowerCase();
                 final matchesSearch =
                     name.contains(searchQuery) || id.contains(searchQuery);
+
                 return status == 'Approved' && matchesSearch;
               }).toList();
 
@@ -994,7 +1058,9 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
               return ListView.builder(
                 itemCount: approved.length,
                 itemBuilder: (context, index) {
-                  final data = approved[index].data() as Map<String, dynamic>;
+                  final data =
+                      approved[index].data() as Map<String, dynamic>;
+
                   return Card(
                     margin:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1035,6 +1101,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // 🔹 Search Bar
         Padding(
           padding: const EdgeInsets.all(12),
           child: TextField(
@@ -1042,7 +1109,8 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
               hintText: 'Search by name or student ID...',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12))),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
             ),
             onChanged: (value) {
               setState(() {
@@ -1051,6 +1119,8 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
             },
           ),
         ),
+
+        // 🔹 Firestore Stream
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -1061,6 +1131,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
+
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return const Center(child: Text('No completed orders found.'));
               }
@@ -1068,10 +1139,13 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
               final orders = snapshot.data!.docs.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final status = data['status'] ?? '';
-                final name = (data['userName'] ?? '').toString().toLowerCase();
-                final id = (data['studentId'] ?? '').toString().toLowerCase();
+                final name =
+                    (data['userName'] ?? '').toString().toLowerCase();
+                final id =
+                    (data['studentId'] ?? '').toString().toLowerCase();
                 final matchesSearch =
                     name.contains(searchQuery) || id.contains(searchQuery);
+
                 return status == 'Completed' && matchesSearch;
               }).toList();
 
@@ -1083,12 +1157,15 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                 itemCount: orders.length,
                 itemBuilder: (context, index) {
                   final data = orders[index].data() as Map<String, dynamic>;
+
                   return Card(
                     margin:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: ListTile(
                       title: Text(
-                          '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})'),
+                        '${data['userName'] ?? 'Unknown'} '
+                        '(${data['studentId'] ?? ''})',
+                      ),
                       subtitle: Text(
                         'Course: ${data['course'] ?? ''}\n'
                         'Size: ${data['size'] ?? ''}\n'
