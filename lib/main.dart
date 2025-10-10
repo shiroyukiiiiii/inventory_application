@@ -146,27 +146,6 @@ class _SignInPageState extends State<SignInPage> {
                   const SizedBox(height: 20),
 
                   // 🔹 Admin Login Button (Fixed syntax)
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.green.shade400, width: 2),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 25),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/admin-login');
-                    },
-                    child: const Text(
-                      'Admin Login',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

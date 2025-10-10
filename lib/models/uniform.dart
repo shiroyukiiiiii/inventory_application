@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Uniform {
   final String id;
-  final String gender; // 'Male' or 'Female'
-  final String course; // e.g., 'Crim', 'ABCOM', 'BSCS'
-  final String size; // e.g., 'S', 'M', 'L', 'XL'
+  final String gender;
+  final String course;
+  final String size;
   final int quantity;
+  final Timestamp? addedAt; // ✅ Added timestamp
 
   Uniform({
     required this.id,
@@ -11,27 +14,27 @@ class Uniform {
     required this.course,
     required this.size,
     required this.quantity,
+    this.addedAt,
   });
 
-  // Convert a Uniform object into a Map for Firestore
+  factory Uniform.fromMap(Map<String, dynamic> data, String id) {
+    return Uniform(
+      id: id,
+      gender: data['gender'] ?? '',
+      course: data['course'] ?? '',
+      size: data['size'] ?? '',
+      quantity: data['quantity'] ?? 0,
+      addedAt: data['addedAt'], // ✅ Load timestamp
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'gender': gender,
       'course': course,
       'size': size,
       'quantity': quantity,
+      'addedAt': addedAt ?? Timestamp.now(), // ✅ Auto-fill if missing
     };
-  }
-
-  // Create a Uniform object from a Firestore document
-  factory Uniform.fromMap(Map<String, dynamic> map, String documentId) {
-    return Uniform(
-      id: documentId,
-      gender: map['gender'] ?? '',
-      course: map['course'] ?? '',
-      size: map['size'] ?? '',
-      quantity: map['quantity'] ?? 0,
-    );
   }
 }
