@@ -18,93 +18,109 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
   final TextEditingController _manualController = TextEditingController();
 
   /// Common handler for QR and manual input
-  Future<void> _handleScan(String? studentNumber,
-      {String method = "qr"}) async {
-    setState(() {
-      _lastScannedValue = studentNumber;
-      _detected = studentNumber != null && studentNumber.trim().isNotEmpty;
-      _isProcessing = true;
-    });
+  Future<void> _handleScan(String? studentNumber, {String method = "qr"}) async {
+  setState(() {
+    _lastScannedValue = studentNumber;
+    _detected = studentNumber != null && studentNumber.trim().isNotEmpty;
+    _isProcessing = true;
+  });
 
-    if (studentNumber != null && studentNumber.trim().isNotEmpty) {
-      final query = await FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .where('studentId', isEqualTo: studentNumber.trim())
-          .limit(1)
-          .get();
+  if (studentNumber != null && studentNumber.trim().isNotEmpty) {
+    final query = await FirebaseFirestore.instance
+        .collection('uniform_requests')
+        .where('studentId', isEqualTo: studentNumber.trim())
+        .limit(1)
+        .get();
 
-      String statusMessage;
-      Color statusColor = Colors.red;
+    String statusMessage;
+    Color statusColor = Colors.red;
 
-      if (query.docs.isNotEmpty) {
-        final doc = query.docs.first;
-        final data = doc.data();
+    if (query.docs.isNotEmpty) {
+      final doc = query.docs.first;
+      final data = doc.data();
 
-        // ✅ Already completed
-        if (data['status'] == 'Completed') {
+      // ✅ Already completed
+      if (data['status'] == 'Completed') {
+        statusMessage =
+            "ℹ️ Request for $studentNumber is already Completed";
+        statusColor = Colors.blue;
+      } else {
+        // ✅ Extract course, size, gender
+        final String? course = data['course'] as String?;
+        final String? size = data['size'] as String?;
+        final String? gender = data['gender'] as String?;
+
+        if (course == null || size == null || gender == null) {
           statusMessage =
-              "ℹ️ Request for $studentNumber is already Completed";
-          statusColor = Colors.blue;
+              "⚠️ Request data is incomplete for $studentNumber (missing course/size/gender)";
+          statusColor = Colors.orange;
         } else {
-          // ✅ Use course + size from the request
-          final String? course = data['course'] as String?;
-          final String? size = data['size'] as String?;
+          // 🔹 Find the uniform doc based on course + size + gender
+          final inventoryQuery = await FirebaseFirestore.instance
+              .collection('uniforms')
+              .where('course', isEqualTo: course)
+              .where('size', isEqualTo: size)
+              .where('gender', isEqualTo: gender)
+              .limit(1)
+              .get();
 
-          if (course == null || size == null) {
-            statusMessage =
-                "⚠️ Request data is incomplete for $studentNumber (missing course/size)";
-            statusColor = Colors.orange;
-          } else {
-            // 🔹 Find the uniform doc by course + size
-            final inventoryQuery = await FirebaseFirestore.instance
-                .collection('uniforms')
-                .where('course', isEqualTo: course)
-                .where('size', isEqualTo: size)
-                .limit(1)
-                .get();
+          if (inventoryQuery.docs.isNotEmpty) {
+            final inventoryDoc = inventoryQuery.docs.first;
 
-            if (inventoryQuery.docs.isNotEmpty) {
-              final inventoryDoc = inventoryQuery.docs.first;
-              final currentCount = inventoryDoc['quantity'] ?? 0;
+            // ✅ Perform both updates atomically in a transaction
+            try {
+              await FirebaseFirestore.instance
+                  .runTransaction((transaction) async {
+                final snapshot = await transaction.get(inventoryDoc.reference);
+                final int currentCount =
+                    (snapshot['quantity'] ?? 0).toInt();
 
-              if (currentCount > 0) {
-                // Deduct stock
-                await inventoryDoc.reference
-                    .update({'quantity': currentCount - 1});
+                if (currentCount <= 0) {
+                  throw Exception(
+                      'No stock left for $course ($size, $gender)');
+                }
 
-                // Mark request completed
-                await doc.reference.update({'status': 'Completed'});
+                // Deduct 1 from stock
+                transaction.update(inventoryDoc.reference, {
+                  'quantity': currentCount - 1,
+                });
 
-                statusMessage =
-                    "✅ Request for $studentNumber marked as Completed & stock updated";
-                statusColor = Colors.green;
-              } else {
-                statusMessage =
-                    "⚠️ No stock left for $course ($size). Request not Completed.";
-                statusColor = Colors.orange;
-              }
-            } else {
+                // Mark request as completed
+                transaction.update(doc.reference, {
+                  'status': 'Completed',
+                });
+              });
+
               statusMessage =
-                  "❌ No inventory found for $course ($size)";
-              statusColor = Colors.red;
+                  "✅ Request for $studentNumber marked as Completed — 1 stock deducted for $course ($size, $gender)";
+              statusColor = Colors.green;
+            } catch (e) {
+              statusMessage = "⚠️ Stock deduction failed: ${e.toString()}";
+              statusColor = Colors.orange;
             }
+          } else {
+            statusMessage =
+                "❌ No inventory found for $course ($size, $gender)";
+            statusColor = Colors.red;
           }
         }
-      } else {
-        statusMessage = "❌ No request found for $studentNumber";
-        statusColor = Colors.red;
       }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(statusMessage), backgroundColor: statusColor),
-        );
-        Navigator.pop(context); // ✅ Close after processing
-      }
+    } else {
+      statusMessage = "❌ No request found for $studentNumber";
+      statusColor = Colors.red;
     }
 
-    setState(() => _isProcessing = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(statusMessage), backgroundColor: statusColor),
+      );
+      Navigator.pop(context); // ✅ Close page after processing
+    }
   }
+
+  setState(() => _isProcessing = false);
+}
+
 
   @override
   Widget build(BuildContext context) {
