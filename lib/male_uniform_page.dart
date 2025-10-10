@@ -10,6 +10,9 @@ class MaleUniformPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isDesktop = screenWidth > 800;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -23,13 +26,14 @@ class MaleUniformPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.male, color: Colors.white),
-            const SizedBox(width: 10),
+            const SizedBox(width: 5),
             const Text(
               'Male Uniform',
               style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  fontSize: 20),
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 20,
+              ),
             ),
             const SizedBox(width: 10),
             CircleAvatar(
@@ -69,59 +73,76 @@ class MaleUniformPage extends StatelessWidget {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 60 : 20,
+                vertical: isDesktop ? 60 : 40,
+              ),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 35, vertical: 40),
-                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 40 : 25,
+                  vertical: isDesktop ? 40 : 30,
+                ),
+                width: isDesktop ? 500 : 320, // ✅ responsive white box
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.97),
-                  borderRadius: BorderRadius.circular(35),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.25),
-                      blurRadius: 30,
-                      offset: const Offset(0, 15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Top banner
-                    // 🔹 Replace logo with an icon
-                    Icon(
-                      Icons.school_sharp, // Choose any icon you like
-                      size: 60, // Adjust width/height as needed
-                      color: Colors.green.shade700,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Image.asset(
+                        'assets/images/eclaroacademy.png',
+                        width: isDesktop ? 160 : 130,
+                        height: isDesktop ? 55 : 40,
+                        fit: BoxFit.contain,
+                      ),
                     ),
-
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 20),
                     const Text(
                       'Select Your Course',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF333333),
                       ),
                     ),
-                    const SizedBox(height: 35),
+                    const SizedBox(height: 30),
 
-                    // Courses Wrap (BSCS centered)
+                    // ✅ Courses with images (not cropped)
                     Wrap(
                       alignment: WrapAlignment.center,
-                      spacing: 25,
+                      spacing: isDesktop ? 30 : 20,
                       runSpacing: 25,
                       children: [
-                        _buildCourseItem(context, 'BSCRIM', Colors.green, user),
-                        _buildCourseItem(context, 'ABCOM', Colors.blue, user),
-                        // Center the last item
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildCourseItem(
-                                context, 'BSCS', Colors.teal, user),
-                          ],
+                        _buildCourseItem(
+                          context,
+                          'BSCRIM',
+                          Colors.green,
+                          user,
+                          'assets/images/malecrim.png',
+                        ),
+                        _buildCourseItem(
+                          context,
+                          'ABCOM',
+                          Colors.blue,
+                          user,
+                          'assets/images/maleabbs.png',
+                        ),
+                        _buildCourseItem(
+                          context,
+                          'BSCS',
+                          Colors.teal,
+                          user,
+                          'assets/images/maleabbs.png',
                         ),
                       ],
                     ),
@@ -135,23 +156,39 @@ class MaleUniformPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseItem(
-      BuildContext context, String course, Color color, User user) {
+  Widget _buildCourseItem(BuildContext context, String course, Color color,
+      User user, String imagePath) {
     return SizedBox(
-      width: 160,
+      width: 150, // ✅ adjusted for better desktop/mobile fit
       child: Column(
         children: [
-          // 🔹 Removed the image container
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
+              color: Colors.white,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                imagePath,
+                width: 120,
+                height: 110,
+                fit: BoxFit.contain, // ✅ no cropping
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
-            height: 55,
+            height: 40,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                elevation: 6,
+                elevation: 5,
               ),
               onPressed: () {
                 Navigator.push(
@@ -170,8 +207,7 @@ class MaleUniformPage extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  letterSpacing: 1.2,
+                  fontSize: 16,
                 ),
               ),
             ),

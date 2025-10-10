@@ -65,71 +65,68 @@ class _UniformListPageState extends State<UniformListPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          const _InventoryTab(),
-          UniformRequestsListPage(),
-          ApprovedOrdersListPage(),
-          CompletedOrdersListPage(),
-          // More tab content
+          const UniformRequestsListPage(),
+          _InventoryTab(),
+          // "More" tab — with access to hidden sections
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const Text(
+                    'More Options',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () {
-                      // Open Add Uniform form
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const UniformFormPage()),
+                            builder: (_) => ApprovedOrdersListPage()),
                       );
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Inventory'),
+                    icon: const Icon(Icons.check_circle),
+                    label: const Text('Approved Orders'),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 30, vertical: 15),
-                      backgroundColor: Colors.teal,
                     ),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () {
-                      // TODO: Add Export action
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => CompletedOrdersListPage()),
+                      );
                     },
-                    icon: const Icon(Icons.file_download),
-                    label: const Text('Export Inventory'),
+                    icon: const Icon(Icons.done_all),
+                    label: const Text('Completed Orders'),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 30, vertical: 15),
-                      backgroundColor: Colors.blue,
                     ),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () {
-                      // TODO: Add Reports or other app features
+                      // Add your other actions here (e.g. Reports, Settings, etc.)
                     },
-                    icon: const Icon(Icons.analytics),
-                    label: const Text('Reports'),
+                    icon: const Icon(Icons.more_horiz),
+                    label: const Text('Other Options'),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 15),
-                      backgroundColor: Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Add Settings or other apps
-                    },
-                    icon: const Icon(Icons.settings),
-                    label: const Text('Settings'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 15),
                       backgroundColor: Colors.grey,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 15),
                     ),
                   ),
                 ],
@@ -139,21 +136,19 @@ class _UniformListPageState extends State<UniformListPage>
         ],
       ),
 
-      // ✅ Bottom Tabs with icons
+// ✅ Bottom Navigation Bar — centered and limited to 3 tabs
       bottomNavigationBar: Container(
         color: const Color.fromARGB(255, 2, 167, 30),
         child: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          labelColor: const Color.fromARGB(255, 0, 136, 255),
+          labelColor: Colors.yellowAccent,
           unselectedLabelColor: Colors.white,
           labelStyle:
               const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           tabs: const [
-            Tab(icon: Icon(Icons.inventory), text: 'Inventory'),
             Tab(icon: Icon(Icons.pending_actions), text: 'Requests'),
-            Tab(icon: Icon(Icons.check_circle), text: 'Approved'),
-            Tab(icon: Icon(Icons.done_all), text: 'Completed'),
+            Tab(icon: Icon(Icons.inventory), text: 'Summary'),
             Tab(icon: Icon(Icons.more_horiz), text: 'More'),
           ],
         ),
@@ -244,253 +239,206 @@ class _InventoryTab extends StatelessWidget {
           }
 
           return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Inventory Summary",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF00A86B),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _SummaryCard(
-                        title: "Total Uniforms",
-                        value: uniforms.length.toString(),
-                        icon: Icons.inventory_2_outlined,
-                        color: const Color(0xFF00A86B),
-                      ),
-                      const SizedBox(width: 12),
-                      _SummaryCard(
-                        title: "Total Stock",
-                        value: totalStock.toString(),
-                        icon: Icons.check_circle_outline,
-                        color: const Color(0xFF00B4FF),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  const Text(
-                    "Per Course Summary (by Gender)",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF00A86B),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  // Render summary as before
-                  Column(
-                    children: summary.entries.map((entry) {
-                      final course = entry.key;
-                      final genderData = entry.value;
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 10),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 25, vertical: 20),
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0xFFB2EBF2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blue.withOpacity(0.15),
-                              blurRadius: 10,
-                              offset: const Offset(0, 6),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth > 700;
+
+                return SingleChildScrollView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Inventory Summary",
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF00A86B),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              course,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF00A86B),
+                          ),
+                          const SizedBox(height: 20),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              _SummaryCard(
+                                title: "Total Uniforms",
+                                value: uniforms.length.toString(),
+                                icon: Icons.inventory_2_outlined,
+                                color: const Color(0xFF00A86B),
                               ),
+                              _SummaryCard(
+                                title: "Total Stock",
+                                value: totalStock.toString(),
+                                icon: Icons.check_circle_outline,
+                                color: const Color(0xFF00B4FF),
+                              ),
+                            ],
+                          ),
+                          // Add this right after the Wrap() showing Total Uniforms and Total Stock
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 255, 255, 255)
+                                  .withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(height: 15),
-                            ...genderData.entries.map((g) {
-                              final gender = g.key;
-                              final data = g.value;
-                              final color = gender == 'Male'
-                                  ? const Color(0xFF00A86B)
-                                  : const Color(0xFF00B4FF);
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    gender,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: color,
-                                    ),
+                            child: const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "SIZE",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
                                   ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    "Total Stock: ${data['Total']}",
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
+                                ),
+                                SizedBox(height: 6),
+                                Text("S - SMALL",
+                                    style: TextStyle(fontSize: 16)),
+                                Text("M - MEDIUM",
+                                    style: TextStyle(fontSize: 16)),
+                                Text("L - LARGE",
+                                    style: TextStyle(fontSize: 16)),
+                                Text("XL - DOUBLE XL",
+                                    style: TextStyle(fontSize: 16)),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 30),
+                          const Text(
+                            "Per Course Summary (by Gender)",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF00A86B),
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          Column(
+                            children: summary.entries.map((entry) {
+                              final course = entry.key;
+                              final genderData = entry.value;
+                              return Container(
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 25, vertical: 20),
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                      color: const Color(0xFFB2EBF2)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.blue.withOpacity(0.15),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 6),
                                     ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "By Size",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black54,
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      course,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF00A86B),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Wrap(
-                                    alignment: WrapAlignment.center,
-                                    spacing: 20,
-                                    children: ['S', 'M', 'L', 'XL'].map((size) {
+                                    const SizedBox(height: 15),
+                                    ...genderData.entries.map((g) {
+                                      final gender = g.key;
+                                      final data = g.value;
+                                      final color = gender == 'Male'
+                                          ? const Color(0xFF00A86B)
+                                          : const Color(0xFF00B4FF);
                                       return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
                                         children: [
                                           Text(
-                                            size,
-                                            style: const TextStyle(
-                                              fontSize: 15,
+                                            gender,
+                                            style: TextStyle(
+                                              fontSize: 18,
                                               fontWeight: FontWeight.bold,
+                                              color: color,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Text(
+                                            "Total Stock: ${data['Total']}",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
                                               color: Colors.black87,
                                             ),
                                           ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            data[size].toString(),
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              color: Colors.black,
+                                          const SizedBox(height: 10),
+                                          const Text(
+                                            "By Size",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black54,
                                             ),
                                           ),
+                                          const SizedBox(height: 6),
+                                          Wrap(
+                                            alignment: WrapAlignment.center,
+                                            spacing: 25,
+                                            children: ['S', 'M', 'L', 'XL']
+                                                .map((size) {
+                                              return Column(
+                                                children: [
+                                                  Text(
+                                                    size, // just the letter
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    data[size].toString(),
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                      color: Colors.black,
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            }).toList(),
+                                          ),
+                                          const SizedBox(height: 18),
                                         ],
                                       );
-                                    }).toList(),
-                                  ),
-                                  const SizedBox(height: 18),
-                                ],
+                                    }),
+                                  ],
+                                ),
                               );
-                            }),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-
-                  const SizedBox(height: 25),
-                  const Text(
-                    "Detailed Inventory List",
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.teal),
-                  ),
-                  const SizedBox(height: 10),
-                  ListView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemCount: uniforms.length,
-                    itemBuilder: (context, index) {
-                      final uniform = uniforms[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 3,
-                        child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Header Row: Course + Gender
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '${uniform.course}',
-                                        style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.teal),
-                                      ),
-                                      Text(
-                                        '${uniform.gender}',
-                                        style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.black87),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Size & Quantity Row
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Size: ${uniform.size}',
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                      Text(
-                                        'Qty: ${uniform.quantity}',
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  // Action Buttons
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit,
-                                            color: Colors.teal),
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => UniformFormPage(
-                                                  uniform: uniform),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Colors.red),
-                                        onPressed: () async {
-                                          await FirebaseFirestore.instance
-                                              .collection('uniforms')
-                                              .doc(uniform.id)
-                                              .delete();
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ])),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           );
         },
@@ -739,7 +687,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
-                    items: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+                    items: ['S', 'M', 'L', 'XL', 'XXL']
                         .map((size) => DropdownMenuItem(
                               value: size,
                               child: Text(size),

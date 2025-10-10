@@ -34,9 +34,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           .limit(1)
           .get();
 
-      if (query.docs.isEmpty) {
-        throw Exception('Username not found');
-      }
+      if (query.docs.isEmpty) throw Exception('Username not found');
 
       final email = query.docs.first['email'] as String;
 
@@ -63,8 +61,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isDesktop = size.width > 800;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F5F2), // light mint background
+      backgroundColor: const Color(0xFFE6F5F2),
       body: SafeArea(
         child: Stack(
           children: [
@@ -80,154 +81,159 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               ),
             ),
 
-            // 🧩 Login Form
+            // 🧩 Centered Login Form
             Center(
               child: SingleChildScrollView(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isDesktop ? 450 : 360,
                   ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 🏫 Eclaro Academy Logo
-                        // 🔹 Replace logo with an icon
-                        Icon(
-                          Icons.school_sharp, // Choose any icon you like
-                          size: 60, // Adjust width/height as needed
-                          color: Colors.green.shade700,
-                        ),
-
-                        const Text(
-                          "ADMIN LOGIN",
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A5F7A), // Dark blue-green
-                          ),
-                        ),
-                        const SizedBox(height: 25),
-
-                        // Username Field
-                        TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Username',
-                            prefixIcon: const Icon(Icons.person_outline,
-                                color: Color(0xFF1A5F7A)),
-                            filled: true,
-                            fillColor: const Color(0xFFF5F9F8),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF1A5F7A), width: 1.5),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          onChanged: (val) => _username = val,
-                          validator: (val) => val == null || val.isEmpty
-                              ? 'Enter username'
-                              : null,
-                        ),
-                        const SizedBox(height: 15),
-
-                        // Password Field
-                        TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            prefixIcon: const Icon(Icons.lock_outline,
-                                color: Color(0xFF1A5F7A)),
-                            filled: true,
-                            fillColor: const Color(0xFFF5F9F8),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF1A5F7A), width: 1.5),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          obscureText: true,
-                          onChanged: (val) => _password = val,
-                          validator: (val) => val == null || val.isEmpty
-                              ? 'Enter password'
-                              : null,
-                        ),
-                        const SizedBox(height: 25),
-
-                        if (_error != null)
-                          Text(
-                            _error!,
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                        const SizedBox(height: 10),
-
-                        // Login Button
-                        _isLoading
-                            ? const CircularProgressIndicator()
-                            : SizedBox(
-                                width: double.infinity,
-                                height: 50,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFF1A5F7A), // dark teal
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                  ),
-                                  onPressed: _login,
-                                  child: const Text(
-                                    'Login',
-                                    style: TextStyle(
-                                        fontSize: 18, color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                        const SizedBox(height: 15),
-
-                        // Registration Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFF1A5F7A)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                            ),
-                            onPressed: _goToRegistration,
-                            child: const Text(
-                              'Register New Admin',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1A5F7A),
-                              ),
-                            ),
-                          ),
+                  child: Container(
+                    padding: const EdgeInsets.all(30),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 8),
                         ),
                       ],
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.admin_panel_settings_rounded,
+                            size: 70,
+                            color: Colors.green.shade700,
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            "ADMIN LOGIN",
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A5F7A),
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 25),
+
+                          // Username Field
+                          TextFormField(
+                            decoration: InputDecoration(
+                              labelText: 'Username',
+                              prefixIcon: const Icon(Icons.person_outline,
+                                  color: Color(0xFF1A5F7A)),
+                              filled: true,
+                              fillColor: const Color(0xFFF5F9F8),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF1A5F7A), width: 1.5),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            onChanged: (val) => _username = val,
+                            validator: (val) => val == null || val.isEmpty
+                                ? 'Enter username'
+                                : null,
+                          ),
+                          const SizedBox(height: 15),
+
+                          // Password Field
+                          TextFormField(
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              prefixIcon: const Icon(Icons.lock_outline,
+                                  color: Color(0xFF1A5F7A)),
+                              filled: true,
+                              fillColor: const Color(0xFFF5F9F8),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF1A5F7A), width: 1.5),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            obscureText: true,
+                            onChanged: (val) => _password = val,
+                            validator: (val) => val == null || val.isEmpty
+                                ? 'Enter password'
+                                : null,
+                          ),
+                          const SizedBox(height: 25),
+
+                          if (_error != null)
+                            Text(
+                              _error!,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 14),
+                              textAlign: TextAlign.center,
+                            ),
+                          const SizedBox(height: 10),
+
+                          // Login Button
+                          _isLoading
+                              ? const CircularProgressIndicator()
+                              : SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1A5F7A),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      elevation: 5,
+                                    ),
+                                    onPressed: _login,
+                                    child: const Text(
+                                      'Login',
+                                      style: TextStyle(
+                                          fontSize: 18, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                          const SizedBox(height: 15),
+
+                          // Register Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side:
+                                    const BorderSide(color: Color(0xFF1A5F7A)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              onPressed: _goToRegistration,
+                              child: const Text(
+                                'Register New Admin',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF1A5F7A),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
