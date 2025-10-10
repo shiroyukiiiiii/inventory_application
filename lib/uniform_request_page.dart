@@ -264,12 +264,12 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             readOnly: true,
             initialValue: _gender,
             decoration: const InputDecoration(
-              labelText: 'Gender',
+              labelText: 'Sex',
               prefixIcon: Icon(Icons.people_alt_outlined),
               border: OutlineInputBorder(),
             ),
             validator: (value) =>
-                value == null || value.isEmpty ? 'Select gender' : null,
+                value == null || value.isEmpty ? 'Select Sex' : null,
           ),
 
           const SizedBox(height: 20),
@@ -358,7 +358,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Text(
-            'No uniform inventory available for this course and gender.',
+            'No uniform inventory available for this course and Sex.',
             style: TextStyle(color: Colors.grey),
           );
         }

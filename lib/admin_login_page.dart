@@ -211,27 +211,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           const SizedBox(height: 15),
 
                           // Register Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                side:
-                                    const BorderSide(color: Color(0xFF1A5F7A)),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              onPressed: _goToRegistration,
-                              child: const Text(
-                                'Register New Admin',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFF1A5F7A),
-                                ),
-                              ),
-                            ),
-                          ),
+                          
                         ],
                       ),
                     ),

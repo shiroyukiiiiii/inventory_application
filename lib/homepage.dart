@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import 'male_uniform_page.dart';
-import 'female_uniform_page.dart';
 import 'main.dart';
 import 'student_manage_requests_page.dart';
+import 'select_sex_page.dart';
 
 class HomePage extends StatelessWidget {
   final User user;
@@ -104,7 +102,7 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 30),
                     const Text(
-                      'Please select an option:',
+                      'Please select your course:',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
@@ -113,64 +111,35 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 25),
 
-                    // Male Uniform Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff90caf9),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-                        icon: const Icon(Icons.male, color: Colors.white),
-                        label: const Text(
-                          'Male Uniform',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MaleUniformPage(user: user),
-                            ),
-                          );
-                        },
-                      ),
+                    // BSCRIM Button
+                    _buildCourseButton(
+                      context,
+                      user,
+                      'BSCRIM',
+                      const Color(0xFF4CAF50),
+                      Icons.security,
                     ),
                     const SizedBox(height: 15),
 
-                    // Female Uniform Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF50E3C2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-                        icon: const Icon(Icons.female, color: Colors.white),
-                        label: const Text(
-                          'Female Uniform',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  FemaleUniformPage(user: user),
-                            ),
-                          );
-                        },
-                      ),
+                    // ABCOM Button
+                    _buildCourseButton(
+                      context,
+                      user,
+                      'ABCOM',
+                      const Color(0xFF42A5F5),
+                      Icons.mic_none_rounded,
                     ),
                     const SizedBox(height: 15),
+
+                    // BSCS Button
+                    _buildCourseButton(
+                      context,
+                      user,
+                      'BSCS',
+                      const Color(0xFF26C6DA),
+                      Icons.computer_rounded,
+                    ),
+                    const SizedBox(height: 25),
 
                     // Manage Requests Button
                     SizedBox(
@@ -211,6 +180,39 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCourseButton(BuildContext context, User user, String course,
+      Color color, IconData icon) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        icon: Icon(icon, color: Colors.white),
+        label: Text(
+          course,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SelectSexPage(user: user, course: course),
+            ),
+          );
+        },
       ),
     );
   }
