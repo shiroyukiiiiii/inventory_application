@@ -10,11 +10,11 @@ class StudentManageRequestsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // Orders + Cancelled Orders
+      length: 3, // ✅ Orders + Completed + Cancelled
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F6FA),
         appBar: AppBar(
-          backgroundColor: const Color.fromARGB(255, 0, 126, 61), // Solid green
+          backgroundColor: const Color.fromARGB(255, 0, 126, 61),
           elevation: 3,
           title: Row(
             children: [
@@ -47,6 +47,7 @@ class StudentManageRequestsPage extends StatelessWidget {
             unselectedLabelColor: Colors.white70,
             tabs: [
               Tab(icon: Icon(Icons.list_alt_rounded), text: 'Orders'),
+              Tab(icon: Icon(Icons.check_circle_outline), text: 'Completed'),
               Tab(icon: Icon(Icons.cancel_outlined), text: 'Cancelled'),
             ],
           ),
@@ -75,9 +76,16 @@ class StudentManageRequestsPage extends StatelessWidget {
 
             final allRequests = snapshot.data!.docs;
 
+            // ✅ Separate requests by status
             final orders = allRequests.where((doc) {
               final data = doc.data() as Map<String, dynamic>;
-              return (data['status'] ?? 'Pending') != 'Cancelled';
+              final status = (data['status'] ?? 'Pending').toString();
+              return status != 'Cancelled' && status != 'Completed';
+            }).toList();
+
+            final completedOrders = allRequests.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              return (data['status'] ?? '') == 'Completed';
             }).toList();
 
             final cancelledOrders = allRequests.where((doc) {
@@ -89,6 +97,12 @@ class StudentManageRequestsPage extends StatelessWidget {
               children: [
                 _buildListView(context, orders,
                     emptyMessage: 'No active orders.'),
+                _buildListView(
+                  context,
+                  completedOrders,
+                  emptyMessage: 'No completed orders.',
+                  showActions: false,
+                ),
                 _buildListView(
                   context,
                   cancelledOrders,
@@ -229,9 +243,9 @@ class StudentManageRequestsPage extends StatelessWidget {
       case 'pending':
         return Colors.orange;
       case 'approved':
-        return Color.fromARGB(255, 2, 149, 56); // Green
+        return Color.fromARGB(255, 2, 149, 56);
       case 'completed':
-        return Color(0xFF1976D2); // Blue
+        return const Color(0xFF1976D2);
       case 'cancelled':
         return Colors.redAccent;
       default:
