@@ -31,9 +31,9 @@ class EmailJsService {
       throw Exception('Failed to send admin registration email: \\${response.body}');
     }
   }
-  static const String serviceId = 'service_8hwyvbt';
-  static const String templateId = 'template_ae41hfa';
-  static const String userId = '_VxrLuVeFMOAXs46e';
+  static const String serviceId = 'service_rhy5ula';
+  static const String templateId = 'template_es6tz3k';
+  static const String userId = 'fkjnejUTrQGSFyntI';
 
   static Future<void> sendApprovalEmail({
     required String toEmail,

@@ -4,9 +4,9 @@ import 'package:http/http.dart' as http;
 /// EmailJS service for sending uniform request notifications
 class EmailService {
   // ⚡ Update these with your actual EmailJS IDs
-  static const String serviceId = 'service_8hwyvbt';
-  static const String templateId = 'template_nyx8quh';
-  static const String publicKey  = '_VxrLuVeFMOAXs46e';
+  static const String serviceId = 'service_rhy5ula';
+  static const String templateId = 'template_8piolgp';
+  static const String publicKey  = 'fkjnejUTrQGSFyntI';
 
   /// Sends a uniform request email to the admin
   static Future<bool> sendUniformRequestEmail({
