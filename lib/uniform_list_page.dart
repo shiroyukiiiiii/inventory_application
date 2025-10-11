@@ -607,8 +607,24 @@ class _UniformFormPageState extends State<UniformFormPage> {
   }
 
   Future<void> _saveUniform() async {
-    final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+  if (!_formKey.currentState!.validate()) return;
+  _formKey.currentState!.save();
 
+  final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+  String message = '';
+
+  if (widget.uniform != null) {
+    // 🔹 Editing existing uniform — update directly by document ID
+    await uniformsRef.doc(widget.uniform!.id).update({
+      'course': _course,
+      'gender': _gender,
+      'size': _size,
+      'quantity': _quantity,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    message = 'Stock updated successfully!';
+  } else {
+    // 🔹 Adding new uniform — check if combination already exists
     final existingQuery = await uniformsRef
         .where('course', isEqualTo: _course)
         .where('gender', isEqualTo: _gender)
@@ -617,16 +633,13 @@ class _UniformFormPageState extends State<UniformFormPage> {
         .get();
 
     if (existingQuery.docs.isNotEmpty) {
-      // 🔹 Existing document found — update quantity
       final existingDoc = existingQuery.docs.first;
-      final existingQty = existingDoc['quantity'] ?? 0;
-
       await uniformsRef.doc(existingDoc.id).update({
-        'quantity': existingQty + _quantity, // Add new quantity
+        'quantity': FieldValue.increment(_quantity),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      message = 'Stock updated successfully!';
     } else {
-      // 🔹 No document found — create new one
       await uniformsRef.add({
         'course': _course,
         'gender': _gender,
@@ -635,10 +648,23 @@ class _UniformFormPageState extends State<UniformFormPage> {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      message = 'New stock added successfully!';
     }
+  }
 
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.teal,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
     Navigator.pop(context);
   }
+}
+
 
   Widget _sectionTitle(String title, IconData icon) {
     return Row(
@@ -1748,7 +1774,6 @@ class InventoryPage extends StatefulWidget {
   @override
   State<InventoryPage> createState() => _InventoryPageState();
 }
-
 class _InventoryPageState extends State<InventoryPage> {
   String searchQuery = '';
 
