@@ -607,24 +607,39 @@ class _UniformFormPageState extends State<UniformFormPage> {
   }
 
   Future<void> _saveUniform() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      final uniform = Uniform(
-        id: widget.uniform?.id ?? '',
-        gender: _gender,
-        course: _course,
-        size: _size,
-        quantity: _quantity,
-      );
-      final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
-      if (widget.uniform == null) {
-        await uniformsRef.add(uniform.toMap());
-      } else {
-        await uniformsRef.doc(uniform.id).update(uniform.toMap());
-      }
-      if (mounted) Navigator.pop(context);
-    }
+  final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+
+  final existingQuery = await uniformsRef
+      .where('course', isEqualTo: _course)
+      .where('gender', isEqualTo: _gender)
+      .where('size', isEqualTo: _size)
+      .limit(1)
+      .get();
+
+  if (existingQuery.docs.isNotEmpty) {
+    // 🔹 Existing document found — update quantity
+    final existingDoc = existingQuery.docs.first;
+    final existingQty = existingDoc['quantity'] ?? 0;
+
+    await uniformsRef.doc(existingDoc.id).update({
+      'quantity': existingQty + _quantity, // Add new quantity
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  } else {
+    // 🔹 No document found — create new one
+    await uniformsRef.add({
+      'course': _course,
+      'gender': _gender,
+      'size': _size,
+      'quantity': _quantity,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
+
+  Navigator.pop(context);
+}
+
 
   Widget _sectionTitle(String title, IconData icon) {
     return Row(
@@ -818,35 +833,105 @@ class UniformRequestsListPage extends StatefulWidget {
 class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
   String searchQuery = '';
 
-  Future<void> _approveRequest(
-      String id, Map<String, dynamic> data, BuildContext context) async {
-    await FirebaseFirestore.instance
-        .collection('uniform_requests')
-        .doc(id)
-        .update({
-      'status': 'Approved',
-      'approvedAt': Timestamp.now(),
-    });
-    try {
-      await EmailJsService.sendApprovalEmail(
-        toEmail: data['email'] ?? '',
-        toName: data['userName'] ?? '',
-        studentNumber: data['studentId'] ?? '',
-        studentName: data['userName'] ?? '',
-        gender: data['gender'] ?? '',
-        course: data['course'] ?? '',
-        size: data['size'] ?? '',
-        qrCode: data['qrCode'] ?? '',
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Approval email sent!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send approval email: $e')),
-      );
+ Future<void> _approveRequest(
+  String id,
+  Map<String, dynamic> data,
+  BuildContext context,
+) async {
+  final firestore = FirebaseFirestore.instance;
+
+  try {
+    print('🔹 Approving request ID: $id with data: $data');
+
+    final String course = (data['course'] ?? '').toString().trim();
+    final String size = (data['size'] ?? '').toString().trim();
+    final String gender = (data['gender'] ?? '').toString().trim();
+
+    if (course.isEmpty || size.isEmpty || gender.isEmpty) {
+      throw Exception('Invalid course, size, or gender values. Cannot proceed.');
     }
+
+    print('🔹 Looking for uniform: $course / $gender / $size');
+
+    final uniformQuery = await firestore
+        .collection('uniforms')
+        .where('course', isEqualTo: course)
+        .where('gender', isEqualTo: gender)
+        .where('size', isEqualTo: size)
+        .limit(1)
+        .get();
+
+    if (uniformQuery.docs.isEmpty) {
+      throw Exception('No uniform found for $course - $gender - $size');
+    }
+
+    final uniformDoc = uniformQuery.docs.first.reference;
+    final requestRef = firestore.collection('uniform_requests').doc(id);
+
+    print('✅ Uniform doc found: ${uniformDoc.id}');
+
+    await firestore.runTransaction((transaction) async {
+      print('🔁 Starting transaction...');
+      final uniformSnap = await transaction.get(uniformDoc);
+
+      if (!uniformSnap.exists) {
+        throw Exception('Uniform doc ${uniformDoc.id} no longer exists!');
+      }
+
+      final uniformData = uniformSnap.data() as Map<String, dynamic>? ?? {};
+      int currentStock = (uniformData['quantity'] ?? 0) as int;
+      print('📦 Current stock: $currentStock');
+
+      if (currentStock <= 0) {
+        throw Exception('No stock available for $course - $gender - $size.');
+      }
+
+      final requestSnap = await transaction.get(requestRef);
+      final requestData = requestSnap.data() as Map<String, dynamic>? ?? {};
+      final currentStatus = (requestData['status'] ?? 'Pending').toString();
+      print('📝 Current request status: $currentStatus');
+
+      if (currentStatus == 'Approved' || currentStatus == 'Completed') {
+        throw Exception('Request already approved or completed.');
+      }
+
+      transaction.update(uniformDoc, {'quantity': currentStock - 1});
+      transaction.update(requestRef, {
+        'status': 'Approved',
+        'approvedAt': FieldValue.serverTimestamp(),
+      });
+
+      print('✅ Transaction update complete.');
+    });
+
+    print('📧 Sending approval email...');
+    await EmailJsService.sendApprovalEmail(
+      toEmail: data['email'] ?? '',
+      toName: data['userName'] ?? '',
+      studentNumber: data['studentId'] ?? '',
+      studentName: data['userName'] ?? '',
+      gender: data['gender'] ?? '',
+      course: data['course'] ?? '',
+      size: data['size'] ?? '',
+      qrCode: data['qrCode'] ?? '',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            '✅ Approved $course - $gender - $size. Stock deducted and email sent!'),
+      ),
+    );
+  } catch (e, stack) {
+    print('❌ ERROR approving request: $e');
+    print('📜 STACK TRACE:\n$stack');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('❌ Error approving request: $e')),
+    );
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -1634,6 +1719,9 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
     );
   }
 }
+
+
+///Inventory Management Page
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
