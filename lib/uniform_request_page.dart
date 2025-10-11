@@ -50,57 +50,71 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   }
 
   Future<void> _submitRequest() async {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+  if (!_formKey.currentState!.validate()) return;
+  _formKey.currentState!.save();
 
-    setState(() {
-      _isSubmitting = true;
-      _message = null;
+  // ✅ REQUIRED SIZE CHECK
+  if (_size.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please select a uniform size before submitting.'),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
+  }
+
+  setState(() {
+    _isSubmitting = true;
+    _message = null;
+  });
+
+  try {
+    final qrCodeBytes = await QRService.generateQRCodeBytes(_studentId);
+    final qrBase64 = base64Encode(qrCodeBytes);
+
+    await FirebaseFirestore.instance.collection('uniform_requests').add({
+      'userId': widget.user.uid,
+      'userName': widget.user.displayName ?? '',
+      'fullName': _fullName,
+      'email': _email,
+      'gender': _gender,
+      'course': _course,
+      'size': _size,
+      'studentId': _studentId,
+      'qrCode': qrBase64,
+      'timestamp': FieldValue.serverTimestamp(),
     });
 
-    try {
-      final qrCodeBytes = await QRService.generateQRCodeBytes(_studentId);
-      final qrBase64 = base64Encode(qrCodeBytes);
+    final emailSent = await EmailService.sendUniformRequestEmail(
+      studentNumber: _studentId,
+      studentName: _fullName.isNotEmpty
+          ? _fullName
+          : (widget.user.displayName ?? 'Unknown'),
+      gender: _gender,
+      course: _course,
+      size: _size,
+      qrCodeBytes: qrCodeBytes,
+      toEmail: _email.isNotEmpty ? _email : (widget.user.email ?? ''),
+    );
 
-      await FirebaseFirestore.instance.collection('uniform_requests').add({
-        'userId': widget.user.uid,
-        'userName': widget.user.displayName ?? '',
-        'fullName': _fullName,
-        'email': _email,
-        'gender': _gender,
-        'course': _course,
-        'size': _size,
-        'studentId': _studentId,
-        'qrCode': qrBase64,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+    setState(() {
+      _message = emailSent
+          ? 'Request submitted, QR code saved to Firestore, and email sent! Note: Kindly wait for the email approval before payment.'
+          : 'Request submitted and QR code saved (email failed).';
+    });
 
-      final emailSent = await EmailService.sendUniformRequestEmail(
-        studentNumber: _studentId,
-        studentName: _fullName.isNotEmpty
-            ? _fullName
-            : (widget.user.displayName ?? 'Unknown'),
-        gender: _gender,
-        course: _course,
-        size: _size,
-        qrCodeBytes: qrCodeBytes,
-        toEmail: _email.isNotEmpty ? _email : (widget.user.email ?? ''),
-      );
-
-      setState(() {
-        _message = emailSent
-            ? 'Request submitted, QR code saved to Firestore, and email sent! Note: Kindly wait for the email approval before payment.'
-            : 'Request submitted and QR code saved (email failed).';
-      });
-
-      _formKey.currentState?.reset();
-      _showQRCode = false;
-    } catch (e) {
-      setState(() => _message = 'Error: $e');
-    } finally {
-      setState(() => _isSubmitting = false);
-    }
+    _formKey.currentState?.reset();
+    _showQRCode = false;
+    _size = ''; // ✅ Reset size selection
+  } catch (e) {
+    setState(() => _message = 'Error: $e');
+  } finally {
+    setState(() => _isSubmitting = false);
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
