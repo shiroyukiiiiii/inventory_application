@@ -850,35 +850,82 @@ class UniformRequestsListPage extends StatefulWidget {
 class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
   String searchQuery = '';
 
-  Future<void> _approveRequest(
-      String id, Map<String, dynamic> data, BuildContext context) async {
-    await FirebaseFirestore.instance
-        .collection('uniform_requests')
-        .doc(id)
-        .update({
-      'status': 'Approved',
-      'approvedAt': Timestamp.now(),
-    });
-    try {
-      await EmailJsService.sendApprovalEmail(
-        toEmail: data['email'] ?? '',
-        toName: data['userName'] ?? '',
-        studentNumber: data['studentId'] ?? '',
-        studentName: data['userName'] ?? '',
-        gender: data['gender'] ?? '',
-        course: data['course'] ?? '',
-        size: data['size'] ?? '',
-        qrCode: data['qrCode'] ?? '',
-      );
+ Future<void> _approveRequest(
+  String id,
+  Map<String, dynamic> requestData,
+  BuildContext context,
+) async {
+  try {
+    final requestsRef = FirebaseFirestore.instance.collection('requests');
+    final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+
+    // Extract relevant request data
+    final String gender = requestData['gender'];
+    final String course = requestData['course'];
+    final String size = requestData['size'];
+    final int requestedQty = requestData['quantity'];
+
+    // Find matching uniform in inventory
+    final query = await uniformsRef
+        .where('gender', isEqualTo: gender)
+        .where('course', isEqualTo: course)
+        .where('size', isEqualTo: size)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Approval email sent!')),
+        const SnackBar(
+          content: Text('No matching uniform found in inventory.'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send approval email: $e')),
-      );
+      return;
     }
+
+    final doc = query.docs.first;
+    final currentQty = doc['quantity'] ?? 0;
+
+    // Check stock availability
+    if (currentQty < requestedQty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Not enough stock for $course - $gender - $size. Available: $currentQty'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    // Deduct stock
+    await uniformsRef.doc(doc.id).update({
+      'quantity': currentQty - requestedQty,
+    });
+
+    // Mark request as approved
+    await requestsRef.doc(id).update({
+      'status': 'Approved',
+      'approvedAt': FieldValue.serverTimestamp(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Request approved and stock updated!'),
+        backgroundColor: Colors.teal,
+      ),
+    );
+  } catch (e) {
+    print('Error approving request: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -1297,70 +1344,72 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                             child: Text('No approved requests.'));
                       }
                       // Desktop: Centered Table
-                      if (isDesktop) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: Center(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: DataTable(
-                                headingRowColor: MaterialStateProperty.all(
-                                    const Color(0xFF00A86B).withOpacity(0.1)),
-                                columnSpacing: 20,
-                                columns: const [
-                                  DataColumn(
-                                      label: Text('Name',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Student ID',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Email',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Course',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Gender',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Size',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Approved At',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                ],
-                                rows: approved.map((doc) {
-                                  final data =
-                                      doc.data() as Map<String, dynamic>;
-                                  return DataRow(
-                                    cells: [
-                                      DataCell(Text(data['userName'] ?? '')),
-                                      DataCell(Text(data['studentId'] ?? '')),
-                                      DataCell(Text(data['email'] ?? '')),
-                                      DataCell(Text(data['course'] ?? '')),
-                                      DataCell(Text(data['gender'] ?? '')),
-                                      DataCell(Text(data['size'] ?? '')),
-                                      DataCell(Text(data['approvedAt'] != null
-                                          ? (data['approvedAt'] as Timestamp)
-                                              .toDate()
-                                              .toString()
-                                          : 'N/A')),
-                                    ],
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
+                     if (isDesktop) {
+  return SingleChildScrollView(
+    scrollDirection: Axis.vertical,
+    child: Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowColor: MaterialStateProperty.all(
+            const Color(0xFF00A86B).withOpacity(0.1),
+          ),
+          columnSpacing: 20,
+          columns: const [
+            DataColumn(
+              label: Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            DataColumn(
+              label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            DataColumn(
+              label: Text('Student ID',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            DataColumn(
+              label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            DataColumn(
+              label: Text('Course', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            DataColumn(
+              label: Text('Gender', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            DataColumn(
+              label: Text('Size', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            DataColumn(
+              label: Text('Approved At',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+          rows: List.generate(approved.length, (index) {
+            final doc = approved[index];
+            final data = doc.data() as Map<String, dynamic>;
+            return DataRow(
+              cells: [
+                DataCell(Text((index + 1).toString())), // 👈 Row number
+                DataCell(Text(data['userName'] ?? '')),
+                DataCell(Text(data['studentId'] ?? '')),
+                DataCell(Text(data['email'] ?? '')),
+                DataCell(Text(data['course'] ?? '')),
+                DataCell(Text(data['gender'] ?? '')),
+                DataCell(Text(data['size'] ?? '')),
+                DataCell(Text(
+                  data['approvedAt'] != null
+                      ? (data['approvedAt'] as Timestamp)
+                          .toDate()
+                          .toString()
+                      : 'N/A',
+                )),
+              ],
+            );
+          }),
+        ),
+      ),
+    ),
+  );
+}
 
                       // Mobile: Cards
                       return ListView.builder(
