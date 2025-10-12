@@ -456,7 +456,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Select Size:',
+              'Select Size:''\nNOTE: Price is 1000 PHP per set',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),

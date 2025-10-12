@@ -83,12 +83,11 @@ class UniformPreviewPage extends StatelessWidget {
               ),
               const SizedBox(height: 15),
               Text(
-                'Uniform preview and details go here.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade700,
-                ),
-              ),
+                    'NOTE: Prices for Each Uniform Set 1000 PHP\n(Includes Shirt, Pants/Skirt)',
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                    textAlign: TextAlign.center, // ✅ correct parameter
+                  ),
+
               const SizedBox(height: 40),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
