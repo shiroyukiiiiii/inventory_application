@@ -17,54 +17,72 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
 
   final TextEditingController _manualController = TextEditingController();
 
-  Future<void> _handleScan(String? studentNumber, {String method = "qr"}) async {
+  /// ✅ Handles both QR scan and manual input
+  Future<void> _handleScan(String? qrData, {String method = "qr"}) async {
     setState(() {
-      _lastScannedValue = studentNumber;
-      _detected = studentNumber != null && studentNumber.trim().isNotEmpty;
+      _lastScannedValue = qrData;
+      _detected = qrData != null && qrData.trim().isNotEmpty;
       _isProcessing = true;
     });
 
-    if (studentNumber != null && studentNumber.trim().isNotEmpty) {
-      final query = await FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .where('studentId', isEqualTo: studentNumber.trim())
-          .limit(1)
-          .get();
+    if (qrData != null && qrData.trim().isNotEmpty) {
+      try {
+        // ✅ Search Firestore by qrData (studentId + orderId)
+        final query = await FirebaseFirestore.instance
+            .collection('uniform_requests')
+            .where('qrData', isEqualTo: qrData.trim())
+            .limit(1)
+            .get();
 
-      String statusMessage;
-      Color statusColor = Colors.red;
+        String statusMessage;
+        Color statusColor = Colors.red;
 
-      if (query.docs.isNotEmpty) {
-        final doc = query.docs.first;
-        final data = doc.data();
+        if (query.docs.isNotEmpty) {
+          final doc = query.docs.first;
+          final data = doc.data();
+          final studentNumber = data['studentId'] ?? '(unknown)';
+          final orderId = data['orderId'] ?? '(no order id)';
 
-        if (data['status'] == 'Completed') {
-          statusMessage = "ℹ️ Request for $studentNumber is already Completed";
-          statusColor = Colors.blue;
-        } else {
-          try {
+          if (data['status'] == 'Completed') {
+            statusMessage =
+                "ℹ️ Request for $studentNumber (Order ID: $orderId) is already completed.";
+            statusColor = Colors.blue;
+          } else {
             await doc.reference.update({
               'status': 'Completed',
               'completedAt': FieldValue.serverTimestamp(),
             });
 
-            statusMessage = "✅ Request for $studentNumber marked as Completed";
+            statusMessage =
+                "✅ Request for $studentNumber (Order ID: $orderId) marked as completed!";
             statusColor = Colors.green;
-          } catch (e) {
-            statusMessage = "⚠️ Failed to update request: ${e.toString()}";
-            statusColor = Colors.orange;
           }
+        } else {
+          statusMessage = "❌ No request found for scanned QR data.";
+          statusColor = Colors.red;
         }
-      } else {
-        statusMessage = "❌ No request found for $studentNumber";
-        statusColor = Colors.red;
-      }
 
-      if (mounted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(statusMessage),
+              backgroundColor: statusColor,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+
+          // ✅ Automatically close after a short delay
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) Navigator.pop(context);
+          });
+        }
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(statusMessage), backgroundColor: statusColor),
+          SnackBar(
+            content: Text("⚠️ Error scanning QR: $e"),
+            backgroundColor: Colors.orange,
+          ),
         );
-        Navigator.pop(context); // ✅ Close page after processing
       }
     }
 
@@ -86,12 +104,13 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
                   onDetect: (capture) async {
                     if (_isProcessing) return;
                     for (final barcode in capture.barcodes) {
-                      final String? studentNumber = barcode.rawValue;
-                      _handleScan(studentNumber, method: "qr");
+                      final String? scannedValue = barcode.rawValue;
+                      _handleScan(scannedValue, method: "qr");
                       break;
                     }
                   },
                 ),
+                // ✅ Debug Overlay
                 Positioned(
                   left: 0,
                   right: 0,
@@ -106,8 +125,9 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
                         const Text(
                           'Debug Overlay',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -139,7 +159,7 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    "Manual Student ID Entry",
+                    "Manual QR Data Entry",
                     style:
                         TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
@@ -148,7 +168,7 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
                     controller: _manualController,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      hintText: "Enter student number",
+                      hintText: "Enter full QR data (studentId-orderId)",
                     ),
                   ),
                   const SizedBox(height: 8),

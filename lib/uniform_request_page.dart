@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'services/qr_service.dart';
 import 'services/email_service.dart';
+import 'package:uuid/uuid.dart';
 
 class UniformRequestPage extends StatefulWidget {
   final User user;
@@ -44,10 +45,17 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   }
 
   void _generateQRPreview() {
-    if (_studentId.isNotEmpty) {
-      setState(() => _showQRCode = true);
-    }
+  if (_studentId.isNotEmpty) {
+    final tempOrderId = 'PREVIEW'; // or generate a temporary fake one
+    final qrData = '$_studentId-$tempOrderId';
+
+    setState(() {
+      _showQRCode = true;
+    });
+    QRService.createQRCodeWidget(qrData, size: 150);
   }
+}
+
 
   Future<void> _submitRequest() async {
   if (!_formKey.currentState!.validate()) return;
@@ -71,10 +79,13 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   });
 
   try {
-    final qrCodeBytes = await QRService.generateQRCodeBytes(_studentId);
+    final orderId = const Uuid().v4(); // Unique order ID for each request
+    final qrData = '$_studentId-$orderId'; // ✅ Combine studentId + orderId
+    final qrCodeBytes = await QRService.generateQRCodeBytes(qrData);
     final qrBase64 = base64Encode(qrCodeBytes);
 
     await FirebaseFirestore.instance.collection('uniform_requests').add({
+      'orderId': orderId, // ✅ new unique order ID
       'userId': widget.user.uid,
       'userName': widget.user.displayName ?? '',
       'fullName': _fullName,
@@ -83,9 +94,11 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       'course': _course,
       'size': _size,
       'studentId': _studentId,
+      'qrData': qrData, // ✅ updated to studentId + orderId
       'qrCode': qrBase64,
       'timestamp': FieldValue.serverTimestamp(),
-    });
+});
+
 
     final emailSent = await EmailService.sendUniformRequestEmail(
       studentNumber: _studentId,
@@ -348,7 +361,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
-          QRService.createQRCodeWidget(_studentId, size: 150),
+          QRService.createQRCodeWidget('$_studentId-PREVIEW', size: 150),
           const SizedBox(height: 10),
           Text(
             'Student Number: $_studentId',
