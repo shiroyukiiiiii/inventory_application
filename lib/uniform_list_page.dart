@@ -1791,9 +1791,7 @@ class _InventoryPageState extends State<InventoryPage> {
     );
   }
 
-  Future<void> _deleteUniform(String id) async {
-    await FirebaseFirestore.instance.collection('uniforms').doc(id).delete();
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -2090,19 +2088,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                                                             _openForm(uniform);
                                                                           },
                                                                         ),
-                                                                        IconButton(
-                                                                          icon: const Icon(
-                                                                              Icons.delete,
-                                                                              color: Colors.redAccent),
-                                                                          onPressed:
-                                                                              () async {
-                                                                            for (var u in uniforms.where((u) =>
-                                                                                u.size ==
-                                                                                size)) {
-                                                                              await _deleteUniform(u.id);
-                                                                            }
-                                                                          },
-                                                                        ),
+                                                                        
                                                                       ],
                                                                     )),
                                                                   ]);
@@ -2169,22 +2155,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                                                           uniform);
                                                                     },
                                                                   ),
-                                                                  IconButton(
-                                                                    icon: const Icon(
-                                                                        Icons
-                                                                            .delete,
-                                                                        color: Colors
-                                                                            .redAccent),
-                                                                    onPressed:
-                                                                        () async {
-                                                                      for (var u in uniforms.where((u) =>
-                                                                          u.size ==
-                                                                          size)) {
-                                                                        await _deleteUniform(
-                                                                            u.id);
-                                                                      }
-                                                                    },
-                                                                  ),
+                                                                  
                                                                 ],
                                                               ),
                                                             ),
