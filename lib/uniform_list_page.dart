@@ -2069,8 +2069,15 @@ class _InventoryPageState extends State<InventoryPage> {
                                                                     DataCell(Text(
                                                                         size)),
                                                                     DataCell(
-                                                                        Text(qty
-                                                                            .toString())),
+                                                                          Text(
+                                                                            qty.toString(),
+                                                                            style: TextStyle(
+                                                                              color: qty == 0 ? Colors.red : Colors.black,
+                                                                              fontWeight: qty == 0 ? FontWeight.bold : FontWeight.normal,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+
                                                                     DataCell(
                                                                         Row(
                                                                       mainAxisAlignment:
@@ -2131,7 +2138,12 @@ class _InventoryPageState extends State<InventoryPage> {
                                                                           FontWeight
                                                                               .bold)),
                                                               subtitle: Text(
-                                                                  "Quantity: $qty"),
+                                                                    "Quantity: $qty",
+                                                                    style: TextStyle(
+                                                                      color: qty == 0 ? Colors.red : Colors.black,
+                                                                      fontWeight: qty == 0 ? FontWeight.bold : FontWeight.normal,
+                                                                    ),
+                                                                  ),
                                                               trailing: Row(
                                                                 mainAxisSize:
                                                                     MainAxisSize
