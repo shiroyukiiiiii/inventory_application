@@ -1109,9 +1109,10 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
-                                      headingRowColor: WidgetStateProperty.all(
-                                          const Color(0xFF00A86B)
-                                              .withOpacity(0.1)),
+                                      headingRowColor:
+                                          MaterialStateProperty.all(
+                                              const Color(0xFF00A86B)
+                                                  .withOpacity(0.1)),
                                       columnSpacing: 20,
                                       columns: const [
                                         DataColumn(
@@ -1505,9 +1506,10 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
-                                      headingRowColor: WidgetStateProperty.all(
-                                          const Color(0xFF00A86B)
-                                              .withOpacity(0.1)),
+                                      headingRowColor:
+                                          MaterialStateProperty.all(
+                                              const Color(0xFF00A86B)
+                                                  .withOpacity(0.1)),
                                       columnSpacing: 20,
                                       columns: const [
                                         DataColumn(
@@ -1856,9 +1858,10 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
-                                      headingRowColor: WidgetStateProperty.all(
-                                          const Color(0xFF00A86B)
-                                              .withOpacity(0.1)),
+                                      headingRowColor:
+                                          MaterialStateProperty.all(
+                                              const Color(0xFF00A86B)
+                                                  .withOpacity(0.1)),
                                       columnSpacing: 20,
                                       columns: const [
                                         DataColumn(
