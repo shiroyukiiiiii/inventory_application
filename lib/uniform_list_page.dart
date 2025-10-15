@@ -1154,8 +1154,37 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                             backgroundColor:
                                                 const Color.fromARGB(
                                                     255, 105, 206, 249)),
-                                        onPressed: () => _approveRequest(
-                                            doc.id, data, context),
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: const Text('Confirm Approval'),
+                                                content: const Text(
+                                                  'Are you sure you want to approve this request? This action cannot be undone.',
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    child: const Text('Cancel'),
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop(); // Close the dialog
+                                                    },
+                                                  ),
+                                                  ElevatedButton(
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: const Color(0xFF00B4FF),
+                                                    ),
+                                                    child: const Text('Approve'),
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop(); // Close the dialog
+                                                      _approveRequest(doc.id, data, context); // Proceed with approval
+                                                    },
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
                                         child: const Text('Approve'),
                                       )),
                                     ],
@@ -1203,13 +1232,43 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                   Align(
                                     alignment: Alignment.centerRight,
                                     child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              const Color(0xFF00B4FF)),
-                                      onPressed: () => _approveRequest(
-                                          doc.id, data, context),
-                                      child: const Text('Approve'),
-                                    ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF00B4FF),
+                                        ),
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: const Text('Confirm Approval'),
+                                                content: const Text(
+                                                  'Are you sure you want to approve this request? This action cannot be undone.',
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    child: const Text('Cancel'),
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop(); // Close the dialog
+                                                    },
+                                                  ),
+                                                  ElevatedButton(
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: const Color(0xFF00B4FF),
+                                                    ),
+                                                    child: const Text('Approve'),
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop(); // Close the dialog
+                                                      _approveRequest(doc.id, data, context); // Proceed with approval
+                                                    },
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
+                                        child: const Text('Approve'),
+                                      ),
+
                                   ),
                                 ],
                               ),
