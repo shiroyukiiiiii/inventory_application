@@ -859,103 +859,107 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
   String searchQuery = '';
 
   Future<void> _approveRequest(
-    String id,
-    Map<String, dynamic> data,
-    BuildContext context,
-  ) async {
-    final firestore = FirebaseFirestore.instance;
+  String id,
+  Map<String, dynamic> data,
+  BuildContext context,
+) async {
+  final firestore = FirebaseFirestore.instance;
 
-    try {
-      print('🔹 Approving request ID: $id with data: $data');
+  try {
+    print('🔹 Approving request ID: $id with data: $data');
 
-      final String course = (data['course'] ?? '').toString().trim();
-      final String size = (data['size'] ?? '').toString().trim();
-      final String gender = (data['gender'] ?? '').toString().trim();
+    final String course = (data['course'] ?? '').toString().trim();
+    final String size = (data['size'] ?? '').toString().trim();
+    final String gender = (data['gender'] ?? '').toString().trim();
+    final int orderQuantity = (data['orderQuantity'] ?? 1) as int;
 
-      if (course.isEmpty || size.isEmpty || gender.isEmpty) {
-        throw Exception(
-            'Invalid course, size, or gender values. Cannot proceed.');
+    if (course.isEmpty || size.isEmpty || gender.isEmpty) {
+      throw Exception('Invalid course, size, or gender values. Cannot proceed.');
+    }
+
+    print('🔹 Looking for uniform: $course / $gender / $size');
+
+    final uniformQuery = await firestore
+        .collection('uniforms')
+        .where('course', isEqualTo: course)
+        .where('gender', isEqualTo: gender)
+        .where('size', isEqualTo: size)
+        .limit(1)
+        .get();
+
+    if (uniformQuery.docs.isEmpty) {
+      throw Exception('No uniform found for $course - $gender - $size');
+    }
+
+    final uniformDoc = uniformQuery.docs.first.reference;
+    final requestRef = firestore.collection('uniform_requests').doc(id);
+
+    print('✅ Uniform doc found: ${uniformDoc.id}');
+
+    await firestore.runTransaction((transaction) async {
+      print('🔁 Starting transaction...');
+      final uniformSnap = await transaction.get(uniformDoc);
+
+      if (!uniformSnap.exists) {
+        throw Exception('Uniform doc ${uniformDoc.id} no longer exists!');
       }
 
-      print('🔹 Looking for uniform: $course / $gender / $size');
+      final uniformData = uniformSnap.data() as Map<String, dynamic>? ?? {};
+      int currentStock = (uniformData['quantity'] ?? 0) as int;
+      print('📦 Current stock: $currentStock');
 
-      final uniformQuery = await firestore
-          .collection('uniforms')
-          .where('course', isEqualTo: course)
-          .where('gender', isEqualTo: gender)
-          .where('size', isEqualTo: size)
-          .limit(1)
-          .get();
-
-      if (uniformQuery.docs.isEmpty) {
-        throw Exception('No uniform found for $course - $gender - $size');
+      if (currentStock < orderQuantity) {
+        throw Exception('Not enough stock available. Only $currentStock left.');
       }
 
-      final uniformDoc = uniformQuery.docs.first.reference;
-      final requestRef = firestore.collection('uniform_requests').doc(id);
+      final requestSnap = await transaction.get(requestRef);
+      final requestData = requestSnap.data() as Map<String, dynamic>? ?? {};
+      final currentStatus = (requestData['status'] ?? 'Pending').toString();
+      print('📝 Current request status: $currentStatus');
 
-      print('✅ Uniform doc found: ${uniformDoc.id}');
+      if (currentStatus == 'Approved' || currentStatus == 'Completed') {
+        throw Exception('Request already approved or completed.');
+      }
 
-      await firestore.runTransaction((transaction) async {
-        print('🔁 Starting transaction...');
-        final uniformSnap = await transaction.get(uniformDoc);
+      // Deduct order quantity
+      transaction.update(uniformDoc, {'quantity': currentStock - orderQuantity});
 
-        if (!uniformSnap.exists) {
-          throw Exception('Uniform doc ${uniformDoc.id} no longer exists!');
-        }
-
-        final uniformData = uniformSnap.data() as Map<String, dynamic>? ?? {};
-        int currentStock = (uniformData['quantity'] ?? 0) as int;
-        print('📦 Current stock: $currentStock');
-
-        if (currentStock <= 0) {
-          throw Exception('No stock available for $course - $gender - $size.');
-        }
-
-        final requestSnap = await transaction.get(requestRef);
-        final requestData = requestSnap.data() as Map<String, dynamic>? ?? {};
-        final currentStatus = (requestData['status'] ?? 'Pending').toString();
-        print('📝 Current request status: $currentStatus');
-
-        if (currentStatus == 'Approved' || currentStatus == 'Completed') {
-          throw Exception('Request already approved or completed.');
-        }
-
-        transaction.update(uniformDoc, {'quantity': currentStock - 1});
-        transaction.update(requestRef, {
-          'status': 'Approved',
-          'approvedAt': FieldValue.serverTimestamp(),
-        });
-
-        print('✅ Transaction update complete.');
+      // Update request status
+      transaction.update(requestRef, {
+        'status': 'Approved',
+        'approvedAt': FieldValue.serverTimestamp(),
       });
 
-      print('📧 Sending approval email...');
-      await EmailJsService.sendApprovalEmail(
-        toEmail: data['email'] ?? '',
-        toName: data['userName'] ?? '',
-        studentNumber: data['studentId'] ?? '',
-        studentName: data['userName'] ?? '',
-        gender: data['gender'] ?? '',
-        course: data['course'] ?? '',
-        size: data['size'] ?? '',
-        qrCode: data['qrCode'] ?? '',
-      );
+      print('✅ Transaction update complete.');
+    });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              '✅ Approved $course - $gender - $size. Stock deducted and email sent!'),
-        ),
-      );
-    } catch (e, stack) {
-      print('❌ ERROR approving request: $e');
-      print('📜 STACK TRACE:\n$stack');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error approving request: $e')),
-      );
-    }
+    print('📧 Sending approval email...');
+    await EmailJsService.sendApprovalEmail(
+      toEmail: data['email'] ?? '',
+      toName: data['userName'] ?? '',
+      studentNumber: data['studentId'] ?? '',
+      studentName: data['userName'] ?? '',
+      gender: data['gender'] ?? '',
+      course: data['course'] ?? '',
+      size: data['size'] ?? '',
+      orderQuantity: data['orderQuantity'],
+      qrCode: data['qrCode'] ?? '',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            '✅ Approved $course - $gender - $size. $orderQuantity uniform(s) deducted and email sent!'),
+      ),
+    );
+  } catch (e, stack) {
+    print('❌ ERROR approving request: $e');
+    print('📜 STACK TRACE:\n$stack');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('❌ Error approving request: $e')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -1127,6 +1131,9 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                       label: Text('Size',
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold))),
+
+                                  DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
+
                                   DataColumn(
                                       label: Text('Requested At',
                                           style: TextStyle(
@@ -1144,6 +1151,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                       DataCell(Text(data['course'] ?? '')),
                                       DataCell(Text(data['gender'] ?? '')),
                                       DataCell(Text(data['size'] ?? '')),
+                                      DataCell(Text('${data['orderQuantity'] ?? 1}')),
                                       DataCell(Text(data['timestamp'] != null
                                           ? (data['timestamp'] as Timestamp)
                                               .toDate()
@@ -1468,6 +1476,11 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                       label: Text('Size',
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold))),
+
+                                  DataColumn(
+                                            label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          ),
+
                                   DataColumn(
                                       label: Text('Approved At',
                                           style: TextStyle(
@@ -1484,6 +1497,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                       DataCell(Text(data['course'] ?? '')),
                                       DataCell(Text(data['gender'] ?? '')),
                                       DataCell(Text(data['size'] ?? '')),
+                                      DataCell(Text('${data['quantity'] ?? 0}')),
                                       DataCell(Text(data['approvedAt'] != null
                                           ? (data['approvedAt'] as Timestamp)
                                               .toDate()
