@@ -11,6 +11,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
+    final isTablet = screenWidth > 500 && screenWidth <= 800;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -66,11 +70,19 @@ class HomePage extends StatelessWidget {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop
+                    ? 200
+                    : isTablet
+                        ? 80
+                        : 25,
+                vertical: isDesktop ? 60 : 40,
+              ),
               child: Container(
-                padding: const EdgeInsets.all(25),
+                width: double.infinity,
+                padding: EdgeInsets.all(isDesktop ? 40 : 20),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withOpacity(0.95),
                   borderRadius: BorderRadius.circular(25),
                   boxShadow: [
                     BoxShadow(
@@ -80,27 +92,35 @@ class HomePage extends StatelessWidget {
                     ),
                   ],
                 ),
+                constraints: const BoxConstraints(maxWidth: 600),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.school_outlined,
-                        size: 70, color: Color(0xFF4A90E2)),
+                    // 🔹 Logo (responsive)
+                    Image.asset(
+                      'assets/images/eclaroacademy.png',
+                      width: screenWidth * 0.5, // scales automatically
+                      fit: BoxFit.contain,
+                    ),
                     const SizedBox(height: 15),
-                    const Text(
+                    Text(
                       'Welcome to SIASU!',
                       style: TextStyle(
-                        fontSize: 26,
+                        fontSize: isDesktop ? 28 : 22,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF333333),
+                        color: const Color(0xFF333333),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'An inventory management system for school uniforms of college students.',
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: isDesktop ? 16 : 13,
+                        color: Colors.black54,
+                      ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 25),
                     const Text(
                       'Please select your course:',
                       style: TextStyle(
@@ -111,37 +131,36 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 25),
 
-                    // BSCRIM Button
-                    _buildCourseButton(
+                    // 📚 Course Sections
+                    _buildCourseSection(
                       context,
                       user,
                       'BSCRIM',
                       const Color(0xFF4CAF50),
-                      Icons.security,
+                      'assets/images/crim.png',
+                      screenWidth,
                     ),
-                    const SizedBox(height: 15),
-
-                    // ABCOM Button
-                    _buildCourseButton(
+                    const SizedBox(height: 20),
+                    _buildCourseSection(
                       context,
                       user,
                       'ABCOM',
                       const Color(0xFF42A5F5),
-                      Icons.mic_none_rounded,
+                      'assets/images/abbs.png',
+                      screenWidth,
                     ),
-                    const SizedBox(height: 15),
-
-                    // BSCS Button
-                    _buildCourseButton(
+                    const SizedBox(height: 20),
+                    _buildCourseSection(
                       context,
                       user,
                       'BSCS',
                       const Color(0xFF26C6DA),
-                      Icons.computer_rounded,
+                      'assets/images/abbs.png',
+                      screenWidth,
                     ),
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 30),
 
-                    // Manage Requests Button
+                    // 🧾 Manage Requests Button
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -184,36 +203,48 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseButton(BuildContext context, User user, String course,
-      Color color, IconData icon) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
+  // 📦 Each Course Section (Responsive Design)
+  Widget _buildCourseSection(BuildContext context, User user, String course,
+      Color color, String imagePath, double screenWidth) {
+    return Column(
+      children: [
+        Image.asset(
+          imagePath,
+          height: screenWidth < 400 ? 80 : 120,
+          fit: BoxFit.contain,
         ),
-        icon: Icon(icon, color: Colors.white),
-        label: Text(
-          course,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SelectSexPage(user: user, course: course),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              padding: EdgeInsets.symmetric(
+                  horizontal: 30, vertical: screenWidth < 400 ? 12 : 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
             ),
-          );
-        },
-      ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      SelectSexPage(user: user, course: course),
+                ),
+              );
+            },
+            child: Text(
+              course,
+              style: TextStyle(
+                fontSize: screenWidth < 400 ? 16 : 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

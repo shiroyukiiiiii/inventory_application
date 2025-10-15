@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:inventory_application/admin_login_page.dart';
 import '../models/uniform.dart';
 import 'admin_qr_confirmation.dart';
 import 'services/emailjs_service.dart';
+import 'package:intl/intl.dart';
 
 class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
@@ -15,7 +17,7 @@ class UniformListPage extends StatefulWidget {
 class _UniformListPageState extends State<UniformListPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedPage = 'tabs'; // ✅ default view (main tabbed content)
+  String _selectedPage = 'tabs'; // default view
 
   @override
   void initState() {
@@ -33,19 +35,18 @@ class _UniformListPageState extends State<UniformListPage>
   }
 
   void _openDrawerOption(BuildContext context, String option) {
-    Navigator.pop(context); // close drawer
+    Navigator.pop(context);
     setState(() {
       _selectedPage = option;
     });
   }
 
-  // ✅ Determines which screen to show
   Widget _getSelectedPage() {
     switch (_selectedPage) {
       case 'inventorySummary':
         return const _InventoryTab();
-      case 'settings':
-        return const SettingsPage(); // 👈 Added new SettingsPage
+      case 'stock_history':
+        return const HistoryStockReportTab(); // new empty table
       case 'tabs':
       default:
         return TabBarView(
@@ -65,7 +66,7 @@ class _UniformListPageState extends State<UniformListPage>
     return Scaffold(
       backgroundColor: Colors.grey[100],
 
-      // ✅ Drawer Menu
+      // Drawer Menu
       drawer: Drawer(
         child: SafeArea(
           child: Column(
@@ -86,23 +87,12 @@ class _UniformListPageState extends State<UniformListPage>
                 ),
               ),
 
-              // ✅ Inventory Summary
               ListTile(
                 leading: const Icon(Icons.summarize, color: Colors.green),
                 title: const Text('Inventory Summary'),
                 onTap: () => _openDrawerOption(context, 'inventorySummary'),
               ),
 
-              // ✅ Settings
-              ListTile(
-                leading: const Icon(Icons.settings, color: Colors.grey),
-                title: const Text('Settings'),
-                onTap: () => _openDrawerOption(context, 'settings'),
-              ),
-
-              const Divider(),
-
-              // ✅ Approved Orders
               ListTile(
                 leading: const Icon(Icons.check_circle, color: Colors.green),
                 title: const Text('Approved Orders'),
@@ -115,7 +105,6 @@ class _UniformListPageState extends State<UniformListPage>
                 },
               ),
 
-              // ✅ Completed Orders
               ListTile(
                 leading: const Icon(Icons.done_all, color: Colors.blue),
                 title: const Text('Completed Orders'),
@@ -127,12 +116,61 @@ class _UniformListPageState extends State<UniformListPage>
                   });
                 },
               ),
+
+              ListTile(
+                leading: const Icon(Icons.history, color: Colors.orange),
+                title: const Text('History Stock Report'),
+                onTap: () {
+                  Navigator.pop(context); // close drawer
+                  setState(() {
+                    _selectedPage = 'stock_history'; // shows inside the page
+                  });
+                },
+              ),
+
+              const Spacer(), // pushes logout to the bottom
+
+              // Logout button
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text('Logout'),
+                onTap: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Logout Confirmation'),
+                      content: const Text('Are you sure you want to log out?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text(
+                            'Logout',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    await FirebaseAuth.instance.signOut();
+                    if (mounted) {
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/login', (route) => false);
+                    }
+                  }
+                },
+              ),
             ],
           ),
         ),
       ),
 
-      // ✅ AppBar stays visible
+      // AppBar
       appBar: AppBar(
         backgroundColor: const Color(0xFF00A86B),
         title: const Text(
@@ -142,34 +180,19 @@ class _UniformListPageState extends State<UniformListPage>
             color: Colors.white,
           ),
         ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-            tooltip: 'QR Confirmation',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AdminQrConfirmationPage(),
-                ),
-              );
-            },
-          ),
-        ],
       ),
 
-      // ✅ Load content dynamically
+      // Body
       body: _getSelectedPage(),
 
-      // ✅ Bottom tab bar visible only on main tab view
+      // Bottom Tab Bar
       bottomNavigationBar: _selectedPage == 'tabs'
           ? Container(
               color: const Color(0xFF00A86B),
               child: TabBar(
                 controller: _tabController,
-                indicatorColor: Colors.white,
-                labelColor: const Color(0xFF0088FF),
+                indicatorColor: const Color.fromARGB(255, 0, 55, 255),
+                labelColor: const Color.fromARGB(255, 0, 3, 5),
                 unselectedLabelColor: Colors.white,
                 labelStyle:
                     const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -180,23 +203,6 @@ class _UniformListPageState extends State<UniformListPage>
                   Tab(icon: Icon(Icons.inventory), text: 'Inventory'),
                 ],
               ),
-            )
-          : null,
-
-      // ✅ FAB visible only in Approved tab
-      floatingActionButton: _selectedPage == 'tabs' && _tabController.index == 1
-          ? FloatingActionButton(
-              backgroundColor: const Color(0xFF0088FF),
-              tooltip: 'Add Uniform',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const UniformFormPage(),
-                  ),
-                );
-              },
-              child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
     );
@@ -423,7 +429,7 @@ class _InventoryTab extends StatelessWidget {
                                           const SizedBox(height: 18),
                                         ],
                                       );
-                                    }).toList(),
+                                    }),
                                   ],
                                 ),
                               );
@@ -607,64 +613,63 @@ class _UniformFormPageState extends State<UniformFormPage> {
   }
 
   Future<void> _saveUniform() async {
-  if (!_formKey.currentState!.validate()) return;
-  _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
 
-  final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
-  String message = '';
+    final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+    String message = '';
 
-  if (widget.uniform != null) {
-    // 🔹 Editing existing uniform — update directly by document ID
-    await uniformsRef.doc(widget.uniform!.id).update({
-      'course': _course,
-      'gender': _gender,
-      'size': _size,
-      'quantity': _quantity,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    message = 'Stock updated successfully!';
-  } else {
-    // 🔹 Adding new uniform — check if combination already exists
-    final existingQuery = await uniformsRef
-        .where('course', isEqualTo: _course)
-        .where('gender', isEqualTo: _gender)
-        .where('size', isEqualTo: _size)
-        .limit(1)
-        .get();
-
-    if (existingQuery.docs.isNotEmpty) {
-      final existingDoc = existingQuery.docs.first;
-      await uniformsRef.doc(existingDoc.id).update({
-        'quantity': FieldValue.increment(_quantity),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      message = 'Stock updated successfully!';
-    } else {
-      await uniformsRef.add({
+    if (widget.uniform != null) {
+      // 🔹 Editing existing uniform — update directly by document ID
+      await uniformsRef.doc(widget.uniform!.id).update({
         'course': _course,
         'gender': _gender,
         'size': _size,
         'quantity': _quantity,
-        'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      message = 'New stock added successfully!';
+      message = 'Stock updated successfully!';
+    } else {
+      // 🔹 Adding new uniform — check if combination already exists
+      final existingQuery = await uniformsRef
+          .where('course', isEqualTo: _course)
+          .where('gender', isEqualTo: _gender)
+          .where('size', isEqualTo: _size)
+          .limit(1)
+          .get();
+
+      if (existingQuery.docs.isNotEmpty) {
+        final existingDoc = existingQuery.docs.first;
+        await uniformsRef.doc(existingDoc.id).update({
+          'quantity': FieldValue.increment(_quantity),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        message = 'Stock updated successfully!';
+      } else {
+        await uniformsRef.add({
+          'course': _course,
+          'gender': _gender,
+          'size': _size,
+          'quantity': _quantity,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        message = 'New stock added successfully!';
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.teal,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      Navigator.pop(context);
     }
   }
-
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.teal,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    Navigator.pop(context);
-  }
-}
-
 
   Widget _sectionTitle(String title, IconData icon) {
     return Row(
@@ -747,7 +752,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: DropdownButtonFormField<String>(
-                    value: _size.isNotEmpty ? _size : null,
+                    initialValue: _size.isNotEmpty ? _size : null,
                     decoration: InputDecoration(
                       labelText: 'Size',
                       prefixIcon:
@@ -857,6 +862,16 @@ class UniformRequestsListPage extends StatefulWidget {
 
 class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
   String searchQuery = '';
+  int rowsPerPage = 10;
+  int currentPage = 0;
+
+  // Helper function to format timestamp
+  String formatTimestamp(Timestamp? timestamp) {
+    if (timestamp == null) return 'N/A';
+    final date = timestamp.toDate();
+    return DateFormat('MMM/dd/yyyy hh:mm a')
+        .format(date); // Oct/15/2025 03:45 PM
+  }
 
   Future<void> _approveRequest(
     String id,
@@ -866,18 +881,13 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
     final firestore = FirebaseFirestore.instance;
 
     try {
-      print('🔹 Approving request ID: $id with data: $data');
-
       final String course = (data['course'] ?? '').toString().trim();
       final String size = (data['size'] ?? '').toString().trim();
       final String gender = (data['gender'] ?? '').toString().trim();
 
       if (course.isEmpty || size.isEmpty || gender.isEmpty) {
-        throw Exception(
-            'Invalid course, size, or gender values. Cannot proceed.');
+        throw Exception('Invalid course, size, or gender values.');
       }
-
-      print('🔹 Looking for uniform: $course / $gender / $size');
 
       final uniformQuery = await firestore
           .collection('uniforms')
@@ -894,29 +904,15 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
       final uniformDoc = uniformQuery.docs.first.reference;
       final requestRef = firestore.collection('uniform_requests').doc(id);
 
-      print('✅ Uniform doc found: ${uniformDoc.id}');
-
       await firestore.runTransaction((transaction) async {
-        print('🔁 Starting transaction...');
         final uniformSnap = await transaction.get(uniformDoc);
-
-        if (!uniformSnap.exists) {
-          throw Exception('Uniform doc ${uniformDoc.id} no longer exists!');
-        }
-
-        final uniformData = uniformSnap.data() as Map<String, dynamic>? ?? {};
-        int currentStock = (uniformData['quantity'] ?? 0) as int;
-        print('📦 Current stock: $currentStock');
-
-        if (currentStock <= 0) {
-          throw Exception('No stock available for $course - $gender - $size.');
-        }
+        if (!uniformSnap.exists) throw Exception('Uniform no longer exists!');
+        final currentStock = (uniformSnap.data()?['quantity'] ?? 0) as int;
+        if (currentStock <= 0) throw Exception('No stock available.');
 
         final requestSnap = await transaction.get(requestRef);
-        final requestData = requestSnap.data() as Map<String, dynamic>? ?? {};
-        final currentStatus = (requestData['status'] ?? 'Pending').toString();
-        print('📝 Current request status: $currentStatus');
-
+        final currentStatus =
+            (requestSnap.data()?['status'] ?? 'Pending').toString();
         if (currentStatus == 'Approved' || currentStatus == 'Completed') {
           throw Exception('Request already approved or completed.');
         }
@@ -926,11 +922,8 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
           'status': 'Approved',
           'approvedAt': FieldValue.serverTimestamp(),
         });
-
-        print('✅ Transaction update complete.');
       });
 
-      print('📧 Sending approval email...');
       await EmailJsService.sendApprovalEmail(
         toEmail: data['email'] ?? '',
         toName: data['userName'] ?? '',
@@ -944,13 +937,10 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              '✅ Approved $course - $gender - $size. Stock deducted and email sent!'),
-        ),
+            content: Text(
+                '✅ Approved $course - $gender - $size. Stock deducted and email sent!')),
       );
-    } catch (e, stack) {
-      print('❌ ERROR approving request: $e');
-      print('📜 STACK TRACE:\n$stack');
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ Error approving request: $e')),
       );
@@ -967,7 +957,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Text(
                   "Uniform Requests",
@@ -979,33 +969,62 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Search Bar
-                SizedBox(
-                  width: isDesktop ? 400 : double.infinity,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search',
-                      prefixIcon:
-                          const Icon(Icons.search, color: Color(0xFF00B4FF)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                // Search + Rows per page
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: isDesktop ? 250 : 180,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search',
+                          prefixIcon: const Icon(Icons.search,
+                              color: Color(0xFF00B4FF)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            searchQuery = value.toLowerCase();
+                            currentPage = 0;
+                          });
+                        },
                       ),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value.toLowerCase();
-                      });
-                    },
-                  ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black12),
+                      ),
+                      child: DropdownButton<int>(
+                        value: rowsPerPage,
+                        underline: const SizedBox(),
+                        items: const [
+                          DropdownMenuItem(value: 10, child: Text("10")),
+                          DropdownMenuItem(value: 50, child: Text("50")),
+                          DropdownMenuItem(value: 100, child: Text("100")),
+                          DropdownMenuItem(value: -1, child: Text("ALL")),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            rowsPerPage = value!;
+                            currentPage = 0;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
 
-                // Requests List
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
@@ -1027,53 +1046,30 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                         final data = doc.data() as Map<String, dynamic>;
                         final status = data['status'] ?? '';
 
-                        // Lowercase fields for search
-                        final name = (data['userName'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final studentId = (data['studentId'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final email = (data['email'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final course = (data['course'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final gender = (data['gender'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final size = (data['size'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
+                        final name =
+                            (data['userName'] ?? '').toString().toLowerCase();
+                        final studentId =
+                            (data['studentId'] ?? '').toString().toLowerCase();
+                        final email =
+                            (data['email'] ?? '').toString().toLowerCase();
+                        final course =
+                            (data['course'] ?? '').toString().toLowerCase();
+                        final gender =
+                            (data['gender'] ?? '').toString().toLowerCase();
+                        final size =
+                            (data['size'] ?? '').toString().toLowerCase();
                         final dateStr = data['timestamp'] != null
-                            ? (data['timestamp'] as Timestamp)
-                                .toDate()
-                                .toString()
+                            ? formatTimestamp(data['timestamp'] as Timestamp?)
                                 .toLowerCase()
-                                .trim()
                             : '';
 
-                        // Split search query by spaces
-                        final queryWords =
-                            searchQuery.toLowerCase().split(RegExp(r'\s+'));
+                        final queryWords = searchQuery.split(RegExp(r'\s+'));
 
-                        // Each word must match at least one field
                         bool matches = queryWords.every((word) {
                           if (word.isEmpty) return true;
-
-                          // Strict match for gender
                           if (word == 'male' || word == 'female') {
                             return gender == word;
                           }
-
-                          // Partial match for other fields
                           return name.contains(word) ||
                               studentId.contains(word) ||
                               email.contains(word) ||
@@ -1091,87 +1087,164 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                         return const Center(
                             child: Text('No pending requests.'));
                       }
-                      // Desktop: Centered Table
+
+                      final totalPages = rowsPerPage == -1
+                          ? 1
+                          : (requests.length / rowsPerPage).ceil();
+                      final start = currentPage * rowsPerPage;
+                      final end = rowsPerPage == -1
+                          ? requests.length
+                          : (start + rowsPerPage).clamp(0, requests.length);
+                      final pageRequests = requests.sublist(start, end);
+
+                      // Desktop Table
                       if (isDesktop) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: Center(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: DataTable(
-                                headingRowColor: MaterialStateProperty.all(
-                                    const Color(0xFF00A86B).withOpacity(0.1)),
-                                columnSpacing: 20,
-                                columns: const [
-                                  DataColumn(
-                                      label: Text('Name',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Student ID',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Email',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Course',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Gender',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Size',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Requested At',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Action')),
-                                ],
-                                rows: requests.map((doc) {
-                                  final data =
-                                      doc.data() as Map<String, dynamic>;
-                                  return DataRow(
-                                    cells: [
-                                      DataCell(Text(data['userName'] ?? '')),
-                                      DataCell(Text(data['studentId'] ?? '')),
-                                      DataCell(Text(data['email'] ?? '')),
-                                      DataCell(Text(data['course'] ?? '')),
-                                      DataCell(Text(data['gender'] ?? '')),
-                                      DataCell(Text(data['size'] ?? '')),
-                                      DataCell(Text(data['timestamp'] != null
-                                          ? (data['timestamp'] as Timestamp)
-                                              .toDate()
-                                              .toString()
-                                          : 'N/A')),
-                                      DataCell(ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                const Color.fromARGB(
-                                                    255, 105, 206, 249)),
-                                        onPressed: () => _approveRequest(
-                                            doc.id, data, context),
-                                        child: const Text('Approve'),
-                                      )),
-                                    ],
-                                  );
-                                }).toList(),
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.vertical,
+                                child: Center(
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: DataTable(
+                                      headingRowColor:
+                                          MaterialStateProperty.all(
+                                              const Color(0xFF00A86B)
+                                                  .withOpacity(0.1)),
+                                      columnSpacing: 20,
+                                      columns: const [
+                                        DataColumn(
+                                            label: Text('No.',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Name',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Student ID',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Email',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Course',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Gender',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Size',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Requested At',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(label: Text('Action')),
+                                      ],
+                                      rows: pageRequests.asMap().entries.map(
+                                        (entry) {
+                                          final index = start + entry.key + 1;
+                                          final data = entry.value.data()
+                                              as Map<String, dynamic>;
+                                          return DataRow(
+                                            cells: [
+                                              DataCell(Text(index.toString())),
+                                              DataCell(
+                                                  Text(data['userName'] ?? '')),
+                                              DataCell(Text(
+                                                  data['studentId'] ?? '')),
+                                              DataCell(
+                                                  Text(data['email'] ?? '')),
+                                              DataCell(
+                                                  Text(data['course'] ?? '')),
+                                              DataCell(
+                                                  Text(data['gender'] ?? '')),
+                                              DataCell(
+                                                  Text(data['size'] ?? '')),
+                                              DataCell(Text(formatTimestamp(
+                                                  data['timestamp']
+                                                      as Timestamp?))),
+                                              DataCell(ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        const Color(
+                                                            0xFF00B4FF)),
+                                                onPressed: () =>
+                                                    _approveRequest(
+                                                        entry.value.id,
+                                                        data,
+                                                        context),
+                                                child: const Text('Approve'),
+                                              )),
+                                            ],
+                                          );
+                                        },
+                                      ).toList(),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: currentPage > 0
+                                      ? () => setState(() => currentPage--)
+                                      : null,
+                                  child: const Text('Prev'),
+                                ),
+                                const SizedBox(width: 8),
+                                for (int i = 0; i < totalPages; i++)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    child: ElevatedButton(
+                                      onPressed: () =>
+                                          setState(() => currentPage = i),
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor: i == currentPage
+                                              ? const Color.fromARGB(
+                                                  255, 136, 255, 212)
+                                              : null),
+                                      child: Text('${i + 1}'),
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: currentPage < totalPages - 1
+                                      ? () => setState(() => currentPage++)
+                                      : null,
+                                  child: const Text('Next'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                         );
                       }
 
-                      // Mobile: Cards
+                      // Mobile Cards
                       return ListView.builder(
-                        itemCount: requests.length,
+                        itemCount: pageRequests.length,
                         itemBuilder: (context, index) {
-                          final doc = requests[index];
+                          final doc = pageRequests[index];
                           final data = doc.data() as Map<String, dynamic>;
                           return Card(
                             elevation: 3,
@@ -1198,7 +1271,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
                                   Text(
-                                      'Requested: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}'),
+                                      'Requested At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
                                   const SizedBox(height: 8),
                                   Align(
                                     alignment: Alignment.centerRight,
@@ -1229,7 +1302,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
   }
 }
 
-/// ============================
+// ============================
 /// Approved Orders Tab with Search
 /// ============================
 class ApprovedOrdersListPage extends StatefulWidget {
@@ -1241,6 +1314,16 @@ class ApprovedOrdersListPage extends StatefulWidget {
 
 class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
   String searchQuery = '';
+  int rowsPerPage = 10;
+  int currentPage = 0;
+
+  // ✅ Format timestamp to "MMM/dd/yyyy hh:mm a"
+  String formatTimestamp(Timestamp? timestamp) {
+    if (timestamp == null) return 'N/A';
+    final date = timestamp.toDate();
+    return DateFormat('MMM/dd/yyyy hh:mm a')
+        .format(date); // Oct/15/2025 03:45 PM
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1252,7 +1335,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Text(
                   "Approved Orders",
@@ -1264,33 +1347,87 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Search Bar
-                SizedBox(
-                  width: isDesktop ? 400 : double.infinity,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search',
-                      prefixIcon:
-                          const Icon(Icons.search, color: Color(0xFF00B4FF)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                // ✅ QR Button
+                Center(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminQrConfirmationPage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('QR Confirmation'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00A86B),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 20),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 🔍 Search + Rows per page
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: isDesktop ? 250 : 180,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search',
+                          prefixIcon: const Icon(Icons.search,
+                              color: Color(0xFF00B4FF)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            searchQuery = value.toLowerCase();
+                            currentPage = 0;
+                          });
+                        },
                       ),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value.toLowerCase();
-                      });
-                    },
-                  ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black12),
+                      ),
+                      child: DropdownButton<int>(
+                        value: rowsPerPage,
+                        underline: const SizedBox(),
+                        items: const [
+                          DropdownMenuItem(value: 10, child: Text("10")),
+                          DropdownMenuItem(value: 50, child: Text("50")),
+                          DropdownMenuItem(value: 100, child: Text("100")),
+                          DropdownMenuItem(value: -1, child: Text("ALL")),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            rowsPerPage = value!;
+                            currentPage = 0;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
 
-                // Approved Orders List
+                // 🔹 Orders List / Table / Mobile List
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
@@ -1305,146 +1442,194 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                       }
                       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                         return const Center(
-                            child: Text('No approved requests.'));
+                            child: Text('No approved orders found.'));
                       }
-                      final approved = snapshot.data!.docs.where((doc) {
+
+                      final allOrders = snapshot.data!.docs.where((doc) {
                         final data = doc.data() as Map<String, dynamic>;
                         final status = data['status'] ?? '';
 
-                        // Lowercase fields for searching
-                        final name = (data['userName'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final studentId = (data['studentId'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final email = (data['email'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final course = (data['course'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final gender = (data['gender'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final size = (data['size'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
+                        // search filter
+                        final name =
+                            (data['userName'] ?? '').toString().toLowerCase();
+                        final studentId =
+                            (data['studentId'] ?? '').toString().toLowerCase();
+                        final email =
+                            (data['email'] ?? '').toString().toLowerCase();
+                        final course =
+                            (data['course'] ?? '').toString().toLowerCase();
+                        final gender =
+                            (data['gender'] ?? '').toString().toLowerCase();
+                        final size =
+                            (data['size'] ?? '').toString().toLowerCase();
                         final dateStr = data['approvedAt'] != null
-                            ? (data['approvedAt'] as Timestamp)
-                                .toDate()
-                                .toString()
+                            ? formatTimestamp(data['approvedAt'] as Timestamp)
                                 .toLowerCase()
-                                .trim()
                             : '';
 
-                        // Split search query by spaces
-                        final queryWords =
-                            searchQuery.toLowerCase().split(RegExp(r'\s+'));
+                        final queryWords = searchQuery.split(RegExp(r'\s+'));
 
-                        // Each word must match at least one field
-                        bool matches = queryWords.every((word) {
-                          if (word.isEmpty) return true;
-
-                          // Strict match for gender
-                          if (word == 'male' || word == 'female') {
-                            return gender == word;
-                          }
-
-                          // Partial match for all other fields
-                          return name.contains(word) ||
-                              studentId.contains(word) ||
-                              email.contains(word) ||
-                              course.contains(word) ||
-                              size.contains(word) ||
-                              dateStr.contains(word);
-                        });
-
-                        return status == 'Approved' && matches;
+                        return status == 'Approved' &&
+                            queryWords.every((word) {
+                              if (word.isEmpty) return true;
+                              if (word == 'male' || word == 'female') {
+                                return gender == word;
+                              }
+                              return name.contains(word) ||
+                                  studentId.contains(word) ||
+                                  email.contains(word) ||
+                                  course.contains(word) ||
+                                  size.contains(word) ||
+                                  dateStr.contains(word);
+                            });
                       }).toList();
 
-                      if (approved.isEmpty) {
-                        return const Center(
-                            child: Text('No approved requests.'));
-                      }
-                      // Desktop: Centered Table
+                      // Pagination
+                      final totalPages = rowsPerPage == -1
+                          ? 1
+                          : (allOrders.length / rowsPerPage).ceil();
+                      final start = currentPage * rowsPerPage;
+                      final end = rowsPerPage == -1
+                          ? allOrders.length
+                          : (start + rowsPerPage).clamp(0, allOrders.length);
+                      final pageOrders = allOrders.sublist(start, end);
+
+                      // Desktop Table
                       if (isDesktop) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: Center(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: DataTable(
-                                headingRowColor: MaterialStateProperty.all(
-                                    const Color(0xFF00A86B).withOpacity(0.1)),
-                                columnSpacing: 20,
-                                columns: const [
-                                  DataColumn(
-                                      label: Text('Name',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Student ID',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Email',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Course',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Gender',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Size',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text('Approved At',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                ],
-                                rows: approved.map((doc) {
-                                  final data =
-                                      doc.data() as Map<String, dynamic>;
-                                  return DataRow(
-                                    cells: [
-                                      DataCell(Text(data['userName'] ?? '')),
-                                      DataCell(Text(data['studentId'] ?? '')),
-                                      DataCell(Text(data['email'] ?? '')),
-                                      DataCell(Text(data['course'] ?? '')),
-                                      DataCell(Text(data['gender'] ?? '')),
-                                      DataCell(Text(data['size'] ?? '')),
-                                      DataCell(Text(data['approvedAt'] != null
-                                          ? (data['approvedAt'] as Timestamp)
-                                              .toDate()
-                                              .toString()
-                                          : 'N/A')),
-                                    ],
-                                  );
-                                }).toList(),
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.vertical,
+                                child: Center(
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: DataTable(
+                                      headingRowColor:
+                                          MaterialStateProperty.all(
+                                              const Color(0xFF00A86B)
+                                                  .withOpacity(0.1)),
+                                      columnSpacing: 20,
+                                      columns: const [
+                                        DataColumn(
+                                            label: Text('No.',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Name',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Student ID',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Email',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Course',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Sex Uniform',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Size',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Approved At',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                      ],
+                                      rows: pageOrders
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
+                                        final index = start + entry.key + 1;
+                                        final data = entry.value.data()
+                                            as Map<String, dynamic>;
+                                        return DataRow(
+                                          cells: [
+                                            DataCell(Text(index.toString())),
+                                            DataCell(
+                                                Text(data['userName'] ?? '')),
+                                            DataCell(
+                                                Text(data['studentId'] ?? '')),
+                                            DataCell(Text(data['email'] ?? '')),
+                                            DataCell(
+                                                Text(data['course'] ?? '')),
+                                            DataCell(
+                                                Text(data['gender'] ?? '')),
+                                            DataCell(Text(data['size'] ?? '')),
+                                            DataCell(Text(formatTimestamp(
+                                                data['approvedAt']
+                                                    as Timestamp))),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 12),
+                            // Pagination buttons
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: currentPage > 0
+                                      ? () => setState(() => currentPage--)
+                                      : null,
+                                  child: const Text('Prev'),
+                                ),
+                                const SizedBox(width: 8),
+                                for (int i = 0; i < totalPages; i++)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    child: ElevatedButton(
+                                      onPressed: () =>
+                                          setState(() => currentPage = i),
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor: i == currentPage
+                                              ? const Color.fromARGB(
+                                                  255, 118, 255, 205)
+                                              : null),
+                                      child: Text('${i + 1}'),
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: currentPage < totalPages - 1
+                                      ? () => setState(() => currentPage++)
+                                      : null,
+                                  child: const Text('Next'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                         );
                       }
 
-                      // Mobile: Cards
+                      // Mobile view
                       return ListView.builder(
-                        itemCount: approved.length,
+                        itemCount: pageOrders.length,
                         itemBuilder: (context, index) {
-                          final doc = approved[index];
-                          final data = doc.data() as Map<String, dynamic>;
+                          final data =
+                              pageOrders[index].data() as Map<String, dynamic>;
                           return Card(
                             elevation: 3,
                             margin: const EdgeInsets.symmetric(vertical: 8),
@@ -1456,21 +1641,19 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    data['userName'] ?? 'Unknown',
+                                    '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})',
                                     style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         color: Color(0xFF00A86B)),
                                   ),
                                   const SizedBox(height: 6),
-                                  Text(
-                                      'Student ID: ${data['studentId'] ?? ''}'),
                                   Text('Email: ${data['email'] ?? ''}'),
                                   Text('Course: ${data['course'] ?? ''}'),
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
                                   Text(
-                                      'Approved At: ${data['approvedAt'] != null ? (data['approvedAt'] as Timestamp).toDate().toString() : 'N/A'}'),
+                                      'Approved At: ${formatTimestamp(data['approvedAt'] as Timestamp)}'),
                                 ],
                               ),
                             ),
@@ -1502,6 +1685,15 @@ class CompletedOrdersListPage extends StatefulWidget {
 
 class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
   String searchQuery = '';
+  int rowsPerPage = 10; // default 10 rows
+  int currentPage = 0; // current page index
+
+  // 🔹 Helper function to format timestamp
+  String formatTimestamp(Timestamp? timestamp) {
+    if (timestamp == null) return 'N/A';
+    final date = timestamp.toDate();
+    return DateFormat('MMM/dd/yyyy hh:mm a').format(date);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1513,7 +1705,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Text(
                   "Completed Orders",
@@ -1525,33 +1717,64 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Search Bar
-                SizedBox(
-                  width: isDesktop ? 400 : double.infinity,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search',
-                      prefixIcon:
-                          const Icon(Icons.search, color: Color(0xFF00B4FF)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                // 🔍 Search + Rows Per Page (Filter)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: isDesktop ? 250 : 180,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search',
+                          prefixIcon: const Icon(Icons.search,
+                              color: Color(0xFF00B4FF)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            searchQuery = value.toLowerCase();
+                            currentPage = 0;
+                          });
+                        },
                       ),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value.toLowerCase();
-                      });
-                    },
-                  ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black12),
+                      ),
+                      child: DropdownButton<int>(
+                        value: rowsPerPage,
+                        underline: const SizedBox(),
+                        items: const [
+                          DropdownMenuItem(value: 10, child: Text("10")),
+                          DropdownMenuItem(value: 50, child: Text("50")),
+                          DropdownMenuItem(value: 100, child: Text("100")),
+                          DropdownMenuItem(value: -1, child: Text("ALL")),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            rowsPerPage = value!;
+                            currentPage = 0;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
 
-                // Completed Orders List
+                // 🔹 Orders List
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
@@ -1569,11 +1792,11 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                             child: Text('No completed orders found.'));
                       }
 
-                      final orders = snapshot.data!.docs.where((doc) {
+                      final allOrders = snapshot.data!.docs.where((doc) {
                         final data = doc.data() as Map<String, dynamic>;
                         final status = data['status'] ?? '';
 
-                        // Lowercase and trim fields
+                        // Search filter
                         final name = (data['userName'] ?? '')
                             .toString()
                             .toLowerCase()
@@ -1582,149 +1805,184 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                             .toString()
                             .toLowerCase()
                             .trim();
-                        final email = (data['email'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final course = (data['course'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final gender = (data['gender'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
-                        final size = (data['size'] ?? '')
-                            .toString()
-                            .toLowerCase()
-                            .trim();
+                        final email =
+                            (data['email'] ?? '').toString().toLowerCase();
+                        final course =
+                            (data['course'] ?? '').toString().toLowerCase();
+                        final gender =
+                            (data['gender'] ?? '').toString().toLowerCase();
+                        final size =
+                            (data['size'] ?? '').toString().toLowerCase();
                         final dateStr = data['timestamp'] != null
-                            ? (data['timestamp'] as Timestamp)
-                                .toDate()
-                                .toString()
+                            ? formatTimestamp(data['timestamp'] as Timestamp)
                                 .toLowerCase()
-                                .trim()
                             : '';
 
-                        // Split search query by spaces
                         final queryWords =
-                            searchQuery.toLowerCase().split(RegExp(r'\s+'));
+                            searchQuery.split(RegExp(r'\s+')).toList();
 
-                        // Each word must match at least one field
-                        bool matches = queryWords.every((word) {
-                          if (word.isEmpty) return true;
-
-                          // Strict match for gender
-                          if (word == 'male' || word == 'female') {
-                            return gender == word;
-                          }
-
-                          // Partial match for all other fields
-                          return name.contains(word) ||
-                              studentId.contains(word) ||
-                              email.contains(word) ||
-                              course.contains(word) ||
-                              size.contains(word) ||
-                              dateStr.contains(word);
-                        });
-
-                        return status == 'Completed' && matches;
+                        return status == 'Completed' &&
+                            queryWords.every((word) {
+                              if (word.isEmpty) return true;
+                              if (word == 'male' || word == 'female') {
+                                return gender == word;
+                              }
+                              return name.contains(word) ||
+                                  studentId.contains(word) ||
+                                  email.contains(word) ||
+                                  course.contains(word) ||
+                                  size.contains(word) ||
+                                  dateStr.contains(word);
+                            });
                       }).toList();
-// Desktop: Centered Table
-                      if (isDesktop) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: Center(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: DataTable(
-                                headingRowColor: MaterialStateProperty.all(
-                                  const Color(0xFF00A86B).withOpacity(0.1),
-                                ),
-                                columnSpacing: 20,
-                                columns: const [
-                                  DataColumn(
-                                    label: Text(
-                                      'No.',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ), // ✅ Added number column
-                                  DataColumn(
-                                    label: Text('Name',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  DataColumn(
-                                    label: Text('Student ID',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  DataColumn(
-                                    label: Text('Email',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  DataColumn(
-                                    label: Text('Course',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  DataColumn(
-                                    label: Text('Sex Uniform',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  DataColumn(
-                                    label: Text('Size',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  DataColumn(
-                                    label: Text('Completed At',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                ],
-                                rows: orders.asMap().entries.map((entry) {
-                                  final index = entry.key +
-                                      1; // ✅ Row number (starts at 1)
-                                  final doc = entry.value;
-                                  final data =
-                                      doc.data() as Map<String, dynamic>;
 
-                                  return DataRow(
-                                    cells: [
-                                      DataCell(Text(index
-                                          .toString())), // ✅ Display row number
-                                      DataCell(Text(data['userName'] ?? '')),
-                                      DataCell(Text(data['studentId'] ?? '')),
-                                      DataCell(Text(data['email'] ?? '')),
-                                      DataCell(Text(data['course'] ?? '')),
-                                      DataCell(Text(data['gender'] ?? '')),
-                                      DataCell(Text(data['size'] ?? '')),
-                                      DataCell(Text(
-                                        data['timestamp'] != null
-                                            ? (data['timestamp'] as Timestamp)
-                                                .toDate()
-                                                .toString()
-                                            : 'N/A',
-                                      )),
-                                    ],
-                                  );
-                                }).toList(),
+                      // Pagination calculation
+                      final totalPages = rowsPerPage == -1
+                          ? 1
+                          : (allOrders.length / rowsPerPage).ceil();
+                      final start = currentPage * rowsPerPage;
+                      final end = rowsPerPage == -1
+                          ? allOrders.length
+                          : (start + rowsPerPage).clamp(0, allOrders.length);
+                      final pageOrders = allOrders.sublist(start, end);
+
+                      // Desktop: DataTable
+                      if (isDesktop) {
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.vertical,
+                                child: Center(
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: DataTable(
+                                      headingRowColor:
+                                          MaterialStateProperty.all(
+                                              const Color(0xFF00A86B)
+                                                  .withOpacity(0.1)),
+                                      columnSpacing: 20,
+                                      columns: const [
+                                        DataColumn(
+                                            label: Text('No.',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Name',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Student ID',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Email',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Course',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Sex Uniform',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Size',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Completed At',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                      ],
+                                      rows: pageOrders
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
+                                        final index = start + entry.key + 1;
+                                        final data = entry.value.data()
+                                            as Map<String, dynamic>;
+                                        return DataRow(
+                                          cells: [
+                                            DataCell(Text(index.toString())),
+                                            DataCell(
+                                                Text(data['userName'] ?? '')),
+                                            DataCell(
+                                                Text(data['studentId'] ?? '')),
+                                            DataCell(Text(data['email'] ?? '')),
+                                            DataCell(
+                                                Text(data['course'] ?? '')),
+                                            DataCell(
+                                                Text(data['gender'] ?? '')),
+                                            DataCell(Text(data['size'] ?? '')),
+                                            DataCell(Text(formatTimestamp(
+                                                data['timestamp']
+                                                    as Timestamp?))),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+
+                            // 🔹 Pagination Buttons
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: currentPage > 0
+                                      ? () => setState(() => currentPage--)
+                                      : null,
+                                  child: const Text('Prev'),
+                                ),
+                                const SizedBox(width: 8),
+                                for (int i = 0; i < totalPages; i++)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    child: ElevatedButton(
+                                      onPressed: () =>
+                                          setState(() => currentPage = i),
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor: i == currentPage
+                                              ? const Color.fromARGB(
+                                                  255, 93, 255, 196)
+                                              : null),
+                                      child: Text('${i + 1}'),
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: currentPage < totalPages - 1
+                                      ? () => setState(() => currentPage++)
+                                      : null,
+                                  child: const Text('Next'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                         );
                       }
 
-                      // Mobile: Cards
+                      // Mobile view (no DataTable)
                       return ListView.builder(
-                        itemCount: orders.length,
+                        itemCount: pageOrders.length,
                         itemBuilder: (context, index) {
-                          final doc = orders[index];
-                          final data = doc.data() as Map<String, dynamic>;
+                          final data =
+                              pageOrders[index].data() as Map<String, dynamic>;
                           return Card(
                             elevation: 3,
                             margin: const EdgeInsets.symmetric(vertical: 8),
@@ -1748,7 +2006,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
                                   Text(
-                                      'Completed At: ${data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate().toString() : 'N/A'}'),
+                                      'Completed At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
                                 ],
                               ),
                             ),
@@ -1774,6 +2032,7 @@ class InventoryPage extends StatefulWidget {
   @override
   State<InventoryPage> createState() => _InventoryPageState();
 }
+
 class _InventoryPageState extends State<InventoryPage> {
   String searchQuery = '';
 
@@ -1784,14 +2043,76 @@ class _InventoryPageState extends State<InventoryPage> {
             .toList());
   }
 
-  void _openForm([Uniform? uniform]) {
-    Navigator.push(
+  void _openForm([Uniform? uniform]) async {
+    final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => UniformFormPage(uniform: uniform)),
+      MaterialPageRoute(
+        builder: (_) => UniformFormPage(uniform: uniform),
+      ),
     );
+
+    if (result != null) {
+      // EDIT existing uniform
+      if (uniform != null && result is int) {
+        _updateStockIn(uniform, result);
+      }
+      // ADD new uniform
+      else if (uniform == null && result is Uniform) {
+        final newUniform = result;
+
+        // Save new uniform to Firestore
+        final docRef = FirebaseFirestore.instance
+            .collection('uniforms')
+            .doc(newUniform.id);
+        await docRef.set(newUniform.toMap());
+
+        // Log as initial stock in
+        await FirebaseFirestore.instance.collection('inventory_history').add({
+          'course': newUniform.course,
+          'gender': newUniform.gender,
+          'size': newUniform.size,
+          'stockIn': newUniform.quantity,
+          'stockOut': 0,
+          'date': FieldValue.serverTimestamp(),
+        });
+      }
+    }
   }
 
+  Future<void> _updateStockIn(Uniform uniform, int newQuantity) async {
+    final docRef =
+        FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
 
+    final docSnap = await docRef.get();
+    if (!docSnap.exists) return;
+
+    final data = docSnap.data()!;
+    final oldQuantity = data['quantity'] ?? 0;
+    int stockInChange = 0;
+
+    // detect if stock increased
+    if (newQuantity > oldQuantity) {
+      stockInChange = (newQuantity - oldQuantity).toInt();
+
+      // ✅ Add a record to the "history" collection
+      await FirebaseFirestore.instance.collection('history').add({
+        'course': data['course'] ?? '',
+        'sex': data['sex'] ?? '',
+        'size': data['size'] ?? '',
+        'stockIn': stockInChange,
+        'stockOut': 0,
+        'remainingStock': newQuantity,
+        'date': FieldValue.serverTimestamp(),
+      });
+    }
+
+    // ✅ Update the main uniform document
+    await docRef.update({
+      'quantity': newQuantity,
+      'stockIn': FieldValue.increment(stockInChange),
+      'lastEdited': FieldValue.serverTimestamp(),
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2029,7 +2350,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                                           child: DataTable(
                                                             columnSpacing: 40,
                                                             headingRowColor:
-                                                                MaterialStateProperty.all(
+                                                                WidgetStateProperty.all(
                                                                     const Color(
                                                                         0xFF1E88E5)),
                                                             headingTextStyle:
@@ -2069,15 +2390,19 @@ class _InventoryPageState extends State<InventoryPage> {
                                                                     DataCell(Text(
                                                                         size)),
                                                                     DataCell(
-                                                                          Text(
-                                                                            qty.toString(),
-                                                                            style: TextStyle(
-                                                                              color: qty == 0 ? Colors.red : Colors.black,
-                                                                              fontWeight: qty == 0 ? FontWeight.bold : FontWeight.normal,
-                                                                            ),
-                                                                          ),
+                                                                      Text(
+                                                                        qty.toString(),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          color: qty == 0
+                                                                              ? Colors.red
+                                                                              : Colors.black,
+                                                                          fontWeight: qty == 0
+                                                                              ? FontWeight.bold
+                                                                              : FontWeight.normal,
                                                                         ),
-
+                                                                      ),
+                                                                    ),
                                                                     DataCell(
                                                                         Row(
                                                                       mainAxisAlignment:
@@ -2095,7 +2420,6 @@ class _InventoryPageState extends State<InventoryPage> {
                                                                             _openForm(uniform);
                                                                           },
                                                                         ),
-                                                                        
                                                                       ],
                                                                     )),
                                                                   ]);
@@ -2138,12 +2462,23 @@ class _InventoryPageState extends State<InventoryPage> {
                                                                           FontWeight
                                                                               .bold)),
                                                               subtitle: Text(
-                                                                    "Quantity: $qty",
-                                                                    style: TextStyle(
-                                                                      color: qty == 0 ? Colors.red : Colors.black,
-                                                                      fontWeight: qty == 0 ? FontWeight.bold : FontWeight.normal,
-                                                                    ),
-                                                                  ),
+                                                                "Quantity: $qty",
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: qty ==
+                                                                          0
+                                                                      ? Colors
+                                                                          .red
+                                                                      : Colors
+                                                                          .black,
+                                                                  fontWeight: qty ==
+                                                                          0
+                                                                      ? FontWeight
+                                                                          .bold
+                                                                      : FontWeight
+                                                                          .normal,
+                                                                ),
+                                                              ),
                                                               trailing: Row(
                                                                 mainAxisSize:
                                                                     MainAxisSize
@@ -2167,7 +2502,6 @@ class _InventoryPageState extends State<InventoryPage> {
                                                                           uniform);
                                                                     },
                                                                   ),
-                                                                  
                                                                 ],
                                                               ),
                                                             ),
@@ -2176,7 +2510,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                                       ),
                                                   ],
                                                 );
-                                              }).toList(),
+                                              }),
                                             ],
                                           ),
                                         ),
@@ -2201,73 +2535,106 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 }
 
-/// ============================
-/// SETTINGS PAGE
-/// ============================
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+class HistoryStockReportTab extends StatelessWidget {
+  const HistoryStockReportTab({super.key});
+
+  String formatDate(dynamic ts) {
+    if (ts == null) return '';
+    try {
+      final dt =
+          (ts is Timestamp) ? ts.toDate() : DateTime.parse(ts.toString());
+      return DateFormat('MMM dd, yyyy hh:mm a')
+          .format(dt); // e.g. Oct 15, 2025 03:45 PM
+    } catch (e) {
+      return ts.toString();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const Text(
+            'History Stock Report',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF00A86B),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('inventory_history')
+                  .orderBy('date', descending: true)
+                  .snapshots(),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                      child: CircularProgressIndicator(
+                    color: Color(0xFF00B4FF),
+                  ));
+                }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: const Color(0xFF00A86B),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Admin Profile',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                final docs = snap.data?.docs ?? [];
+
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No data',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  );
+                }
+
+                // Build DataRows from docs
+                final rows = docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final course = (data['course'] ?? '').toString();
+                  final gender = (data['gender'] ?? '').toString();
+                  final size = (data['size'] ?? '').toString();
+                  final stockIn = (data['stockIn'] ?? 0).toString();
+                  final stockOut = (data['stockOut'] ?? 0).toString();
+                  final remaining = ((data['remaining'] != null)
+                          ? data['remaining'].toString()
+                          : (int.tryParse(stockIn) ?? 0) -
+                              (int.tryParse(stockOut) ?? 0))
+                      .toString();
+                  final dateStr = formatDate(data['date']);
+
+                  return DataRow(cells: [
+                    DataCell(Text(course)),
+                    DataCell(Text(gender)),
+                    DataCell(Text(size)),
+                    DataCell(Text(stockIn)),
+                    DataCell(Text(stockOut)),
+                    DataCell(Text(remaining)),
+                    DataCell(Text(dateStr)),
+                  ]);
+                }).toList();
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Course')),
+                      DataColumn(label: Text('Sex')),
+                      DataColumn(label: Text('Size')),
+                      DataColumn(label: Text('Stock In')),
+                      DataColumn(label: Text('Stock Out')),
+                      DataColumn(label: Text('Remaining Stock')),
+                      DataColumn(label: Text('Date')),
+                    ],
+                    rows: rows,
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 20),
-            Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.grey.shade300,
-                child: const Icon(Icons.person, size: 60, color: Colors.grey),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Name: ${user?.displayName ?? 'Admin User'}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Email: ${user?.email ?? 'admin@example.com'}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            const Text('Role: Administrator', style: TextStyle(fontSize: 16)),
-            const Spacer(),
-            Center(
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label:
-                    const Text('Logout', style: TextStyle(color: Colors.white)),
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  if (context.mounted) {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
