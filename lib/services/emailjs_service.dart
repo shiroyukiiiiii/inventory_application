@@ -2,6 +2,11 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class EmailJsService {
+  static const String serviceId = 'service_rhy5ula';
+  static const String templateId = 'template_es6tz3k';
+  static const String userId = 'fkjnejUTrQGSFyntI';
+
+  /// Sends an admin registration email with credentials
   static Future<void> sendAdminRegistrationEmail({
     required String toEmail,
     required String toName,
@@ -17,7 +22,7 @@ class EmailJsService {
       },
       body: json.encode({
         'service_id': serviceId,
-        'template_id': 'template_admin_registration', // <-- Set your admin registration template ID here
+        'template_id': 'template_admin_registration', // ✅ make sure this exists in EmailJS
         'user_id': userId,
         'template_params': {
           'to_email': toEmail,
@@ -27,14 +32,16 @@ class EmailJsService {
         }
       }),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to send admin registration email: \\${response.body}');
-    }
-  }
-  static const String serviceId = 'service_rhy5ula';
-  static const String templateId = 'template_es6tz3k';
-  static const String userId = 'fkjnejUTrQGSFyntI';
 
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Failed to send admin registration email: ${response.body}');
+    }
+
+    print('✅ Admin registration email sent successfully');
+  }
+
+  /// Sends approval email to student when request is approved
   static Future<void> sendApprovalEmail({
     required String toEmail,
     required String toName,
@@ -43,6 +50,7 @@ class EmailJsService {
     required String gender,
     required String course,
     required String size,
+    required int orderQuantity,
     required String qrCode,
   }) async {
     final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
@@ -64,12 +72,16 @@ class EmailJsService {
           'gender': gender,
           'course': course,
           'size': size,
+          'order_quantity': orderQuantity, // ✅ Added this line
           'qr_code': qrCode,
         }
       }),
     );
+
     if (response.statusCode != 200) {
       throw Exception('Failed to send approval email: ${response.body}');
     }
+
+    print('✅ Approval email sent successfully');
   }
 }

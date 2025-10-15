@@ -46,18 +46,40 @@ class HomePage extends StatelessWidget {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () {
-              FirebaseAuth.instance.signOut().then((_) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const SignInPage()),
-                  (Route<dynamic> route) => false,
-                );
-              });
-            },
-          ),
-        ],
+  IconButton(
+    icon: const Icon(Icons.logout, color: Colors.white),
+    onPressed: () {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Confirm Logout'),
+            content: const Text('Are you sure you want to exit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  FirebaseAuth.instance.signOut().then((_) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const SignInPage()),
+                      (Route<dynamic> route) => false,
+                    );
+                  });
+                },
+                child: const Text('Logout'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  ),
+],
+
       ),
       body: Container(
         decoration: const BoxDecoration(

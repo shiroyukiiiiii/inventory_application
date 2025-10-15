@@ -15,8 +15,9 @@ class EmailService {
     required String gender,
     required String course,
     required String size,
-    required String toEmail,          // recipient email address
-    List<int>? qrCodeBytes,           // optional QR image bytes
+    required String orderQuantity, // ✅ replaced 'quantity' with 'orderQuantity'
+    required String toEmail,       // recipient email address
+    List<int>? qrCodeBytes,        // optional QR image bytes
   }) async {
     try {
       final qrBase64 = qrCodeBytes != null ? base64Encode(qrCodeBytes) : '';
@@ -29,13 +30,14 @@ class EmailService {
           'template_id': templateId,
           'user_id': publicKey,
           'template_params': {
-            // ✅ MUST match template variable names exactly
+            // ✅ MUST match template variable names in your EmailJS dashboard
             'to_email': toEmail,
             'student_number': studentNumber,
             'student_name': studentName,
             'gender': gender,
             'course': course,
             'size': size,
+            'order_quantity': orderQuantity, // ✅ correct key/value
             'qr_code': qrBase64,
           },
         }),

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'services/qr_service.dart';
 import 'services/email_service.dart';
 import 'package:uuid/uuid.dart';
+import 'main.dart';
 
 class UniformRequestPage extends StatefulWidget {
   final User user;
@@ -31,6 +32,11 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   String _fullName = '';
   late String _email;
   late TextEditingController _emailController;
+  late TextEditingController _orderQuantityController;
+  late TextEditingController _fullNameController;
+  late TextEditingController _studentIdController;
+
+  int _orderQuantity = 1;
   bool _isSubmitting = false;
   String? _message;
   bool _showQRCode = false;
@@ -42,6 +48,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     _course = widget.initialCourse ?? '';
     _email = widget.user.email ?? '';
     _emailController = TextEditingController(text: _email);
+    _orderQuantityController = TextEditingController(text: '1');
+    _fullNameController = TextEditingController();
+    _studentIdController = TextEditingController();
   }
 
   void _generateQRPreview() {
@@ -72,6 +81,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     );
     return;
   }
+  
 
   setState(() {
     _isSubmitting = true;
@@ -84,6 +94,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     final qrCodeBytes = await QRService.generateQRCodeBytes(qrData);
     final qrBase64 = base64Encode(qrCodeBytes);
 
+     _orderQuantity = int.tryParse(_orderQuantityController.text) ?? 1;
+
     await FirebaseFirestore.instance.collection('uniform_requests').add({
       'orderId': orderId, // ✅ new unique order ID
       'userId': widget.user.uid,
@@ -94,6 +106,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       'course': _course,
       'size': _size,
       'studentId': _studentId,
+      'orderQuantity': _orderQuantity,
       'qrData': qrData, // ✅ updated to studentId + orderId
       'qrCode': qrBase64,
       'timestamp': FieldValue.serverTimestamp(),
@@ -108,6 +121,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       gender: _gender,
       course: _course,
       size: _size,
+      orderQuantity: _orderQuantity.toString(),
       qrCodeBytes: qrCodeBytes,
       toEmail: _email.isNotEmpty ? _email : (widget.user.email ?? ''),
     );
@@ -138,6 +152,42 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         elevation: 2,
+
+        actions: [
+  IconButton(
+    icon: const Icon(Icons.logout, color: Colors.white),
+    onPressed: () {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Confirm Logout'),
+            content: const Text('Are you sure you want to exit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  FirebaseAuth.instance.signOut().then((_) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const SignInPage()),
+                      (Route<dynamic> route) => false,
+                    );
+                  });
+                },
+                child: const Text('Logout'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  ),
+],
+
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -179,23 +229,23 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
           ),
 
           // 🔒 FULL NAME VALIDATION
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'Full Name',
-              prefixIcon: Icon(Icons.person_outline),
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) return 'Enter your full name';
-              final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
-              if (!nameRegExp.hasMatch(value)) {
-                return 'Full name must only contain letters and spaces';
-              }
-              return null;
-            },
-            onSaved: (value) => _fullName = value ?? '',
-            onChanged: (value) => setState(() => _fullName = value),
-          ),
+         TextFormField(
+  controller: _fullNameController,
+  decoration: const InputDecoration(
+    labelText: 'Full Name',
+    border: OutlineInputBorder(),
+  ),
+  validator: (value) {
+    if (value == null || value.isEmpty) return 'Enter your full name';
+    final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
+    if (!nameRegExp.hasMatch(value)) {
+      return 'Full name must only contain letters and spaces';
+    }
+    return null;
+  },
+  onSaved: (value) => _fullName = value ?? '',
+),
+
 
           const SizedBox(height: 15),
 
@@ -221,10 +271,10 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
 
           // 🔒 STUDENT NUMBER VALIDATION
           TextFormField(
+            controller: _studentIdController,
             decoration: const InputDecoration(
-              labelText: 'Student Number',
-              prefixIcon: Icon(Icons.badge_outlined),
-              border: OutlineInputBorder(),
+            labelText: 'Student Number',
+            border: OutlineInputBorder(),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) return 'Enter Student Number';
@@ -243,11 +293,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             },
             onSaved: (value) => _studentId = value ?? '',
             onChanged: (value) {
-              setState(() {
-                _studentId = value;
-                _showQRCode = false;
-              });
+            _studentId = value; // store locally, no setState()
             },
+
           ),
 
           const SizedBox(height: 10),
@@ -501,11 +549,35 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                 ),
               );
             }),
+
+            const SizedBox(height: 15),
+
+// Quantity input field
+TextFormField(
+  controller: _orderQuantityController,
+  decoration: const InputDecoration(
+    labelText: 'Order Quantity',
+    prefixIcon: Icon(Icons.shopping_cart_outlined),
+    border: OutlineInputBorder(),
+  ),
+  keyboardType: TextInputType.number,
+  validator: (value) {
+    if (value == null || value.isEmpty) return 'Enter order quantity';
+    final qty = int.tryParse(value);
+    if (qty == null || qty <= 0) return 'Enter a valid number (1 or more)';
+    return null;
+  },
+  onSaved: (value) => _orderQuantity = int.tryParse(value ?? '1') ?? 1,
+),
+
+
+
           ],
         );
       },
     );
   }
+  
 
   Widget _buildGenderReminder() {
     return Container(
@@ -521,10 +593,15 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       ),
     );
   }
+  
 
   @override
   void dispose() {
     _emailController.dispose();
+     _orderQuantityController.dispose();
+
+     _fullNameController.dispose();
+  _studentIdController.dispose();
     super.dispose();
   }
 }
