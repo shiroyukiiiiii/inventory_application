@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'services/qr_service.dart';
 import 'services/email_service.dart';
 import 'package:uuid/uuid.dart';
+import 'main.dart';
 
 class UniformRequestPage extends StatefulWidget {
   final User user;
@@ -138,6 +139,42 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         elevation: 2,
+
+        actions: [
+  IconButton(
+    icon: const Icon(Icons.logout, color: Colors.white),
+    onPressed: () {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Confirm Logout'),
+            content: const Text('Are you sure you want to exit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  FirebaseAuth.instance.signOut().then((_) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const SignInPage()),
+                      (Route<dynamic> route) => false,
+                    );
+                  });
+                },
+                child: const Text('Logout'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  ),
+],
+
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),

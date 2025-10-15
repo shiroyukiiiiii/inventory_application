@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'uniform_request_page.dart';
+import 'main.dart';
 
 class UniformPreviewPage extends StatelessWidget {
   final String gender;
@@ -34,6 +35,42 @@ class UniformPreviewPage extends StatelessWidget {
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+
+        actions: [
+  IconButton(
+    icon: const Icon(Icons.logout, color: Colors.white),
+    onPressed: () {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Confirm Logout'),
+            content: const Text('Are you sure you want to exit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  FirebaseAuth.instance.signOut().then((_) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const SignInPage()),
+                      (Route<dynamic> route) => false,
+                    );
+                  });
+                },
+                child: const Text('Logout'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  ),
+],
+
       ),
       body: Center(
         child: Container(
