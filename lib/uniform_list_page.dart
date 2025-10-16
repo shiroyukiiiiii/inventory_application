@@ -613,63 +613,95 @@ class _UniformFormPageState extends State<UniformFormPage> {
   }
 
   Future<void> _saveUniform() async {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+  if (!_formKey.currentState!.validate()) return;
+  _formKey.currentState!.save();
 
-    final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
-    String message = '';
+  // 🚫 Additional Validation
+  if (_course.isEmpty || _gender.isEmpty || _size.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All fields are required.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
 
-    if (widget.uniform != null) {
-      // 🔹 Editing existing uniform — update directly by document ID
-      await uniformsRef.doc(widget.uniform!.id).update({
-        'course': _course,
-        'gender': _gender,
-        'size': _size,
-        'quantity': _quantity,
+  if (_quantity <= 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Quantity must be greater than 0.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  if (_quantity > 500) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Quantity cannot exceed 500 per entry.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+  String message = '';
+
+  if (widget.uniform != null) {
+    // 🔹 Editing existing uniform
+    await uniformsRef.doc(widget.uniform!.id).update({
+      'course': _course,
+      'gender': _gender,
+      'size': _size,
+      'quantity': _quantity,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    message = 'Stock updated successfully!';
+  } else {
+    // 🔹 Adding new uniform
+    final existingQuery = await uniformsRef
+        .where('course', isEqualTo: _course)
+        .where('gender', isEqualTo: _gender)
+        .where('size', isEqualTo: _size)
+        .limit(1)
+        .get();
+
+    if (existingQuery.docs.isNotEmpty) {
+      final existingDoc = existingQuery.docs.first;
+      await uniformsRef.doc(existingDoc.id).update({
+        'quantity': FieldValue.increment(_quantity),
         'updatedAt': FieldValue.serverTimestamp(),
       });
       message = 'Stock updated successfully!';
     } else {
-      // 🔹 Adding new uniform — check if combination already exists
-      final existingQuery = await uniformsRef
-          .where('course', isEqualTo: _course)
-          .where('gender', isEqualTo: _gender)
-          .where('size', isEqualTo: _size)
-          .limit(1)
-          .get();
-
-      if (existingQuery.docs.isNotEmpty) {
-        final existingDoc = existingQuery.docs.first;
-        await uniformsRef.doc(existingDoc.id).update({
-          'quantity': FieldValue.increment(_quantity),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        message = 'Stock updated successfully!';
-      } else {
-        await uniformsRef.add({
-          'course': _course,
-          'gender': _gender,
-          'size': _size,
-          'quantity': _quantity,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        message = 'New stock added successfully!';
-      }
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.teal,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      Navigator.pop(context);
+      await uniformsRef.add({
+        'course': _course,
+        'gender': _gender,
+        'size': _size,
+        'quantity': _quantity,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      message = 'New stock added successfully!';
     }
   }
+
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.teal,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    Navigator.pop(context);
+  }
+}
+
 
   Widget _sectionTitle(String title, IconData icon) {
     return Row(
@@ -752,25 +784,27 @@ class _UniformFormPageState extends State<UniformFormPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: DropdownButtonFormField<String>(
-                    initialValue: _size.isNotEmpty ? _size : null,
-                    decoration: InputDecoration(
-                      labelText: 'Size',
-                      prefixIcon:
-                          const Icon(Icons.straighten, color: Colors.teal),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    items: ['S', 'M', 'L', 'XL', 'XXL']
-                        .map((size) => DropdownMenuItem(
-                              value: size,
-                              child: Text(size),
-                            ))
-                        .toList(),
-                    validator: (value) =>
-                        value == null || value.isEmpty ? 'Select size' : null,
-                    onChanged: (val) => setState(() => _size = val ?? ''),
-                    onSaved: (val) => _size = val ?? '',
-                  ),
+                        value: _size.isNotEmpty ? _size : null,
+                        decoration: InputDecoration(
+                          labelText: 'Size',
+                          prefixIcon: const Icon(Icons.straighten, color: Colors.teal),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        items: ['S', 'M', 'L', 'XL', 'XXL']
+                            .map((size) => DropdownMenuItem(
+                                  value: size,
+                                  child: Text(size),
+                                ))
+                            .toList(),
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return 'Please select a size';
+                          return null;
+                        },
+                        onChanged: (val) => setState(() => _size = val ?? ''),
+                      ),
+
                 ),
               ),
 
@@ -2054,76 +2088,149 @@ class _InventoryPageState extends State<InventoryPage> {
             .toList());
   }
 
-  void _openForm([Uniform? uniform]) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UniformFormPage(uniform: uniform),
-      ),
-    );
-
-    if (result != null) {
-      // EDIT existing uniform
-      if (uniform != null && result is int) {
-        _updateStockIn(uniform, result);
-      }
-      // ADD new uniform
-      else if (uniform == null && result is Uniform) {
-        final newUniform = result;
-
-        // Save new uniform to Firestore
-        final docRef = FirebaseFirestore.instance
-            .collection('uniforms')
-            .doc(newUniform.id);
-        await docRef.set(newUniform.toMap());
-
-        // Log as initial stock in
-        await FirebaseFirestore.instance.collection('inventory_history').add({
-          'course': newUniform.course,
-          'gender': newUniform.gender,
-          'size': newUniform.size,
-          'stockIn': newUniform.quantity,
-          'stockOut': 0,
-          'date': FieldValue.serverTimestamp(),
-        });
-      }
-    }
-  }
 
   Future<void> _updateStockIn(Uniform uniform, int newQuantity) async {
-    final docRef =
-        FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
+  final docRef =
+      FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
 
-    final docSnap = await docRef.get();
-    if (!docSnap.exists) return;
+  final docSnap = await docRef.get();
+  if (!docSnap.exists) return;
 
-    final data = docSnap.data()!;
-    final oldQuantity = data['quantity'] ?? 0;
-    int stockInChange = 0;
+  final data = docSnap.data()!;
+  final oldQuantity = data['quantity'] ?? 0;
+  int stockInChange = 0;
 
-    // detect if stock increased
-    if (newQuantity > oldQuantity) {
-      stockInChange = (newQuantity - oldQuantity).toInt();
+  // 🚫 Validation: Prevent negative or zero quantity
+  if (newQuantity <= 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Quantity must be greater than 0.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+  if (newQuantity < 0) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Quantity cannot be negative.'),
+      backgroundColor: Colors.red,
+    ),
+  );
+  return;
+}
 
-      // ✅ Add a record to the "history" collection
-      await FirebaseFirestore.instance.collection('history').add({
-        'course': data['course'] ?? '',
-        'sex': data['sex'] ?? '',
-        'size': data['size'] ?? '',
-        'stockIn': stockInChange,
-        'stockOut': 0,
-        'remainingStock': newQuantity,
-        'date': FieldValue.serverTimestamp(),
-      });
-    }
 
-    // ✅ Update the main uniform document
-    await docRef.update({
-      'quantity': newQuantity,
-      'stockIn': FieldValue.increment(stockInChange),
-      'lastEdited': FieldValue.serverTimestamp(),
+  // detect if stock increased
+  if (newQuantity > oldQuantity) {
+    stockInChange = (newQuantity - oldQuantity).toInt();
+
+    // ✅ Add a record to the "history" collection
+    await FirebaseFirestore.instance.collection('history').add({
+      'course': data['course'] ?? '',
+      'gender': data['gender'] ?? data['sex'] ?? '',
+      'size': data['size'] ?? '',
+      'stockIn': stockInChange,
+      'stockOut': 0,
+      'remainingStock': newQuantity,
+      'date': FieldValue.serverTimestamp(),
     });
   }
+
+  // ✅ Update the main uniform document
+  await docRef.update({
+    'quantity': newQuantity,
+    'stockIn': FieldValue.increment(stockInChange),
+    'lastEdited': FieldValue.serverTimestamp(),
+  });
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Stock updated successfully!'),
+      backgroundColor: Colors.green,
+    ),
+  );
+}
+
+void _openForm([Uniform? uniform]) async {
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => UniformFormPage(uniform: uniform),
+    ),
+  );
+
+  if (result != null) {
+    // EDIT existing uniform
+    if (uniform != null && result is int) {
+      _updateStockIn(uniform, result);
+    }
+    // ADD new uniform
+    else if (uniform == null && result is Uniform) {
+      final newUniform = result;
+
+      // 🚫 Validation: Required fields check
+      if (newUniform.course.isEmpty ||
+          newUniform.gender.isEmpty ||
+          newUniform.size.isEmpty ||
+          newUniform.quantity <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'All fields (course, gender, size, and quantity) are required and quantity must be greater than 0.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // 🚫 Validation: Prevent duplicates (same course + gender + size)
+      final duplicateCheck = await FirebaseFirestore.instance
+          .collection('uniforms')
+          .where('course', isEqualTo: newUniform.course)
+          .where('gender', isEqualTo: newUniform.gender)
+          .where('size', isEqualTo: newUniform.size)
+          .get();
+
+      if (duplicateCheck.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'A uniform with the same course, gender, and size already exists.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // ✅ Save valid new uniform to Firestore
+      final docRef = FirebaseFirestore.instance
+          .collection('uniforms')
+          .doc(newUniform.id);
+      await docRef.set(newUniform.toMap());
+
+      // Log as initial stock in
+      await FirebaseFirestore.instance.collection('inventory_history').add({
+        'course': newUniform.course,
+        'gender': newUniform.gender,
+        'size': newUniform.size,
+        'stockIn': newUniform.quantity,
+        'stockOut': 0,
+        'date': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Uniform added successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
