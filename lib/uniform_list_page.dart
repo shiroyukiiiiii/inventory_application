@@ -1150,6 +1150,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                 style: TextStyle(
                                                     fontWeight:
                                                         FontWeight.bold))),
+                                        DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
                                         DataColumn(
                                             label: Text('Requested At',
                                                 style: TextStyle(
@@ -1177,6 +1178,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                   Text(data['gender'] ?? '')),
                                               DataCell(
                                                   Text(data['size'] ?? '')),
+                                              DataCell(Text(data['orderQuantity']?.toString() ?? '1')),
                                               DataCell(Text(formatTimestamp(
                                                   data['timestamp']
                                                       as Timestamp?))),
@@ -1271,6 +1273,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                   Text('Course: ${data['course'] ?? ''}'),
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
+                                  Text('Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
                                   Text(
                                       'Requested At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
                                   const SizedBox(height: 8),
@@ -1547,6 +1550,8 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                                 style: TextStyle(
                                                     fontWeight:
                                                         FontWeight.bold))),
+                                        DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
+
                                         DataColumn(
                                             label: Text('Approved At',
                                                 style: TextStyle(
@@ -1573,6 +1578,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                             DataCell(
                                                 Text(data['gender'] ?? '')),
                                             DataCell(Text(data['size'] ?? '')),
+                                            DataCell(Text(data['orderQuantity']?.toString() ?? '1')),
                                             DataCell(Text(formatTimestamp(
                                                 data['approvedAt']
                                                     as Timestamp))),
@@ -1653,6 +1659,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                   Text('Course: ${data['course'] ?? ''}'),
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
+                                  Text('Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
                                   Text(
                                       'Approved At: ${formatTimestamp(data['approvedAt'] as Timestamp)}'),
                                 ],
@@ -1899,6 +1906,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                                 style: TextStyle(
                                                     fontWeight:
                                                         FontWeight.bold))),
+                                        DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
                                         DataColumn(
                                             label: Text('Completed At',
                                                 style: TextStyle(
@@ -1925,6 +1933,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                             DataCell(
                                                 Text(data['gender'] ?? '')),
                                             DataCell(Text(data['size'] ?? '')),
+                                            DataCell(Text(data['orderQuantity']?.toString() ?? '1')),
                                             DataCell(Text(formatTimestamp(
                                                 data['timestamp']
                                                     as Timestamp?))),
@@ -2006,6 +2015,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                   Text('Course: ${data['course'] ?? ''}'),
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
+                                  Text('Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
                                   Text(
                                       'Completed At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
                                 ],
