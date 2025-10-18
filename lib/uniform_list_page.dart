@@ -6,6 +6,7 @@ import '../models/uniform.dart';
 import 'admin_qr_confirmation.dart';
 import 'services/emailjs_service.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/gestures.dart';
 
 class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
@@ -613,95 +614,94 @@ class _UniformFormPageState extends State<UniformFormPage> {
   }
 
   Future<void> _saveUniform() async {
-  if (!_formKey.currentState!.validate()) return;
-  _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
 
-  // 🚫 Additional Validation
-  if (_course.isEmpty || _gender.isEmpty || _size.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('All fields are required.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
+    // 🚫 Additional Validation
+    if (_course.isEmpty || _gender.isEmpty || _size.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All fields are required.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  if (_quantity <= 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Quantity must be greater than 0.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
+    if (_quantity <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Quantity must be greater than 0.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  if (_quantity > 500) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Quantity cannot exceed 500 per entry.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
+    if (_quantity > 500) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Quantity cannot exceed 500 per entry.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
-  String message = '';
+    final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+    String message = '';
 
-  if (widget.uniform != null) {
-    // 🔹 Editing existing uniform
-    await uniformsRef.doc(widget.uniform!.id).update({
-      'course': _course,
-      'gender': _gender,
-      'size': _size,
-      'quantity': _quantity,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    message = 'Stock updated successfully!';
-  } else {
-    // 🔹 Adding new uniform
-    final existingQuery = await uniformsRef
-        .where('course', isEqualTo: _course)
-        .where('gender', isEqualTo: _gender)
-        .where('size', isEqualTo: _size)
-        .limit(1)
-        .get();
-
-    if (existingQuery.docs.isNotEmpty) {
-      final existingDoc = existingQuery.docs.first;
-      await uniformsRef.doc(existingDoc.id).update({
-        'quantity': FieldValue.increment(_quantity),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      message = 'Stock updated successfully!';
-    } else {
-      await uniformsRef.add({
+    if (widget.uniform != null) {
+      // 🔹 Editing existing uniform
+      await uniformsRef.doc(widget.uniform!.id).update({
         'course': _course,
         'gender': _gender,
         'size': _size,
         'quantity': _quantity,
-        'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      message = 'New stock added successfully!';
+      message = 'Stock updated successfully!';
+    } else {
+      // 🔹 Adding new uniform
+      final existingQuery = await uniformsRef
+          .where('course', isEqualTo: _course)
+          .where('gender', isEqualTo: _gender)
+          .where('size', isEqualTo: _size)
+          .limit(1)
+          .get();
+
+      if (existingQuery.docs.isNotEmpty) {
+        final existingDoc = existingQuery.docs.first;
+        await uniformsRef.doc(existingDoc.id).update({
+          'quantity': FieldValue.increment(_quantity),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        message = 'Stock updated successfully!';
+      } else {
+        await uniformsRef.add({
+          'course': _course,
+          'gender': _gender,
+          'size': _size,
+          'quantity': _quantity,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        message = 'New stock added successfully!';
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.teal,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      Navigator.pop(context);
     }
   }
-
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.teal,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    Navigator.pop(context);
-  }
-}
-
 
   Widget _sectionTitle(String title, IconData icon) {
     return Row(
@@ -784,27 +784,28 @@ class _UniformFormPageState extends State<UniformFormPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: DropdownButtonFormField<String>(
-                        value: _size.isNotEmpty ? _size : null,
-                        decoration: InputDecoration(
-                          labelText: 'Size',
-                          prefixIcon: const Icon(Icons.straighten, color: Colors.teal),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        items: ['S', 'M', 'L', 'XL', 'XXL']
-                            .map((size) => DropdownMenuItem(
-                                  value: size,
-                                  child: Text(size),
-                                ))
-                            .toList(),
-                        validator: (val) {
-                          if (val == null || val.isEmpty) return 'Please select a size';
-                          return null;
-                        },
-                        onChanged: (val) => setState(() => _size = val ?? ''),
+                    value: _size.isNotEmpty ? _size : null,
+                    decoration: InputDecoration(
+                      labelText: 'Size',
+                      prefixIcon:
+                          const Icon(Icons.straighten, color: Colors.teal),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-
+                    ),
+                    items: ['S', 'M', 'L', 'XL', 'XXL']
+                        .map((size) => DropdownMenuItem(
+                              value: size,
+                              child: Text(size),
+                            ))
+                        .toList(),
+                    validator: (val) {
+                      if (val == null || val.isEmpty)
+                        return 'Please select a size';
+                      return null;
+                    },
+                    onChanged: (val) => setState(() => _size = val ?? ''),
+                  ),
                 ),
               ),
 
@@ -1184,7 +1185,11 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                 style: TextStyle(
                                                     fontWeight:
                                                         FontWeight.bold))),
-                                        DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Quantity',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
                                         DataColumn(
                                             label: Text('Requested At',
                                                 style: TextStyle(
@@ -1212,7 +1217,10 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                   Text(data['gender'] ?? '')),
                                               DataCell(
                                                   Text(data['size'] ?? '')),
-                                              DataCell(Text(data['orderQuantity']?.toString() ?? '1')),
+                                              DataCell(Text(
+                                                  data['orderQuantity']
+                                                          ?.toString() ??
+                                                      '1')),
                                               DataCell(Text(formatTimestamp(
                                                   data['timestamp']
                                                       as Timestamp?))),
@@ -1307,7 +1315,8 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                   Text('Course: ${data['course'] ?? ''}'),
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
-                                  Text('Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
+                                  Text(
+                                      'Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
                                   Text(
                                       'Requested At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
                                   const SizedBox(height: 8),
@@ -1584,8 +1593,11 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                                 style: TextStyle(
                                                     fontWeight:
                                                         FontWeight.bold))),
-                                        DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
-
+                                        DataColumn(
+                                            label: Text('Quantity',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
                                         DataColumn(
                                             label: Text('Approved At',
                                                 style: TextStyle(
@@ -1612,7 +1624,9 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                             DataCell(
                                                 Text(data['gender'] ?? '')),
                                             DataCell(Text(data['size'] ?? '')),
-                                            DataCell(Text(data['orderQuantity']?.toString() ?? '1')),
+                                            DataCell(Text(data['orderQuantity']
+                                                    ?.toString() ??
+                                                '1')),
                                             DataCell(Text(formatTimestamp(
                                                 data['approvedAt']
                                                     as Timestamp))),
@@ -1693,7 +1707,8 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                   Text('Course: ${data['course'] ?? ''}'),
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
-                                  Text('Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
+                                  Text(
+                                      'Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
                                   Text(
                                       'Approved At: ${formatTimestamp(data['approvedAt'] as Timestamp)}'),
                                 ],
@@ -1940,7 +1955,11 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                                 style: TextStyle(
                                                     fontWeight:
                                                         FontWeight.bold))),
-                                        DataColumn(label: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        DataColumn(
+                                            label: Text('Quantity',
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold))),
                                         DataColumn(
                                             label: Text('Completed At',
                                                 style: TextStyle(
@@ -1967,7 +1986,9 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                             DataCell(
                                                 Text(data['gender'] ?? '')),
                                             DataCell(Text(data['size'] ?? '')),
-                                            DataCell(Text(data['orderQuantity']?.toString() ?? '1')),
+                                            DataCell(Text(data['orderQuantity']
+                                                    ?.toString() ??
+                                                '1')),
                                             DataCell(Text(formatTimestamp(
                                                 data['timestamp']
                                                     as Timestamp?))),
@@ -2049,7 +2070,8 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                   Text('Course: ${data['course'] ?? ''}'),
                                   Text('Gender: ${data['gender'] ?? ''}'),
                                   Text('Size: ${data['size'] ?? ''}'),
-                                  Text('Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
+                                  Text(
+                                      'Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
                                   Text(
                                       'Completed At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
                                 ],
@@ -2078,575 +2100,256 @@ class InventoryPage extends StatefulWidget {
   State<InventoryPage> createState() => _InventoryPageState();
 }
 
-class _InventoryPageState extends State<InventoryPage> {
+class _InventoryPageState extends State<InventoryPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   String searchQuery = '';
 
-  Stream<List<Uniform>> getUniforms() {
-    return FirebaseFirestore.instance.collection('uniforms').snapshots().map(
-        (snapshot) => snapshot.docs
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  // ✅ Get all uniforms by course
+  Stream<List<Uniform>> getUniformsByCourse(String course) {
+    return FirebaseFirestore.instance
+        .collection('uniforms')
+        .where('course', isEqualTo: course)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
             .map((doc) => Uniform.fromMap(doc.data(), doc.id))
             .toList());
   }
 
+  // ✅ Update stock and add history record if stock increases
+  Future<void> _updateStockIn(
+      BuildContext context, Uniform uniform, int newQuantity) async {
+    try {
+      final docRef =
+          FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
+      final docSnap = await docRef.get();
+      if (!docSnap.exists) return;
 
-  Future<void> _updateStockIn(Uniform uniform, int newQuantity) async {
-  final docRef =
-      FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
+      final data = docSnap.data()!;
+      final oldQuantity = data['quantity'] ?? 0;
 
-  final docSnap = await docRef.get();
-  if (!docSnap.exists) return;
+      // 🔹 If stock increased
+      if (newQuantity > oldQuantity) {
+        final addedQuantity = newQuantity - oldQuantity;
 
-  final data = docSnap.data()!;
-  final oldQuantity = data['quantity'] ?? 0;
-  int stockInChange = 0;
+        // ✅ Update main stock quantity
+        await docRef.update({
+          'quantity': newQuantity,
+          'lastEdited': FieldValue.serverTimestamp(),
+        });
 
-  // 🚫 Validation: Prevent negative or zero quantity
-  if (newQuantity <= 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Quantity must be greater than 0.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
-  if (newQuantity < 0) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('Quantity cannot be negative.'),
-      backgroundColor: Colors.red,
-    ),
-  );
-  return;
-}
-
-
-  // detect if stock increased
-  if (newQuantity > oldQuantity) {
-    stockInChange = (newQuantity - oldQuantity).toInt();
-
-    // ✅ Add a record to the "history" collection
-    await FirebaseFirestore.instance.collection('history').add({
-      'course': data['course'] ?? '',
-      'gender': data['gender'] ?? data['sex'] ?? '',
-      'size': data['size'] ?? '',
-      'stockIn': stockInChange,
-      'stockOut': 0,
-      'remainingStock': newQuantity,
-      'date': FieldValue.serverTimestamp(),
-    });
-  }
-
-  // ✅ Update the main uniform document
-  await docRef.update({
-    'quantity': newQuantity,
-    'stockIn': FieldValue.increment(stockInChange),
-    'lastEdited': FieldValue.serverTimestamp(),
-  });
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('Stock updated successfully!'),
-      backgroundColor: Colors.green,
-    ),
-  );
-}
-
-void _openForm([Uniform? uniform]) async {
-  final result = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => UniformFormPage(uniform: uniform),
-    ),
-  );
-
-  if (result != null) {
-    // EDIT existing uniform
-    if (uniform != null && result is int) {
-      _updateStockIn(uniform, result);
-    }
-    // ADD new uniform
-    else if (uniform == null && result is Uniform) {
-      final newUniform = result;
-
-      // 🚫 Validation: Required fields check
-      if (newUniform.course.isEmpty ||
-          newUniform.gender.isEmpty ||
-          newUniform.size.isEmpty ||
-          newUniform.quantity <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'All fields (course, gender, size, and quantity) are required and quantity must be greater than 0.',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
+        // ✅ Add stock-in record to history collection
+        await FirebaseFirestore.instance.collection('inventory_history').add({
+          'course': data['course'] ?? '',
+          'gender': data['gender'] ?? '',
+          'size': data['size'] ?? '',
+          'stockIn': addedQuantity,
+          'stockOut': 0,
+          'remaining': newQuantity,
+          'date': Timestamp.now(), // use Timestamp.now() for consistency
+        });
+      } else {
+        // 🔹 Just update quantity if stock didn’t increase
+        await docRef.update({
+          'quantity': newQuantity,
+          'lastEdited': FieldValue.serverTimestamp(),
+        });
       }
-
-      // 🚫 Validation: Prevent duplicates (same course + gender + size)
-      final duplicateCheck = await FirebaseFirestore.instance
-          .collection('uniforms')
-          .where('course', isEqualTo: newUniform.course)
-          .where('gender', isEqualTo: newUniform.gender)
-          .where('size', isEqualTo: newUniform.size)
-          .get();
-
-      if (duplicateCheck.docs.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'A uniform with the same course, gender, and size already exists.',
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      // ✅ Save valid new uniform to Firestore
-      final docRef = FirebaseFirestore.instance
-          .collection('uniforms')
-          .doc(newUniform.id);
-      await docRef.set(newUniform.toMap());
-
-      // Log as initial stock in
-      await FirebaseFirestore.instance.collection('inventory_history').add({
-        'course': newUniform.course,
-        'gender': newUniform.gender,
-        'size': newUniform.size,
-        'stockIn': newUniform.quantity,
-        'stockOut': 0,
-        'date': FieldValue.serverTimestamp(),
-      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Uniform added successfully!'),
+          content: Text('Stock updated successfully!'),
           backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('Error updating stock: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update stock: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     }
   }
-}
 
+  // ✅ Open form for add/edit uniform
+  void _openForm([Uniform? uniform]) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => UniformFormPage(uniform: uniform)),
+    );
+
+    if (result != null) {
+      if (uniform != null && result is int) {
+        // Edited existing uniform → update stock
+        await _updateStockIn(context, uniform, result); // ✅ use result
+      } else if (uniform == null && result is Uniform) {
+        // Added new uniform → save and record in history
+        final newUniform = result;
+        final docRef = FirebaseFirestore.instance
+            .collection('uniforms')
+            .doc(newUniform.id);
+        await docRef.set(newUniform.toMap());
+
+        await FirebaseFirestore.instance.collection('inventory_history').add({
+          'course': newUniform.course,
+          'gender': newUniform.gender,
+          'size': newUniform.size,
+          'stockIn': newUniform.quantity,
+          'stockOut': 0,
+          'remaining': newUniform.quantity,
+          'date': FieldValue.serverTimestamp(),
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isDesktop = constraints.maxWidth > 700;
+    final courses = ['BSCS', 'ABCOM', 'BSCRIM'];
+    final isWide = MediaQuery.of(context).size.width > 800;
 
-            return Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                    maxWidth: isDesktop ? 1100 : double.infinity),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // 🌟 HEADER
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                "Inventory Management",
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF004D40),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              ElevatedButton.icon(
-                                onPressed: () => _openForm(),
-                                icon: const Icon(Icons.add, size: 22),
-                                label: const Text('Add Uniform'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1E88E5),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 18, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  elevation: 3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+    return DefaultTabController(
+      length: courses.length,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F9FC),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: const Color(0xFF00B36B),
+          title: const Text(
+            'Inventory Management',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+            tabs: const [
+              Tab(text: 'BSCS'),
+              Tab(text: 'ABCOM'),
+              Tab(text: 'BSCRIM'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          controller: _tabController,
+          children: courses
+              .map((course) => _buildCourseInventory(course, isWide))
+              .toList(),
+        ),
+      ),
+    );
+  }
 
-                      // 🔍 SEARCH BAR
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.15),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
+  // ✅ Builds each course inventory tab
+  Widget _buildCourseInventory(String course, bool isWide) {
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isWide ? 900 : double.infinity),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 10),
+                Expanded(
+                  child: ScrollConfiguration(
+                    behavior: const ScrollBehavior().copyWith(
+                      scrollbars: true,
+                      dragDevices: {
+                        PointerDeviceKind.touch,
+                        PointerDeviceKind.mouse,
+                      },
+                    ),
+                    child: StreamBuilder<List<Uniform>>(
+                      stream: getUniformsByCourse(course),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              'No uniforms found for this course.',
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 16),
                             ),
-                          ],
-                        ),
-                        width: isDesktop ? 400 : double.infinity,
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search by course, gender, or size...',
-                            prefixIcon: const Icon(Icons.search,
-                                color: Color(0xFF1E88E5)),
-                            border: InputBorder.none,
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          onChanged: (val) =>
-                              setState(() => searchQuery = val.toLowerCase()),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                          );
+                        }
 
-                      // 🧾 INVENTORY LIST
-                      Expanded(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 900),
-                            child: StreamBuilder<List<Uniform>>(
-                              stream: getUniforms(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Center(
-                                      child: CircularProgressIndicator());
-                                }
-                                if (!snapshot.hasData ||
-                                    snapshot.data!.isEmpty) {
-                                  return const Center(
-                                    child: Text(
-                                      'No uniforms found.',
-                                      style: TextStyle(
-                                          color: Colors.grey, fontSize: 16),
+                        final uniforms = snapshot.data!;
+                        final groupedBySize = <String, List<Uniform>>{};
+                        for (final uniform in uniforms) {
+                          groupedBySize.putIfAbsent(uniform.size, () => []);
+                          groupedBySize[uniform.size]!.add(uniform);
+                        }
+
+                        return ListView(
+                          children: groupedBySize.entries.map((entry) {
+                            final size = entry.key;
+                            final uniforms = entry.value;
+                            final totalQty = uniforms.fold<int>(
+                              0,
+                              (sum, u) => sum + (u.quantity ?? 0),
+                            );
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 3,
+                              child: ExpansionTile(
+                                title: Text(
+                                  'Size: $size (Total: $totalQty)',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF004D40),
+                                  ),
+                                ),
+                                children: uniforms.map((u) {
+                                  return ListTile(
+                                    title: Text(
+                                      u.gender,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    subtitle: Text('Quantity: ${u.quantity}'),
+                                    trailing: IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.orange),
+                                      onPressed: () => _openForm(u),
                                     ),
                                   );
-                                }
-
-                                final filteredUniforms = snapshot.data!
-                                    .where((u) {
-                                  final query = searchQuery.toLowerCase();
-                                  return u.course
-                                          .toLowerCase()
-                                          .contains(query) ||
-                                      u.gender.toLowerCase().contains(query) ||
-                                      u.size.toLowerCase().contains(query);
-                                }).toList()
-                                  ..sort(
-                                      (a, b) => a.course.compareTo(b.course));
-
-                                if (filteredUniforms.isEmpty) {
-                                  return const Center(
-                                    child:
-                                        Text('No uniforms match your search.'),
-                                  );
-                                }
-
-                                // Group by course → gender
-                                final Map<String, Map<String, List<Uniform>>>
-                                    grouped = {};
-                                for (var u in filteredUniforms) {
-                                  grouped.putIfAbsent(u.course, () => {});
-                                  grouped[u.course]!
-                                      .putIfAbsent(u.gender, () => []);
-                                  grouped[u.course]![u.gender]!.add(u);
-                                }
-
-                                return SingleChildScrollView(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children:
-                                        grouped.entries.map((courseEntry) {
-                                      final course = courseEntry.key;
-                                      final genders = courseEntry.value;
-
-                                      return Card(
-                                        margin:
-                                            const EdgeInsets.only(bottom: 20),
-                                        elevation: 3,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(15),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              // 📘 COURSE HEADER
-                                              Text(
-                                                course,
-                                                style: const TextStyle(
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF00695C),
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              const Divider(
-                                                  thickness: 1, height: 20),
-
-                                              // 🧍‍♂️ GENDER SECTIONS
-                                              ...genders.entries
-                                                  .map((genderEntry) {
-                                                final gender = genderEntry.key;
-                                                final uniforms =
-                                                    genderEntry.value;
-
-                                                // Group by size
-                                                final Map<String, int>
-                                                    sizeTotals = {};
-                                                for (var uniform in uniforms) {
-                                                  sizeTotals.update(
-                                                    uniform.size,
-                                                    (val) =>
-                                                        val + uniform.quantity,
-                                                    ifAbsent: () =>
-                                                        uniform.quantity,
-                                                  );
-                                                }
-
-                                                return Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              top: 8,
-                                                              bottom: 6),
-                                                      child: Text(
-                                                        gender,
-                                                        style: const TextStyle(
-                                                          fontSize: 18,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color:
-                                                              Color(0xFF00796B),
-                                                        ),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-
-                                                    // 💻 DESKTOP VIEW
-                                                    if (isDesktop)
-                                                      Center(
-                                                        child: Container(
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        10),
-                                                            border: Border.all(
-                                                                color: Colors
-                                                                    .grey
-                                                                    .shade300),
-                                                          ),
-                                                          child: DataTable(
-                                                            columnSpacing: 40,
-                                                            headingRowColor:
-                                                                WidgetStateProperty.all(
-                                                                    const Color(
-                                                                        0xFF1E88E5)),
-                                                            headingTextStyle:
-                                                                const TextStyle(
-                                                                    color: Colors
-                                                                        .white,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    fontSize:
-                                                                        16),
-                                                            dataTextStyle:
-                                                                const TextStyle(
-                                                                    fontSize:
-                                                                        14),
-                                                            columns: const [
-                                                              DataColumn(
-                                                                  label: Text(
-                                                                      'Size')),
-                                                              DataColumn(
-                                                                  label: Text(
-                                                                      'Quantity')),
-                                                              DataColumn(
-                                                                  label: Text(
-                                                                      'Action')),
-                                                            ],
-                                                            rows: sizeTotals
-                                                                .entries
-                                                                .map((entry) {
-                                                              final size =
-                                                                  entry.key;
-                                                              final qty =
-                                                                  entry.value;
-
-                                                              return DataRow(
-                                                                  cells: [
-                                                                    DataCell(Text(
-                                                                        size)),
-                                                                    DataCell(
-                                                                      Text(
-                                                                        qty.toString(),
-                                                                        style:
-                                                                            TextStyle(
-                                                                          color: qty == 0
-                                                                              ? Colors.red
-                                                                              : Colors.black,
-                                                                          fontWeight: qty == 0
-                                                                              ? FontWeight.bold
-                                                                              : FontWeight.normal,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                    DataCell(
-                                                                        Row(
-                                                                      mainAxisAlignment:
-                                                                          MainAxisAlignment
-                                                                              .center,
-                                                                      children: [
-                                                                        IconButton(
-                                                                          icon: const Icon(
-                                                                              Icons.edit,
-                                                                              color: Colors.orange),
-                                                                          onPressed:
-                                                                              () {
-                                                                            final uniform =
-                                                                                uniforms.firstWhere((u) => u.size == size, orElse: () => uniforms.first);
-                                                                            _openForm(uniform);
-                                                                          },
-                                                                        ),
-                                                                      ],
-                                                                    )),
-                                                                  ]);
-                                                            }).toList(),
-                                                          ),
-                                                        ),
-                                                      )
-                                                    else
-                                                      // 📱 MOBILE VIEW
-                                                      Column(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: sizeTotals
-                                                            .entries
-                                                            .map((entry) {
-                                                          final size =
-                                                              entry.key;
-                                                          final qty =
-                                                              entry.value;
-                                                          return Card(
-                                                            color: Colors.white,
-                                                            margin:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                                    vertical:
-                                                                        6),
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
-                                                            ),
-                                                            child: ListTile(
-                                                              title: Text(
-                                                                  "Size: $size",
-                                                                  style: const TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .bold)),
-                                                              subtitle: Text(
-                                                                "Quantity: $qty",
-                                                                style:
-                                                                    TextStyle(
-                                                                  color: qty ==
-                                                                          0
-                                                                      ? Colors
-                                                                          .red
-                                                                      : Colors
-                                                                          .black,
-                                                                  fontWeight: qty ==
-                                                                          0
-                                                                      ? FontWeight
-                                                                          .bold
-                                                                      : FontWeight
-                                                                          .normal,
-                                                                ),
-                                                              ),
-                                                              trailing: Row(
-                                                                mainAxisSize:
-                                                                    MainAxisSize
-                                                                        .min,
-                                                                children: [
-                                                                  IconButton(
-                                                                    icon: const Icon(
-                                                                        Icons
-                                                                            .edit,
-                                                                        color: Colors
-                                                                            .orange),
-                                                                    onPressed:
-                                                                        () {
-                                                                      final uniform = uniforms.firstWhere(
-                                                                          (u) =>
-                                                                              u.size ==
-                                                                              size,
-                                                                          orElse: () =>
-                                                                              uniforms.first);
-                                                                      _openForm(
-                                                                          uniform);
-                                                                    },
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          );
-                                                        }).toList(),
-                                                      ),
-                                                  ],
-                                                );
-                                              }),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                                }).toList(),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -2661,8 +2364,7 @@ class HistoryStockReportTab extends StatelessWidget {
     try {
       final dt =
           (ts is Timestamp) ? ts.toDate() : DateTime.parse(ts.toString());
-      return DateFormat('MMM dd, yyyy hh:mm a')
-          .format(dt); // e.g. Oct 15, 2025 03:45 PM
+      return DateFormat('MMM dd, yyyy hh:mm a').format(dt);
     } catch (e) {
       return ts.toString();
     }
@@ -2670,89 +2372,90 @@ class HistoryStockReportTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          const Text(
-            'History Stock Report',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF00A86B),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('inventory_history')
-                  .orderBy('date', descending: true)
-                  .snapshots(),
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator(
-                    color: Color(0xFF00B4FF),
-                  ));
-                }
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text(
+          'History Stock Report',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF00A86B),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('inventory_history')
+                    .orderBy('date', descending: true)
+                    .snapshots(),
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator(
+                      color: Color(0xFF00B4FF),
+                    ));
+                  }
 
-                final docs = snap.data?.docs ?? [];
+                  final docs = snap.data?.docs ?? [];
 
-                if (docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No data',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                  if (docs.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No data',
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                    );
+                  }
+
+                  final rows = docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final course = (data['course'] ?? '').toString();
+                    final gender = (data['gender'] ?? '').toString();
+                    final size = (data['size'] ?? '').toString();
+                    final stockIn = (data['stockIn'] ?? 0).toString();
+                    final stockOut = (data['stockOut'] ?? 0).toString();
+                    final remaining = ((data['remaining'] != null)
+                            ? data['remaining'].toString()
+                            : (int.tryParse(stockIn) ?? 0) -
+                                (int.tryParse(stockOut) ?? 0))
+                        .toString();
+                    final dateStr = formatDate(data['date']);
+
+                    return DataRow(cells: [
+                      DataCell(Text(course)),
+                      DataCell(Text(gender)),
+                      DataCell(Text(size)),
+                      DataCell(Text(stockIn)),
+                      DataCell(Text(stockOut)),
+                      DataCell(Text(remaining)),
+                      DataCell(Text(dateStr)),
+                    ]);
+                  }).toList();
+
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columns: const [
+                        DataColumn(label: Text('Course')),
+                        DataColumn(label: Text('Sex')),
+                        DataColumn(label: Text('Size')),
+                        DataColumn(label: Text('Stock In')),
+                        DataColumn(label: Text('Stock Out')),
+                        DataColumn(label: Text('Remaining Stock')),
+                        DataColumn(label: Text('Date')),
+                      ],
+                      rows: rows,
                     ),
                   );
-                }
-
-                // Build DataRows from docs
-                final rows = docs.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final course = (data['course'] ?? '').toString();
-                  final gender = (data['gender'] ?? '').toString();
-                  final size = (data['size'] ?? '').toString();
-                  final stockIn = (data['stockIn'] ?? 0).toString();
-                  final stockOut = (data['stockOut'] ?? 0).toString();
-                  final remaining = ((data['remaining'] != null)
-                          ? data['remaining'].toString()
-                          : (int.tryParse(stockIn) ?? 0) -
-                              (int.tryParse(stockOut) ?? 0))
-                      .toString();
-                  final dateStr = formatDate(data['date']);
-
-                  return DataRow(cells: [
-                    DataCell(Text(course)),
-                    DataCell(Text(gender)),
-                    DataCell(Text(size)),
-                    DataCell(Text(stockIn)),
-                    DataCell(Text(stockOut)),
-                    DataCell(Text(remaining)),
-                    DataCell(Text(dateStr)),
-                  ]);
-                }).toList();
-
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Course')),
-                      DataColumn(label: Text('Sex')),
-                      DataColumn(label: Text('Size')),
-                      DataColumn(label: Text('Stock In')),
-                      DataColumn(label: Text('Stock Out')),
-                      DataColumn(label: Text('Remaining Stock')),
-                      DataColumn(label: Text('Date')),
-                    ],
-                    rows: rows,
-                  ),
-                );
-              },
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
