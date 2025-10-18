@@ -983,6 +983,76 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
     }
   }
 
+  Future<void> _confirmApproval(
+  String id,
+  Map<String, dynamic> data,
+  BuildContext context,
+) async {
+  final bool? confirmed = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false, // user must choose explicitly
+    builder: (context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        backgroundColor: Colors.white,
+        titlePadding: const EdgeInsets.only(top: 20),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        title: Row(
+          children: const [
+            Icon(Icons.check_circle_outline,
+                color: Color(0xFF00A86B), size: 28),
+            SizedBox(width: 8),
+            Text(
+              'Approve Request',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF00A86B),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to approve this uniform request? '
+          'This will deduct stock and notify the student via email.',
+          style: TextStyle(fontSize: 15),
+        ),
+        actionsPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey[700],
+            ),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.check, size: 18, color: Colors.white),
+            label: const Text(
+              'Approve',
+              style: TextStyle(color: Colors.white),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00A86B),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmed == true) {
+    await _approveRequest(id, data, context);
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -1229,11 +1299,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                     backgroundColor:
                                                         const Color(
                                                             0xFF00B4FF)),
-                                                onPressed: () =>
-                                                    _approveRequest(
-                                                        entry.value.id,
-                                                        data,
-                                                        context),
+                                               onPressed: () => _confirmApproval(entry.value.id, data, context),
                                                 child: const Text('Approve'),
                                               )),
                                             ],
