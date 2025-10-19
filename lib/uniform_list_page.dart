@@ -64,6 +64,85 @@ class _UniformListPageState extends State<UniformListPage>
     }
   }
 
+  void _showHistoryDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          'Edit History',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('inventory_history')
+                .orderBy('date', descending: true)
+                .limit(20) // limit to recent 20 edits
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('No history records found.'));
+              }
+
+              final history = snapshot.data!.docs;
+
+              return ListView.builder(
+                itemCount: history.length,
+                itemBuilder: (context, index) {
+                  final data = history[index].data() as Map<String, dynamic>;
+                  final course = data['course'] ?? '';
+                  final gender = data['gender'] ?? '';
+                  final size = data['size'] ?? '';
+                  final stockIn = data['stockIn'] ?? 0;
+                  final stockOut = data['stockOut'] ?? 0;
+                  final remaining = data['remaining'] ?? 0;
+                  final remarks = data['remarks'] ?? '';
+                  final date = (data['date'] as Timestamp?)?.toDate();
+
+                  return ListTile(
+                    leading: Icon(
+                      stockIn > 0
+                          ? Icons.add_circle_outline
+                          : Icons.remove_circle_outline,
+                      color: stockIn > 0 ? Colors.green : Colors.red,
+                    ),
+                    title: Text('$course - $gender - $size'),
+                    subtitle: Text(
+                      'In: $stockIn | Out: $stockOut | Remaining: $remaining\nRemarks: $remarks',
+                    ),
+                    trailing: Text(
+                      date != null
+                          ? '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}'
+                          : '',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,15 +254,24 @@ class _UniformListPageState extends State<UniformListPage>
 
       // AppBar
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00A86B),
-        title: const Text(
-          'Uniform Management',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
+  backgroundColor: const Color(0xFF00A86B),
+  title: const Text(
+    'Uniform Management',
+    style: TextStyle(
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.history, color: Colors.white),
+      tooltip: 'View Edit History',
+      onPressed: () {
+        _showHistoryDialog(context);
+      },
+    ),
+  ],
+),
 
       // Body
       body: _getSelectedPage(),
@@ -224,6 +312,7 @@ class _InventoryTab extends StatelessWidget {
             .map((doc) => Uniform.fromMap(doc.data(), doc.id))
             .toList());
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -616,94 +705,147 @@ class _UniformFormPageState extends State<UniformFormPage> {
   }
 
   Future<void> _saveUniform() async {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+  if (!_formKey.currentState!.validate()) return;
+  _formKey.currentState!.save();
 
-    // 🚫 Additional Validation
-    if (_course.isEmpty || _gender.isEmpty || _size.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('All fields are required.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+  // 🚫 Additional Validation
+  if (_course.isEmpty || _gender.isEmpty || _size.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All fields are required.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
 
-    if (_quantity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Quantity must be greater than 0.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+  if (_quantity <= 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Quantity must be greater than 0.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
 
-    if (_quantity > 500) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Quantity cannot exceed 500 per entry.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+  if (_quantity > 500) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Quantity cannot exceed 500 per entry.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
 
-    final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
-    String message = '';
+  final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+  final historyRef = FirebaseFirestore.instance.collection('inventory_history');
+  String message = '';
 
-    if (widget.uniform != null) {
-      // 🔹 Editing existing uniform
-      await uniformsRef.doc(widget.uniform!.id).update({
+  if (widget.uniform != null) {
+    // 🔹 Editing existing uniform
+    final docRef = uniformsRef.doc(widget.uniform!.id);
+    final oldDoc = await docRef.get();
+    final oldData = oldDoc.data() ?? {};
+    final oldQuantity = oldData['quantity'] ?? 0;
+    final quantityChange = _quantity - oldQuantity;
+
+    await docRef.update({
+      'course': _course,
+      'gender': _gender,
+      'size': _size,
+      'quantity': _quantity,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    // ✅ Record edit in history
+    await historyRef.add({
+      'course': _course,
+      'gender': _gender,
+      'size': _size,
+      'stockIn': quantityChange > 0 ? quantityChange : 0,
+      'stockOut': quantityChange < 0 ? quantityChange.abs() : 0,
+      'remaining': _quantity,
+      'remarks': quantityChange == 0
+          ? 'Stock edited (no quantity change)'
+          : (quantityChange > 0 ? 'Stock increased' : 'Stock decreased'),
+      'date': Timestamp.now(),
+    });
+
+    message = 'Stock updated successfully!';
+  } else {
+    // 🔹 Adding new uniform
+    final existingQuery = await uniformsRef
+        .where('course', isEqualTo: _course)
+        .where('gender', isEqualTo: _gender)
+        .where('size', isEqualTo: _size)
+        .limit(1)
+        .get();
+
+    if (existingQuery.docs.isNotEmpty) {
+      final existingDoc = existingQuery.docs.first;
+      final oldQuantity = existingDoc['quantity'] ?? 0;
+      final newQuantity = oldQuantity + _quantity;
+
+      await uniformsRef.doc(existingDoc.id).update({
+        'quantity': newQuantity,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // ✅ Record stock-in in history
+      await historyRef.add({
+        'course': _course,
+        'gender': _gender,
+        'size': _size,
+        'stockIn': _quantity,
+        'stockOut': 0,
+        'remaining': newQuantity,
+        'remarks': 'Stock increased (new batch added)',
+        'date': Timestamp.now(),
+      });
+
+      message = 'Stock updated successfully!';
+    } else {
+      // 🔹 New uniform entry
+      await uniformsRef.add({
         'course': _course,
         'gender': _gender,
         'size': _size,
         'quantity': _quantity,
+        'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      message = 'Stock updated successfully!';
-    } else {
-      // 🔹 Adding new uniform
-      final existingQuery = await uniformsRef
-          .where('course', isEqualTo: _course)
-          .where('gender', isEqualTo: _gender)
-          .where('size', isEqualTo: _size)
-          .limit(1)
-          .get();
 
-      if (existingQuery.docs.isNotEmpty) {
-        final existingDoc = existingQuery.docs.first;
-        await uniformsRef.doc(existingDoc.id).update({
-          'quantity': FieldValue.increment(_quantity),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        message = 'Stock updated successfully!';
-      } else {
-        await uniformsRef.add({
-          'course': _course,
-          'gender': _gender,
-          'size': _size,
-          'quantity': _quantity,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        message = 'New stock added successfully!';
-      }
-    }
+      // ✅ Record creation in history
+      await historyRef.add({
+        'course': _course,
+        'gender': _gender,
+        'size': _size,
+        'stockIn': _quantity,
+        'stockOut': 0,
+        'remaining': _quantity,
+        'remarks': 'New uniform stock added',
+        'date': Timestamp.now(),
+      });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.teal,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      Navigator.pop(context);
+      message = 'New stock added successfully!';
     }
   }
+
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.teal,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    Navigator.pop(context);
+  }
+}
+
 
   Widget _sectionTitle(String title, IconData icon) {
     return Row(
@@ -2212,60 +2354,63 @@ class _InventoryPageState extends State<InventoryPage>
 
   // ✅ Update stock and add history record if stock increases
   Future<void> _updateStockIn(
-      BuildContext context, Uniform uniform, int newQuantity) async {
-    try {
-      final docRef =
-          FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
-      final docSnap = await docRef.get();
-      if (!docSnap.exists) return;
+  BuildContext context,
+  Uniform uniform,
+  int newQuantity,
+) async {
+  try {
+    final docRef =
+        FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
+    final docSnap = await docRef.get();
 
-      final data = docSnap.data()!;
-      final oldQuantity = data['quantity'] ?? 0;
+    if (!docSnap.exists) return;
 
-      // 🔹 If stock increased
-      if (newQuantity > oldQuantity) {
-        final addedQuantity = newQuantity - oldQuantity;
+    final data = docSnap.data()!;
+    final oldQuantity = data['quantity'] ?? 0;
 
-        // ✅ Update main stock quantity
-        await docRef.update({
-          'quantity': newQuantity,
-          'lastEdited': FieldValue.serverTimestamp(),
-        });
+    // Calculate the change
+    final quantityChange = newQuantity - oldQuantity;
 
-        // ✅ Add stock-in record to history collection
-        await FirebaseFirestore.instance.collection('inventory_history').add({
-          'course': data['course'] ?? '',
-          'gender': data['gender'] ?? '',
-          'size': data['size'] ?? '',
-          'stockIn': addedQuantity,
-          'stockOut': 0,
-          'remaining': newQuantity,
-          'date': Timestamp.now(), // use Timestamp.now() for consistency
-        });
-      } else {
-        // 🔹 Just update quantity if stock didn’t increase
-        await docRef.update({
-          'quantity': newQuantity,
-          'lastEdited': FieldValue.serverTimestamp(),
-        });
-      }
+    // ✅ Always update the stock
+    await docRef.update({
+      'quantity': newQuantity,
+      'lastEdited': FieldValue.serverTimestamp(),
+    });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stock updated successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      print('Error updating stock: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update stock: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    // ✅ Always add a history record
+    await FirebaseFirestore.instance.collection('inventory_history').add({
+      'course': data['course'] ?? '',
+      'gender': data['gender'] ?? '',
+      'size': data['size'] ?? '',
+      'stockIn': quantityChange > 0 ? quantityChange : 0,
+      'stockOut': quantityChange < 0 ? quantityChange.abs() : 0,
+      'remaining': newQuantity,
+      'editedBy': 'Admin', // optional: add current user or editor name
+      'remarks': quantityChange == 0
+          ? 'Stock edited (no change in quantity)'
+          : (quantityChange > 0
+              ? 'Stock increased'
+              : 'Stock decreased'),
+      'date': Timestamp.now(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Stock updated successfully!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } catch (e) {
+    print('Error updating stock: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to update stock: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
 
   // ✅ Open form for add/edit uniform
   void _openForm([Uniform? uniform]) async {
