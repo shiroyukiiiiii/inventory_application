@@ -7,6 +7,8 @@ import 'admin_qr_confirmation.dart';
 import 'services/emailjs_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/gestures.dart';
+import 'package:inventory_application/services/lowstockemail.dart';
+
 
 class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
@@ -909,79 +911,99 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
   }
 
   Future<void> _approveRequest(
-    String id,
-    Map<String, dynamic> data,
-    BuildContext context,
-  ) async {
-    final firestore = FirebaseFirestore.instance;
+String id,
+Map<String, dynamic> data,
+BuildContext context,
+) async {
+final firestore = FirebaseFirestore.instance;
 
-    try {
-      final String course = (data['course'] ?? '').toString().trim();
-      final String size = (data['size'] ?? '').toString().trim();
-      final String gender = (data['gender'] ?? '').toString().trim();
+try {
+final String course = (data['course'] ?? '').toString().trim();
+final String size = (data['size'] ?? '').toString().trim();
+final String gender = (data['gender'] ?? '').toString().trim();
 
-      if (course.isEmpty || size.isEmpty || gender.isEmpty) {
-        throw Exception('Invalid course, size, or gender values.');
-      }
+if (course.isEmpty || size.isEmpty || gender.isEmpty) {
+  throw Exception('Invalid course, size, or gender values.');
+}
 
-      final uniformQuery = await firestore
-          .collection('uniforms')
-          .where('course', isEqualTo: course)
-          .where('gender', isEqualTo: gender)
-          .where('size', isEqualTo: size)
-          .limit(1)
-          .get();
+final uniformQuery = await firestore
+    .collection('uniforms')
+    .where('course', isEqualTo: course)
+    .where('gender', isEqualTo: gender)
+    .where('size', isEqualTo: size)
+    .limit(1)
+    .get();
 
-      if (uniformQuery.docs.isEmpty) {
-        throw Exception('No uniform found for $course - $gender - $size');
-      }
+if (uniformQuery.docs.isEmpty) {
+  throw Exception('No uniform found for $course - $gender - $size');
+}
 
-      final uniformDoc = uniformQuery.docs.first.reference;
-      final requestRef = firestore.collection('uniform_requests').doc(id);
+final uniformDoc = uniformQuery.docs.first.reference;
+final requestRef = firestore.collection('uniform_requests').doc(id);
 
-      await firestore.runTransaction((transaction) async {
-        final uniformSnap = await transaction.get(uniformDoc);
-        if (!uniformSnap.exists) throw Exception('Uniform no longer exists!');
-        final currentStock = (uniformSnap.data()?['quantity'] ?? 0) as int;
-        if (currentStock <= 0) throw Exception('No stock available.');
+int updatedStock = 0;
 
-        final requestSnap = await transaction.get(requestRef);
-        final currentStatus =
-            (requestSnap.data()?['status'] ?? 'Pending').toString();
-        if (currentStatus == 'Approved' || currentStatus == 'Completed') {
-          throw Exception('Request already approved or completed.');
-        }
+await firestore.runTransaction((transaction) async {
+  final uniformSnap = await transaction.get(uniformDoc);
+  if (!uniformSnap.exists) throw Exception('Uniform no longer exists!');
+  final currentStock = (uniformSnap.data()?['quantity'] ?? 0) as int;
+  if (currentStock <= 0) throw Exception('No stock available.');
 
-        transaction.update(uniformDoc, {'quantity': currentStock - 1});
-        transaction.update(requestRef, {
-          'status': 'Approved',
-          'approvedAt': FieldValue.serverTimestamp(),
-        });
-      });
-
-      await EmailJsService.sendApprovalEmail(
-        toEmail: data['email'] ?? '',
-        toName: data['userName'] ?? '',
-        studentNumber: data['studentId'] ?? '',
-        studentName: data['userName'] ?? '',
-        gender: data['gender'] ?? '',
-        course: data['course'] ?? '',
-        size: data['size'] ?? '',
-        qrCode: data['qrCode'] ?? '',
-        orderQuantity: data['orderQuantity'] ?? 1, // Add the required argument
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                '✅ Approved $course - $gender - $size. Stock deducted and email sent!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error approving request: $e')),
-      );
-    }
+  final requestSnap = await transaction.get(requestRef);
+  final currentStatus =
+      (requestSnap.data()?['status'] ?? 'Pending').toString();
+  if (currentStatus == 'Approved' || currentStatus == 'Completed') {
+    throw Exception('Request already approved or completed.');
   }
+
+  updatedStock = currentStock - 1;
+  transaction.update(uniformDoc, {'quantity': updatedStock});
+  transaction.update(requestRef, {
+    'status': 'Approved',
+    'approvedAt': FieldValue.serverTimestamp(),
+  });
+});
+
+// ✅ Notify the student that their request was approved
+await EmailJsService.sendApprovalEmail(
+  toEmail: data['email'] ?? '',
+  toName: data['userName'] ?? '',
+  studentNumber: data['studentId'] ?? '',
+  studentName: data['userName'] ?? '',
+  gender: data['gender'] ?? '',
+  course: data['course'] ?? '',
+  size: data['size'] ?? '',
+  qrCode: data['qrCode'] ?? '',
+  orderQuantity: data['orderQuantity'] ?? 1,
+);
+
+// 🚨 NEW: If stock is low (e.g., 5 or below), notify the admin
+if (updatedStock <= 5) {
+  await LowStockEmailService.sendLowStockAlert(
+    course: course,
+    gender: gender,
+    size: size,
+    remainingStock: updatedStock,
+    toEmail: 'ninipiegaming.karl@gmail.com', // ⚙️ Replace with actual admin email
+  );
+}
+
+ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(
+    content: Text(
+      '✅ Approved $course - $gender - $size. Stock deducted and email sent!'
+      '${updatedStock <= 5 ? ' (Low stock alert sent to admin!)' : ''}',
+    ),
+  ),
+);
+
+} catch (e) {
+ScaffoldMessenger.of(context).showSnackBar(
+SnackBar(content: Text('❌ Error approving request: $e')),
+);
+}
+}
+
 
   Future<void> _confirmApproval(
   String id,
