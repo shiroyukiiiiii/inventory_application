@@ -25,7 +25,7 @@ class _UniformListPageState extends State<UniformListPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       setState(() {});
     });
@@ -58,6 +58,7 @@ class _UniformListPageState extends State<UniformListPage>
             UniformRequestsListPage(),
             ApprovedOrdersListPage(),
             CompletedOrdersListPage(),
+            CancelledOrdersListPage(),
             InventoryPage(),
           ],
         );
@@ -199,6 +200,19 @@ class _UniformListPageState extends State<UniformListPage>
                 },
               ),
 
+              // 🆕 NEW — Cancelled Orders Drawer Option
+        ListTile(
+          leading: const Icon(Icons.cancel, color: Colors.redAccent),
+          title: const Text('Cancelled Orders'),
+          onTap: () {
+            Navigator.pop(context);
+            setState(() {
+              _selectedPage = 'tabs';
+              _tabController.index = 3; // match Cancelled tab index
+            });
+          },
+        ),
+
               ListTile(
                 leading: const Icon(Icons.history, color: Colors.orange),
                 title: const Text('History Stock Report'),
@@ -291,6 +305,7 @@ class _UniformListPageState extends State<UniformListPage>
                   Tab(icon: Icon(Icons.pending_actions), text: 'Requests'),
                   Tab(icon: Icon(Icons.check_circle), text: 'Approved'),
                   Tab(icon: Icon(Icons.done_all), text: 'Completed'),
+                  Tab(icon: Icon(Icons.cancel), text: 'Cancelled'),
                   Tab(icon: Icon(Icons.inventory), text: 'Inventory'),
                 ],
               ),
@@ -2322,6 +2337,337 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
   }
 }
 
+/// ================================ ///
+/// Cancelled Orders Tab with Search ///
+/// =============================== ///
+
+class CancelledOrdersListPage extends StatefulWidget {
+const CancelledOrdersListPage({super.key});
+
+@override
+State<CancelledOrdersListPage> createState() =>
+_CancelledOrdersListPageState();
+}
+
+class _CancelledOrdersListPageState extends State<CancelledOrdersListPage> {
+String searchQuery = '';
+int rowsPerPage = 10;
+int currentPage = 0;
+
+String formatTimestamp(Timestamp? timestamp) {
+if (timestamp == null) return 'N/A';
+final date = timestamp.toDate();
+return DateFormat('MMM/dd/yyyy hh:mm a').format(date);
+}
+
+@override
+Widget build(BuildContext context) {
+return SafeArea(
+child: LayoutBuilder(
+builder: (context, constraints) {
+final isDesktop = constraints.maxWidth > 700;
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              "Cancelled Orders",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFF4D4D), // 🔴 Red for Cancelled Orders
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 🔍 Search + Rows Per Page
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: isDesktop ? 250 : 180,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search',
+                      prefixIcon:
+                          const Icon(Icons.search, color: Color(0xFFFF4D4D)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value.toLowerCase();
+                        currentPage = 0;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.black12),
+                  ),
+                  child: DropdownButton<int>(
+                    value: rowsPerPage,
+                    underline: const SizedBox(),
+                    items: const [
+                      DropdownMenuItem(value: 10, child: Text("10")),
+                      DropdownMenuItem(value: 50, child: Text("50")),
+                      DropdownMenuItem(value: 100, child: Text("100")),
+                      DropdownMenuItem(value: -1, child: Text("ALL")),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        rowsPerPage = value!;
+                        currentPage = 0;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // 🔹 Orders List
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('uniform_requests')
+                    .orderBy('timestamp', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFFFF4D4D)));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                        child: Text('No cancelled orders found.'));
+                  }
+
+                  final allOrders = snapshot.data!.docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final status = data['status'] ?? '';
+
+                    // Search filter
+                    final name = (data['userName'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final studentId = (data['studentId'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final email =
+                        (data['email'] ?? '').toString().toLowerCase();
+                    final course =
+                        (data['course'] ?? '').toString().toLowerCase();
+                    final gender =
+                        (data['gender'] ?? '').toString().toLowerCase();
+                    final size =
+                        (data['size'] ?? '').toString().toLowerCase();
+                    final dateStr = data['timestamp'] != null
+                        ? formatTimestamp(data['timestamp'] as Timestamp)
+                            .toLowerCase()
+                        : '';
+
+                    final queryWords =
+                        searchQuery.split(RegExp(r'\s+')).toList();
+
+                    return status == 'Cancelled' &&
+                        queryWords.every((word) {
+                          if (word.isEmpty) return true;
+                          if (word == 'male' || word == 'female') {
+                            return gender == word;
+                          }
+                          return name.contains(word) ||
+                              studentId.contains(word) ||
+                              email.contains(word) ||
+                              course.contains(word) ||
+                              size.contains(word) ||
+                              dateStr.contains(word);
+                        });
+                  }).toList();
+
+                  final totalPages = rowsPerPage == -1
+                      ? 1
+                      : (allOrders.length / rowsPerPage).ceil();
+                  final start = currentPage * rowsPerPage;
+                  final end = rowsPerPage == -1
+                      ? allOrders.length
+                      : (start + rowsPerPage).clamp(0, allOrders.length);
+                  final pageOrders = allOrders.sublist(start, end);
+
+                  if (isDesktop) {
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: Center(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: DataTable(
+                                  headingRowColor:
+                                      MaterialStateProperty.all(
+                                          const Color(0xFFFF4D4D)
+                                              .withOpacity(0.1)),
+                                  columnSpacing: 20,
+                                  columns: const [
+                                    DataColumn(label: Text('No.')),
+                                    DataColumn(label: Text('Name')),
+                                    DataColumn(label: Text('Student ID')),
+                                    DataColumn(label: Text('Email')),
+                                    DataColumn(label: Text('Course')),
+                                    DataColumn(label: Text('Sex Uniform')),
+                                    DataColumn(label: Text('Size')),
+                                    DataColumn(label: Text('Quantity')),
+                                    DataColumn(label: Text('Cancelled At')),
+                                  ],
+                                  rows: pageOrders
+                                      .asMap()
+                                      .entries
+                                      .map((entry) {
+                                    final index = start + entry.key + 1;
+                                    final data = entry.value.data()
+                                        as Map<String, dynamic>;
+                                    return DataRow(
+                                      color: MaterialStateProperty.all(
+                                          Colors.red.withOpacity(0.05)),
+                                      cells: [
+                                        DataCell(Text(index.toString())),
+                                        DataCell(
+                                            Text(data['userName'] ?? '')),
+                                        DataCell(
+                                            Text(data['studentId'] ?? '')),
+                                        DataCell(Text(data['email'] ?? '')),
+                                        DataCell(
+                                            Text(data['course'] ?? '')),
+                                        DataCell(
+                                            Text(data['gender'] ?? '')),
+                                        DataCell(Text(data['size'] ?? '')),
+                                        DataCell(Text(data['orderQuantity']
+                                                ?.toString() ??
+                                            '1')),
+                                        DataCell(Text(formatTimestamp(
+                                            data['timestamp']
+                                                as Timestamp?))),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton(
+                              onPressed: currentPage > 0
+                                  ? () => setState(() => currentPage--)
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      const Color(0xFFFF4D4D)),
+                              child: const Text('Prev'),
+                            ),
+                            const SizedBox(width: 8),
+                            for (int i = 0; i < totalPages; i++)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4),
+                                child: ElevatedButton(
+                                  onPressed: () =>
+                                      setState(() => currentPage = i),
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: i == currentPage
+                                          ? const Color(0xFFFFA0A0)
+                                          : null),
+                                  child: Text('${i + 1}'),
+                                ),
+                              ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: currentPage < totalPages - 1
+                                  ? () => setState(() => currentPage++)
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      const Color(0xFFFF4D4D)),
+                              child: const Text('Next'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    );
+                  }
+
+                  // 📱 Mobile view
+                  return ListView.builder(
+                    itemCount: pageOrders.length,
+                    itemBuilder: (context, index) {
+                      final data =
+                          pageOrders[index].data() as Map<String, dynamic>;
+                      return Card(
+                        elevation: 3,
+                        color: Colors.red[50],
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})',
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFFF4D4D)),
+                              ),
+                              const SizedBox(height: 6),
+                              Text('Email: ${data['email'] ?? ''}'),
+                              Text('Course: ${data['course'] ?? ''}'),
+                              Text('Gender: ${data['gender'] ?? ''}'),
+                              Text('Size: ${data['size'] ?? ''}'),
+                              Text(
+                                  'Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
+                              Text(
+                                  'Cancelled At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  ),
+);
+
+}
+}
+
+
 ///Inventory Management Page
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -2338,7 +2684,7 @@ class _InventoryPageState extends State<InventoryPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   // ✅ Get all uniforms by course
@@ -2445,47 +2791,46 @@ class _InventoryPageState extends State<InventoryPage>
   }
 
   @override
-  Widget build(BuildContext context) {
-    final courses = ['BSCS', 'ABCOM', 'BSCRIM'];
-    final isWide = MediaQuery.of(context).size.width > 800;
+Widget build(BuildContext context) {
+  final courses = ['BSCS', 'ABCOM', 'BSCRIM'];
+  final isWide = MediaQuery.of(context).size.width > 800;
 
-    return DefaultTabController(
-      length: courses.length,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF7F9FC),
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: const Color(0xFF00B36B),
-          title: const Text(
-            'Inventory Management',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          centerTitle: true,
-          bottom: TabBar(
-            controller: _tabController,
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white,
-            labelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-            tabs: const [
-              Tab(text: 'BSCS'),
-              Tab(text: 'ABCOM'),
-              Tab(text: 'BSCRIM'),
-            ],
-          ),
+  return DefaultTabController(
+    length: courses.length,
+    child: Scaffold(
+      backgroundColor: const Color(0xFFF7F9FC),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: const Color(0xFF00B36B),
+        title: const Text(
+          'Inventory Management',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: courses
-              .map((course) => _buildCourseInventory(course, isWide))
-              .toList(),
+        centerTitle: true,
+        bottom: const TabBar(
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white,
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+          tabs: [
+            Tab(text: 'BSCS'),
+            Tab(text: 'ABCOM'),
+            Tab(text: 'BSCRIM'),
+          ],
         ),
       ),
-    );
-  }
+      body: TabBarView(
+        children: courses
+            .map((course) => _buildCourseInventory(course, isWide))
+            .toList(),
+      ),
+    ),
+  );
+}
+
 
   // ✅ Builds each course inventory tab
   Widget _buildCourseInventory(String course, bool isWide) {
