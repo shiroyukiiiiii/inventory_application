@@ -29,6 +29,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   String _course = '';
   String _size = '';
   String _studentId = '';
+  String _status = 'Pending';
   String _fullName = '';
   late String _email;
   late TextEditingController _emailController;
@@ -106,6 +107,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       'course': _course,
       'size': _size,
       'studentId': _studentId,
+      'status': _status, 
       'orderQuantity': _orderQuantity,
       'qrData': qrData, // ✅ updated to studentId + orderId
       'qrCode': qrBase64,

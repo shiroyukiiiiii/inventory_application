@@ -1067,7 +1067,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
         .format(date); // Oct/15/2025 03:45 PM
   }
 
-  Future<void> _approveRequest(
+Future<void> _approveRequest(
 String id,
 Map<String, dynamic> data,
 BuildContext context,
@@ -1113,7 +1113,7 @@ await firestore.runTransaction((transaction) async {
     throw Exception('Request already approved or completed.');
   }
 
-  updatedStock = currentStock - 1;
+  updatedStock = currentStock - (data['orderQuantity'] ?? 1) as int;
   transaction.update(uniformDoc, {'quantity': updatedStock});
   transaction.update(requestRef, {
     'status': 'Approved',
@@ -1232,6 +1232,112 @@ SnackBar(content: Text('❌ Error approving request: $e')),
   }
 }
 
+/// Cancel Request
+
+Future<void> _cancelRequest(
+  String id,
+  Map<String, dynamic> data,
+  BuildContext context,
+) async {
+  final firestore = FirebaseFirestore.instance;
+
+  try {
+    final requestRef = firestore.collection('uniform_requests').doc(id);
+
+    // Check current status first
+    final requestSnap = await requestRef.get();
+    final currentStatus = (requestSnap.data()?['status'] ?? 'Pending').toString();
+
+    if (currentStatus == 'Cancelled') {
+      throw Exception('Request already cancelled.');
+    }
+    if (currentStatus == 'Approved' || currentStatus == 'Completed') {
+      throw Exception('Approved or completed requests cannot be cancelled.');
+    }
+
+    // Update status to "Cancelled"
+    await requestRef.update({
+      'status': 'Cancelled',
+      'cancelledAt': FieldValue.serverTimestamp(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🚫 Request has been marked as cancelled.'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('❌ Error cancelling request: $e'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+}
+
+Future<void> _confirmCancellation(
+  String id,
+  Map<String, dynamic> data,
+  BuildContext context,
+) async {
+  final bool? confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        titlePadding: const EdgeInsets.only(top: 20),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        title: Row(
+          children: const [
+            Icon(Icons.cancel_outlined, color: Colors.red, size: 28),
+            SizedBox(width: 8),
+            Text(
+              'Cancel Request',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to cancel this uniform request? '
+          'This action cannot be undone.',
+          style: TextStyle(fontSize: 15),
+        ),
+        actionsPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.cancel, color: Colors.white, size: 18),
+            label: const Text('Yes, Cancel'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmed == true) {
+    await _cancelRequest(id, data, context);
+  }
+}
+
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -1314,6 +1420,7 @@ SnackBar(content: Text('❌ Error approving request: $e')),
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('uniform_requests')
+                        
                         .orderBy('timestamp', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
@@ -1365,6 +1472,7 @@ SnackBar(content: Text('❌ Error approving request: $e')),
 
                         return status != 'Approved' &&
                             status != 'Completed' &&
+                            status != 'Cancelled' &&
                             matches;
                       }).toList();
 
@@ -1473,14 +1581,27 @@ SnackBar(content: Text('❌ Error approving request: $e')),
                                               DataCell(Text(formatTimestamp(
                                                   data['timestamp']
                                                       as Timestamp?))),
-                                              DataCell(ElevatedButton(
-                                                style: ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        const Color(
-                                                            0xFF00B4FF)),
-                                               onPressed: () => _confirmApproval(entry.value.id, data, context),
-                                                child: const Text('Approve'),
-                                              )),
+                                              DataCell(
+  Row(
+    children: [
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF00B4FF),
+        ),
+        onPressed: () => _confirmApproval(entry.value.id, data, context),
+        child: const Text('Approve'),
+      ),
+      const SizedBox(width: 8),
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.redAccent,
+        ),
+        onPressed: () => _confirmCancellation(entry.value.id, data, context),
+        child: const Text('Cancel'),
+      ),
+    ],
+  ),
+),
                                             ],
                                           );
                                         },
@@ -2444,6 +2565,7 @@ final isDesktop = constraints.maxWidth > 700;
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('uniform_requests')
+                     
                     .orderBy('timestamp', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {
