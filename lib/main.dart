@@ -64,7 +64,7 @@ class _SignInPageState extends State<SignInPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Uniform Management System',
+          'Smart Inventory Application for School Uniform',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             letterSpacing: 1,

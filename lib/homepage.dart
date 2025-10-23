@@ -14,6 +14,7 @@ class HomePage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 800;
     final isTablet = screenWidth > 500 && screenWidth <= 800;
+    final isPhone = screenWidth <= 500;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -34,52 +35,61 @@ class HomePage extends StatelessWidget {
             ),
             const Spacer(),
             CircleAvatar(
-              backgroundImage: NetworkImage(user.photoURL ?? ''),
+              backgroundImage:
+                  user.photoURL != null && user.photoURL!.isNotEmpty
+                      ? NetworkImage(user.photoURL!)
+                      : null,
               radius: 18,
               backgroundColor: Colors.white24,
+              child: user.photoURL == null || user.photoURL!.isEmpty
+                  ? const Icon(Icons.person, color: Colors.white)
+                  : null,
             ),
             const SizedBox(width: 8),
-            Text(
-              user.displayName ?? '',
-              style: const TextStyle(fontSize: 16, color: Colors.white),
+            Flexible(
+              child: Text(
+                user.displayName ?? '',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 16, color: Colors.white),
+              ),
             ),
           ],
         ),
         actions: [
-  IconButton(
-    icon: const Icon(Icons.logout, color: Colors.white),
-    onPressed: () {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Confirm Logout'),
-            content: const Text('Are you sure you want to exit?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  FirebaseAuth.instance.signOut().then((_) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const SignInPage()),
-                      (Route<dynamic> route) => false,
-                    );
-                  });
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Confirm Logout'),
+                    content: const Text('Are you sure you want to exit?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          FirebaseAuth.instance.signOut().then((_) {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                  builder: (context) => const SignInPage()),
+                              (Route<dynamic> route) => false,
+                            );
+                          });
+                        },
+                        child: const Text('Logout'),
+                      ),
+                    ],
+                  );
                 },
-                child: const Text('Logout'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  ),
-],
-
+              );
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -97,12 +107,12 @@ class HomePage extends StatelessWidget {
                     ? 200
                     : isTablet
                         ? 80
-                        : 25,
-                vertical: isDesktop ? 60 : 40,
+                        : 20,
+                vertical: isDesktop ? 60 : 30,
               ),
               child: Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(isDesktop ? 40 : 20),
+                padding: EdgeInsets.all(isDesktop ? 40 : 18),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.95),
                   borderRadius: BorderRadius.circular(25),
@@ -114,30 +124,41 @@ class HomePage extends StatelessWidget {
                     ),
                   ],
                 ),
-                constraints: const BoxConstraints(maxWidth: 600),
+                constraints: const BoxConstraints(maxWidth: 900),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 🔹 Logo (responsive)
+                    // 🔹 Smaller logo on mobile
                     Image.asset(
                       'assets/images/eclaroacademy.png',
-                      width: screenWidth * 0.5, // scales automatically
+                      width: isPhone
+                          ? screenWidth * 0.35
+                          : screenWidth * 0.22, // smaller for phones
                       fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 10),
                     Text(
                       'Welcome to SIASU!',
                       style: TextStyle(
-                        fontSize: isDesktop ? 28 : 22,
+                        fontSize: isDesktop
+                            ? 28
+                            : isTablet
+                                ? 24
+                                : 20,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF333333),
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'An inventory management system for school uniforms of college students.',
                       style: TextStyle(
-                        fontSize: isDesktop ? 16 : 13,
+                        fontSize: isDesktop
+                            ? 16
+                            : isTablet
+                                ? 14
+                                : 12,
                         color: Colors.black54,
                       ),
                       textAlign: TextAlign.center,
@@ -146,46 +167,55 @@ class HomePage extends StatelessWidget {
                     const Text(
                       'Please select your course:',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
                         color: Color(0xFF4A90E2),
                       ),
                     ),
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 40),
 
-                    // 📚 Course Sections
-                    _buildCourseSection(
-                      context,
-                      user,
-                      'BSCRIM',
-                      const Color(0xFF4CAF50),
-                      'assets/images/crim.png',
-                      screenWidth,
+                    // 📚 Responsive Courses Grid
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: isPhone ? 15 : 25,
+                      runSpacing: isPhone ? 15 : 25,
+                      children: [
+                        _buildCourseButton(
+                          context,
+                          user,
+                          'BSCRIM',
+                          const Color(0xFF4CAF50),
+                          'assets/images/crim.png',
+                          screenWidth,
+                          isPhone,
+                        ),
+                        _buildCourseButton(
+                          context,
+                          user,
+                          'ABCOM',
+                          const Color(0xFF42A5F5),
+                          'assets/images/abbs.png',
+                          screenWidth,
+                          isPhone,
+                        ),
+                        _buildCourseButton(
+                          context,
+                          user,
+                          'BSCS',
+                          const Color(0xFF26C6DA),
+                          'assets/images/abbs.png',
+                          screenWidth,
+                          isPhone,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 20),
-                    _buildCourseSection(
-                      context,
-                      user,
-                      'ABCOM',
-                      const Color(0xFF42A5F5),
-                      'assets/images/abbs.png',
-                      screenWidth,
-                    ),
-                    const SizedBox(height: 20),
-                    _buildCourseSection(
-                      context,
-                      user,
-                      'BSCS',
-                      const Color(0xFF26C6DA),
-                      'assets/images/abbs.png',
-                      screenWidth,
-                    ),
-                    const SizedBox(height: 30),
+
+                    const SizedBox(height: 40),
 
                     // 🧾 Manage Requests Button
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
+                      height: isPhone ? 50 : 55,
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(
@@ -199,7 +229,7 @@ class HomePage extends StatelessWidget {
                         label: const Text(
                           'Manage My Requests',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             color: Color(0xFF4A90E2),
                             fontWeight: FontWeight.bold,
                           ),
@@ -225,48 +255,58 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 📦 Each Course Section (Responsive Design)
-  Widget _buildCourseSection(BuildContext context, User user, String course,
-      Color color, String imagePath, double screenWidth) {
-    return Column(
-      children: [
-        Image.asset(
-          imagePath,
-          height: screenWidth < 400 ? 80 : 120,
-          fit: BoxFit.contain,
+  // 🎓 Responsive Course Buttons
+  Widget _buildCourseButton(BuildContext context, User user, String course,
+      Color color, String imagePath, double screenWidth, bool isPhone) {
+    return SizedBox(
+      width: isPhone ? 140 : 140, // ⬅️ wider button for course
+      height: isPhone ? 180 : 230, // ⬅️ taller to fit larger image
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+          elevation: 6,
         ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: color,
-              padding: EdgeInsets.symmetric(
-                  horizontal: 30, vertical: screenWidth < 400 ? 12 : 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SelectSexPage(user: user, course: course),
+            ),
+          );
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center, // ✅ center content
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Flexible(
+              flex: 7,
+              child: Center(
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.contain,
+                  width: isPhone ? 85 : 100, // ⬅️ larger image
+                  height: isPhone ? 200 : 200,
+                ),
               ),
             ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      SelectSexPage(user: user, course: course),
-                ),
-              );
-            },
-            child: Text(
+            const SizedBox(height: 10),
+            Text(
               course,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: screenWidth < 400 ? 16 : 18,
+                fontSize: isPhone ? 18 : 20, // ⬅️ larger text
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
+                letterSpacing: 1.2,
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

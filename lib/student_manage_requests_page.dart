@@ -9,43 +9,65 @@ class StudentManageRequestsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isPhone = screenWidth < 500;
+
     return DefaultTabController(
-      length: 3, // ✅ Orders + Completed + Cancelled
+      length: 3,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F6FA),
         appBar: AppBar(
           backgroundColor: const Color.fromARGB(255, 0, 126, 61),
-          elevation: 3,
+          elevation: 2,
+          titleSpacing: 0,
           title: Row(
             children: [
+              const SizedBox(width: 8),
               const Icon(Icons.shopping_bag_rounded, color: Colors.white),
               const SizedBox(width: 8),
-              const Text(
-                'My Uniform Requests',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  fontSize: 18,
+              const Expanded(
+                child: Text(
+                  'My Uniform Requests',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 18,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              if (!isPhone) const SizedBox(width: 4),
               CircleAvatar(
-                backgroundImage: NetworkImage(user.photoURL ?? ''),
-                radius: 16,
+                backgroundImage:
+                    user.photoURL != null && user.photoURL!.isNotEmpty
+                        ? NetworkImage(user.photoURL!)
+                        : null,
+                radius: isPhone ? 14 : 16,
                 backgroundColor: Colors.white24,
+                child: (user.photoURL == null || user.photoURL!.isEmpty)
+                    ? const Icon(Icons.person, color: Colors.white)
+                    : null,
               ),
-              const SizedBox(width: 6),
-              Text(
-                user.displayName ?? '',
-                style: const TextStyle(fontSize: 15, color: Colors.white),
-              ),
+              if (!isPhone) ...[
+                const SizedBox(width: 6),
+                Text(
+                  user.displayName ?? '',
+                  style: const TextStyle(fontSize: 14, color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(width: 8),
             ],
           ),
-          bottom: const TabBar(
+          bottom: TabBar(
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
-            tabs: [
+            labelStyle: TextStyle(
+              fontSize: isPhone ? 12 : 14,
+              fontWeight: FontWeight.bold,
+            ),
+            tabs: const [
               Tab(icon: Icon(Icons.list_alt_rounded), text: 'Orders'),
               Tab(icon: Icon(Icons.check_circle_outline), text: 'Completed'),
               Tab(icon: Icon(Icons.cancel_outlined), text: 'Cancelled'),
@@ -76,7 +98,6 @@ class StudentManageRequestsPage extends StatelessWidget {
 
             final allRequests = snapshot.data!.docs;
 
-            // ✅ Separate requests by status
             final orders = allRequests.where((doc) {
               final data = doc.data() as Map<String, dynamic>;
               final status = (data['status'] ?? 'Pending').toString();
@@ -97,18 +118,10 @@ class StudentManageRequestsPage extends StatelessWidget {
               children: [
                 _buildListView(context, orders,
                     emptyMessage: 'No active orders.'),
-                _buildListView(
-                  context,
-                  completedOrders,
-                  emptyMessage: 'No completed orders.',
-                  showActions: false,
-                ),
-                _buildListView(
-                  context,
-                  cancelledOrders,
-                  emptyMessage: 'No cancelled orders.',
-                  showActions: false,
-                ),
+                _buildListView(context, completedOrders,
+                    emptyMessage: 'No completed orders.', showActions: false),
+                _buildListView(context, cancelledOrders,
+                    emptyMessage: 'No cancelled orders.', showActions: false),
               ],
             );
           },
@@ -121,13 +134,13 @@ class StudentManageRequestsPage extends StatelessWidget {
       {String emptyMessage = '', bool showActions = true}) {
     if (requests.isEmpty) {
       return Center(
-        child:
-            Text(emptyMessage, style: const TextStyle(color: Colors.black54)),
+        child: Text(emptyMessage,
+            style: const TextStyle(color: Colors.black54, fontSize: 14)),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: requests.length,
       itemBuilder: (context, index) {
         final doc = requests[index];
@@ -153,11 +166,11 @@ class StudentManageRequestsPage extends StatelessWidget {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -166,18 +179,19 @@ class StudentManageRequestsPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Request #${requestId.substring(0, 8)}...',
+                    'Request #${requestId.substring(0, 6)}...',
                     style: const TextStyle(
-                      fontSize: 17,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Color.fromARGB(255, 0, 150, 60),
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (showActions)
                   IconButton(
                     icon: const Icon(Icons.cancel_outlined,
-                        color: Colors.redAccent),
+                        color: Colors.redAccent, size: 20),
                     tooltip: 'Cancel Request',
                     onPressed: () => _cancelRequest(context, requestId),
                   ),
@@ -185,21 +199,22 @@ class StudentManageRequestsPage extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: _getStatusColor(data['status'] ?? 'Pending')
-                    .withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
+                    .withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 data['status'] ?? 'Pending',
                 style: TextStyle(
                   color: _getStatusColor(data['status'] ?? 'Pending'),
                   fontWeight: FontWeight.w600,
+                  fontSize: 13,
                 ),
               ),
             ),
-            const Divider(height: 20, color: Colors.grey),
+            const Divider(height: 18, color: Colors.grey),
             _buildInfoRow(Icons.male_rounded, 'Gender', data['gender'] ?? ''),
             _buildInfoRow(Icons.school_rounded, 'Course', data['course'] ?? ''),
             _buildInfoRow(Icons.straighten_rounded, 'Size', data['size'] ?? ''),
@@ -214,23 +229,25 @@ class StudentManageRequestsPage extends StatelessWidget {
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Color(0xFF1976D2)),
-          const SizedBox(width: 8),
+          Icon(icon, size: 16, color: Color(0xFF1976D2)),
+          const SizedBox(width: 6),
           Text(
             '$label:',
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               color: Colors.black87,
+              fontSize: 13,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(color: Colors.black87),
+              style: const TextStyle(color: Colors.black87, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

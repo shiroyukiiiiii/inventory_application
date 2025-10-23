@@ -29,7 +29,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   String _course = '';
   String _size = '';
   String _studentId = '';
-  String _status = 'Pending';
+  final String _status = 'Pending';
   String _fullName = '';
   late String _email;
   late TextEditingController _emailController;
@@ -55,95 +55,91 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   }
 
   void _generateQRPreview() {
-  if (_studentId.isNotEmpty) {
-    final tempOrderId = 'PREVIEW'; // or generate a temporary fake one
-    final qrData = '$_studentId-$tempOrderId';
+    if (_studentId.isNotEmpty) {
+      final tempOrderId = 'PREVIEW'; // or generate a temporary fake one
+      final qrData = '$_studentId-$tempOrderId';
 
-    setState(() {
-      _showQRCode = true;
-    });
-    QRService.createQRCodeWidget(qrData, size: 150);
+      setState(() {
+        _showQRCode = true;
+      });
+      QRService.createQRCodeWidget(qrData, size: 150);
+    }
   }
-}
-
 
   Future<void> _submitRequest() async {
-  if (!_formKey.currentState!.validate()) return;
-  _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
 
-  // ✅ REQUIRED SIZE CHECK
-  if (_size.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please select a uniform size before submitting.'),
-        backgroundColor: Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    return;
-  }
-  
-
-  setState(() {
-    _isSubmitting = true;
-    _message = null;
-  });
-
-  try {
-    final orderId = const Uuid().v4(); // Unique order ID for each request
-    final qrData = '$_studentId-$orderId'; // ✅ Combine studentId + orderId
-    final qrCodeBytes = await QRService.generateQRCodeBytes(qrData);
-    final qrBase64 = base64Encode(qrCodeBytes);
-
-     _orderQuantity = int.tryParse(_orderQuantityController.text) ?? 1;
-
-    await FirebaseFirestore.instance.collection('uniform_requests').add({
-      'orderId': orderId, // ✅ new unique order ID
-      'userId': widget.user.uid,
-      'userName': widget.user.displayName ?? '',
-      'fullName': _fullName,
-      'email': _email,
-      'gender': _gender,
-      'course': _course,
-      'size': _size,
-      'studentId': _studentId,
-      'status': _status, 
-      'orderQuantity': _orderQuantity,
-      'qrData': qrData, // ✅ updated to studentId + orderId
-      'qrCode': qrBase64,
-      'timestamp': FieldValue.serverTimestamp(),
-});
-
-
-    final emailSent = await EmailService.sendUniformRequestEmail(
-      studentNumber: _studentId,
-      studentName: _fullName.isNotEmpty
-          ? _fullName
-          : (widget.user.displayName ?? 'Unknown'),
-      gender: _gender,
-      course: _course,
-      size: _size,
-      orderQuantity: _orderQuantity.toString(),
-      qrCodeBytes: qrCodeBytes,
-      toEmail: _email.isNotEmpty ? _email : (widget.user.email ?? ''),
-    );
+    // ✅ REQUIRED SIZE CHECK
+    if (_size.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a uniform size before submitting.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     setState(() {
-      _message = emailSent
-          ? 'Request submitted, QR code saved to Firestore, and email sent! Note: Kindly wait for the email approval before payment.'
-          : 'Request submitted and QR code saved (email failed).';
+      _isSubmitting = true;
+      _message = null;
     });
 
-    _formKey.currentState?.reset();
-    _showQRCode = false;
-    _size = ''; // ✅ Reset size selection
-  } catch (e) {
-    setState(() => _message = 'Error: $e');
-  } finally {
-    setState(() => _isSubmitting = false);
-  }
-}
+    try {
+      final orderId = const Uuid().v4(); // Unique order ID for each request
+      final qrData = '$_studentId-$orderId'; // ✅ Combine studentId + orderId
+      final qrCodeBytes = await QRService.generateQRCodeBytes(qrData);
+      final qrBase64 = base64Encode(qrCodeBytes);
 
+      _orderQuantity = int.tryParse(_orderQuantityController.text) ?? 1;
+
+      await FirebaseFirestore.instance.collection('uniform_requests').add({
+        'orderId': orderId, // ✅ new unique order ID
+        'userId': widget.user.uid,
+        'userName': widget.user.displayName ?? '',
+        'fullName': _fullName,
+        'email': _email,
+        'gender': _gender,
+        'course': _course,
+        'size': _size,
+        'studentId': _studentId,
+        'status': _status,
+        'orderQuantity': _orderQuantity,
+        'qrData': qrData, // ✅ updated to studentId + orderId
+        'qrCode': qrBase64,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      final emailSent = await EmailService.sendUniformRequestEmail(
+        studentNumber: _studentId,
+        studentName: _fullName.isNotEmpty
+            ? _fullName
+            : (widget.user.displayName ?? 'Unknown'),
+        gender: _gender,
+        course: _course,
+        size: _size,
+        orderQuantity: _orderQuantity.toString(),
+        qrCodeBytes: qrCodeBytes,
+        toEmail: _email.isNotEmpty ? _email : (widget.user.email ?? ''),
+      );
+
+      setState(() {
+        _message = emailSent
+            ? 'Request submitted, QR code saved to Firestore, and email sent! Note: Kindly wait for the email approval before payment.'
+            : 'Request submitted and QR code saved (email failed).';
+      });
+
+      _formKey.currentState?.reset();
+      _showQRCode = false;
+      _size = ''; // ✅ Reset size selection
+    } catch (e) {
+      setState(() => _message = 'Error: $e');
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -154,42 +150,41 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         elevation: 2,
-
         actions: [
-  IconButton(
-    icon: const Icon(Icons.logout, color: Colors.white),
-    onPressed: () {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Confirm Logout'),
-            content: const Text('Are you sure you want to exit?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  FirebaseAuth.instance.signOut().then((_) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const SignInPage()),
-                      (Route<dynamic> route) => false,
-                    );
-                  });
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Confirm Logout'),
+                    content: const Text('Are you sure you want to exit?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Close dialog
+                          FirebaseAuth.instance.signOut().then((_) {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                  builder: (context) => const SignInPage()),
+                              (Route<dynamic> route) => false,
+                            );
+                          });
+                        },
+                        child: const Text('Logout'),
+                      ),
+                    ],
+                  );
                 },
-                child: const Text('Logout'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  ),
-],
-
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -231,23 +226,22 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
           ),
 
           // 🔒 FULL NAME VALIDATION
-         TextFormField(
-  controller: _fullNameController,
-  decoration: const InputDecoration(
-    labelText: 'Full Name',
-    border: OutlineInputBorder(),
-  ),
-  validator: (value) {
-    if (value == null || value.isEmpty) return 'Enter your full name';
-    final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
-    if (!nameRegExp.hasMatch(value)) {
-      return 'Full name must only contain letters and spaces';
-    }
-    return null;
-  },
-  onSaved: (value) => _fullName = value ?? '',
-),
-
+          TextFormField(
+            controller: _fullNameController,
+            decoration: const InputDecoration(
+              labelText: 'Full Name',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Enter your full name';
+              final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
+              if (!nameRegExp.hasMatch(value)) {
+                return 'Full name must only contain letters and spaces';
+              }
+              return null;
+            },
+            onSaved: (value) => _fullName = value ?? '',
+          ),
 
           const SizedBox(height: 15),
 
@@ -275,8 +269,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
           TextFormField(
             controller: _studentIdController,
             decoration: const InputDecoration(
-            labelText: 'Student Number',
-            border: OutlineInputBorder(),
+              labelText: 'Student Number',
+              border: OutlineInputBorder(),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) return 'Enter Student Number';
@@ -295,9 +289,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             },
             onSaved: (value) => _studentId = value ?? '',
             onChanged: (value) {
-            _studentId = value; // store locally, no setState()
+              _studentId = value; // store locally, no setState()
             },
-
           ),
 
           const SizedBox(height: 10),
@@ -519,7 +512,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Select Size:''\nNOTE: Price is 1000 PHP per set',
+              'Select Size:' '\nNOTE: Price is 1000 PHP per set',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -555,31 +548,32 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             const SizedBox(height: 15),
 
 // Quantity input field
-TextFormField(
-  controller: _orderQuantityController,
-  decoration: const InputDecoration(
-    labelText: 'Order Quantity',
-    prefixIcon: Icon(Icons.shopping_cart_outlined),
-    border: OutlineInputBorder(),
-  ),
-  keyboardType: TextInputType.number,
-  validator: (value) {
-    if (value == null || value.isEmpty) return 'Enter order quantity';
-    final qty = int.tryParse(value);
-    if (qty == null || qty <= 0) return 'Enter a valid number (1 or more)';
-    return null;
-  },
-  onSaved: (value) => _orderQuantity = int.tryParse(value ?? '1') ?? 1,
-),
-
-
-
+            TextFormField(
+              controller: _orderQuantityController,
+              decoration: const InputDecoration(
+                labelText: 'Order Quantity',
+                prefixIcon: Icon(Icons.shopping_cart_outlined),
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Enter order quantity';
+                }
+                final qty = int.tryParse(value);
+                if (qty == null || qty <= 0) {
+                  return 'Enter a valid number (1 or more)';
+                }
+                return null;
+              },
+              onSaved: (value) =>
+                  _orderQuantity = int.tryParse(value ?? '1') ?? 1,
+            ),
           ],
         );
       },
     );
   }
-  
 
   Widget _buildGenderReminder() {
     return Container(
@@ -595,15 +589,14 @@ TextFormField(
       ),
     );
   }
-  
 
   @override
   void dispose() {
     _emailController.dispose();
-     _orderQuantityController.dispose();
+    _orderQuantityController.dispose();
 
-     _fullNameController.dispose();
-  _studentIdController.dispose();
+    _fullNameController.dispose();
+    _studentIdController.dispose();
     super.dispose();
   }
 }

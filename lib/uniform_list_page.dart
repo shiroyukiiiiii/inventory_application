@@ -1,14 +1,22 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:inventory_application/admin_login_page.dart';
 import '../models/uniform.dart';
 import 'admin_qr_confirmation.dart';
 import 'services/emailjs_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/gestures.dart';
 import 'package:inventory_application/services/lowstockemail.dart';
-
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'dart:typed_data';
+import 'package:excel/excel.dart' as exl;
+import 'package:file_saver/file_saver.dart';
+import 'package:flutter/foundation.dart'; // for kIsWeb
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'dart:io';
 
 class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
@@ -66,83 +74,82 @@ class _UniformListPageState extends State<UniformListPage>
   }
 
   void _showHistoryDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        title: const Text(
-          'Edit History',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('inventory_history')
-                .orderBy('date', descending: true)
-                .limit(20) // limit to recent 20 edits
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(child: Text('No history records found.'));
-              }
-
-              final history = snapshot.data!.docs;
-
-              return ListView.builder(
-                itemCount: history.length,
-                itemBuilder: (context, index) {
-                  final data = history[index].data() as Map<String, dynamic>;
-                  final course = data['course'] ?? '';
-                  final gender = data['gender'] ?? '';
-                  final size = data['size'] ?? '';
-                  final stockIn = data['stockIn'] ?? 0;
-                  final stockOut = data['stockOut'] ?? 0;
-                  final remaining = data['remaining'] ?? 0;
-                  final remarks = data['remarks'] ?? '';
-                  final date = (data['date'] as Timestamp?)?.toDate();
-
-                  return ListTile(
-                    leading: Icon(
-                      stockIn > 0
-                          ? Icons.add_circle_outline
-                          : Icons.remove_circle_outline,
-                      color: stockIn > 0 ? Colors.green : Colors.red,
-                    ),
-                    title: Text('$course - $gender - $size'),
-                    subtitle: Text(
-                      'In: $stockIn | Out: $stockOut | Remaining: $remaining\nRemarks: $remarks',
-                    ),
-                    trailing: Text(
-                      date != null
-                          ? '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}'
-                          : '',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  );
-                },
-              );
-            },
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+          title: const Text(
+            'Edit History',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-        ],
-      );
-    },
-  );
-}
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('inventory_history')
+                  .orderBy('date', descending: true)
+                  .limit(20) // limit to recent 20 edits
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No history records found.'));
+                }
 
+                final history = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: history.length,
+                  itemBuilder: (context, index) {
+                    final data = history[index].data() as Map<String, dynamic>;
+                    final course = data['course'] ?? '';
+                    final gender = data['gender'] ?? '';
+                    final size = data['size'] ?? '';
+                    final stockIn = data['stockIn'] ?? 0;
+                    final stockOut = data['stockOut'] ?? 0;
+                    final remaining = data['remaining'] ?? 0;
+                    final remarks = data['remarks'] ?? '';
+                    final date = (data['date'] as Timestamp?)?.toDate();
+
+                    return ListTile(
+                      leading: Icon(
+                        stockIn > 0
+                            ? Icons.add_circle_outline
+                            : Icons.remove_circle_outline,
+                        color: stockIn > 0 ? Colors.green : Colors.red,
+                      ),
+                      title: Text('$course - $gender - $size'),
+                      subtitle: Text(
+                        'In: $stockIn | Out: $stockOut | Remaining: $remaining\nRemarks: $remarks',
+                      ),
+                      trailing: Text(
+                        date != null
+                            ? '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}'
+                            : '',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -201,17 +208,17 @@ class _UniformListPageState extends State<UniformListPage>
               ),
 
               // 🆕 NEW — Cancelled Orders Drawer Option
-        ListTile(
-          leading: const Icon(Icons.cancel, color: Colors.redAccent),
-          title: const Text('Cancelled Orders'),
-          onTap: () {
-            Navigator.pop(context);
-            setState(() {
-              _selectedPage = 'tabs';
-              _tabController.index = 3; // match Cancelled tab index
-            });
-          },
-        ),
+              ListTile(
+                leading: const Icon(Icons.cancel, color: Colors.redAccent),
+                title: const Text('Cancelled Orders'),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _selectedPage = 'tabs';
+                    _tabController.index = 3; // match Cancelled tab index
+                  });
+                },
+              ),
 
               ListTile(
                 leading: const Icon(Icons.history, color: Colors.orange),
@@ -268,24 +275,24 @@ class _UniformListPageState extends State<UniformListPage>
 
       // AppBar
       appBar: AppBar(
-  backgroundColor: const Color(0xFF00A86B),
-  title: const Text(
-    'Uniform Management',
-    style: TextStyle(
-      fontWeight: FontWeight.bold,
-      color: Colors.white,
-    ),
-  ),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.history, color: Colors.white),
-      tooltip: 'View Edit History',
-      onPressed: () {
-        _showHistoryDialog(context);
-      },
-    ),
-  ],
-),
+        backgroundColor: const Color(0xFF00A86B),
+        title: const Text(
+          'Uniform Management',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history, color: Colors.white),
+            tooltip: 'View Edit History',
+            onPressed: () {
+              _showHistoryDialog(context);
+            },
+          ),
+        ],
+      ),
 
       // Body
       body: _getSelectedPage(),
@@ -327,7 +334,6 @@ class _InventoryTab extends StatelessWidget {
             .map((doc) => Uniform.fromMap(doc.data(), doc.id))
             .toList());
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -720,147 +726,147 @@ class _UniformFormPageState extends State<UniformFormPage> {
   }
 
   Future<void> _saveUniform() async {
-  if (!_formKey.currentState!.validate()) return;
-  _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
 
-  // 🚫 Additional Validation
-  if (_course.isEmpty || _gender.isEmpty || _size.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('All fields are required.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
+    // 🚫 Additional Validation
+    if (_course.isEmpty || _gender.isEmpty || _size.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All fields are required.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  if (_quantity <= 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Quantity must be greater than 0.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
+    if (_quantity <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Quantity must be greater than 0.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  if (_quantity > 500) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Quantity cannot exceed 500 per entry.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
+    if (_quantity > 500) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Quantity cannot exceed 500 per entry.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-  final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
-  final historyRef = FirebaseFirestore.instance.collection('inventory_history');
-  String message = '';
+    final uniformsRef = FirebaseFirestore.instance.collection('uniforms');
+    final historyRef =
+        FirebaseFirestore.instance.collection('inventory_history');
+    String message = '';
 
-  if (widget.uniform != null) {
-    // 🔹 Editing existing uniform
-    final docRef = uniformsRef.doc(widget.uniform!.id);
-    final oldDoc = await docRef.get();
-    final oldData = oldDoc.data() ?? {};
-    final oldQuantity = oldData['quantity'] ?? 0;
-    final quantityChange = _quantity - oldQuantity;
+    if (widget.uniform != null) {
+      // 🔹 Editing existing uniform
+      final docRef = uniformsRef.doc(widget.uniform!.id);
+      final oldDoc = await docRef.get();
+      final oldData = oldDoc.data() ?? {};
+      final oldQuantity = oldData['quantity'] ?? 0;
+      final quantityChange = _quantity - oldQuantity;
 
-    await docRef.update({
-      'course': _course,
-      'gender': _gender,
-      'size': _size,
-      'quantity': _quantity,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    // ✅ Record edit in history
-    await historyRef.add({
-      'course': _course,
-      'gender': _gender,
-      'size': _size,
-      'stockIn': quantityChange > 0 ? quantityChange : 0,
-      'stockOut': quantityChange < 0 ? quantityChange.abs() : 0,
-      'remaining': _quantity,
-      'remarks': quantityChange == 0
-          ? 'Stock edited (no quantity change)'
-          : (quantityChange > 0 ? 'Stock increased' : 'Stock decreased'),
-      'date': Timestamp.now(),
-    });
-
-    message = 'Stock updated successfully!';
-  } else {
-    // 🔹 Adding new uniform
-    final existingQuery = await uniformsRef
-        .where('course', isEqualTo: _course)
-        .where('gender', isEqualTo: _gender)
-        .where('size', isEqualTo: _size)
-        .limit(1)
-        .get();
-
-    if (existingQuery.docs.isNotEmpty) {
-      final existingDoc = existingQuery.docs.first;
-      final oldQuantity = existingDoc['quantity'] ?? 0;
-      final newQuantity = oldQuantity + _quantity;
-
-      await uniformsRef.doc(existingDoc.id).update({
-        'quantity': newQuantity,
+      await docRef.update({
+        'course': _course,
+        'gender': _gender,
+        'size': _size,
+        'quantity': _quantity,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // ✅ Record stock-in in history
+      // ✅ Record edit in history
       await historyRef.add({
         'course': _course,
         'gender': _gender,
         'size': _size,
-        'stockIn': _quantity,
-        'stockOut': 0,
-        'remaining': newQuantity,
-        'remarks': 'Stock increased (new batch added)',
+        'stockIn': quantityChange > 0 ? quantityChange : 0,
+        'stockOut': quantityChange < 0 ? quantityChange.abs() : 0,
+        'remaining': _quantity,
+        'remarks': quantityChange == 0
+            ? 'Stock edited (no quantity change)'
+            : (quantityChange > 0 ? 'Stock increased' : 'Stock decreased'),
         'date': Timestamp.now(),
       });
 
       message = 'Stock updated successfully!';
     } else {
-      // 🔹 New uniform entry
-      await uniformsRef.add({
-        'course': _course,
-        'gender': _gender,
-        'size': _size,
-        'quantity': _quantity,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      // 🔹 Adding new uniform
+      final existingQuery = await uniformsRef
+          .where('course', isEqualTo: _course)
+          .where('gender', isEqualTo: _gender)
+          .where('size', isEqualTo: _size)
+          .limit(1)
+          .get();
 
-      // ✅ Record creation in history
-      await historyRef.add({
-        'course': _course,
-        'gender': _gender,
-        'size': _size,
-        'stockIn': _quantity,
-        'stockOut': 0,
-        'remaining': _quantity,
-        'remarks': 'New uniform stock added',
-        'date': Timestamp.now(),
-      });
+      if (existingQuery.docs.isNotEmpty) {
+        final existingDoc = existingQuery.docs.first;
+        final oldQuantity = existingDoc['quantity'] ?? 0;
+        final newQuantity = oldQuantity + _quantity;
 
-      message = 'New stock added successfully!';
+        await uniformsRef.doc(existingDoc.id).update({
+          'quantity': newQuantity,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // ✅ Record stock-in in history
+        await historyRef.add({
+          'course': _course,
+          'gender': _gender,
+          'size': _size,
+          'stockIn': _quantity,
+          'stockOut': 0,
+          'remaining': newQuantity,
+          'remarks': 'Stock increased (new batch added)',
+          'date': Timestamp.now(),
+        });
+
+        message = 'Stock updated successfully!';
+      } else {
+        // 🔹 New uniform entry
+        await uniformsRef.add({
+          'course': _course,
+          'gender': _gender,
+          'size': _size,
+          'quantity': _quantity,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // ✅ Record creation in history
+        await historyRef.add({
+          'course': _course,
+          'gender': _gender,
+          'size': _size,
+          'stockIn': _quantity,
+          'stockOut': 0,
+          'remaining': _quantity,
+          'remarks': 'New uniform stock added',
+          'date': Timestamp.now(),
+        });
+
+        message = 'New stock added successfully!';
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.teal,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      Navigator.pop(context);
     }
   }
-
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.teal,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    Navigator.pop(context);
-  }
-}
-
 
   Widget _sectionTitle(String title, IconData icon) {
     return Row(
@@ -943,7 +949,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: DropdownButtonFormField<String>(
-                    value: _size.isNotEmpty ? _size : null,
+                    initialValue: _size.isNotEmpty ? _size : null,
                     decoration: InputDecoration(
                       labelText: 'Size',
                       prefixIcon:
@@ -959,8 +965,9 @@ class _UniformFormPageState extends State<UniformFormPage> {
                             ))
                         .toList(),
                     validator: (val) {
-                      if (val == null || val.isEmpty)
+                      if (val == null || val.isEmpty) {
                         return 'Please select a size';
+                      }
                       return null;
                     },
                     onChanged: (val) => setState(() => _size = val ?? ''),
@@ -1067,276 +1074,276 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
         .format(date); // Oct/15/2025 03:45 PM
   }
 
-Future<void> _approveRequest(
-String id,
-Map<String, dynamic> data,
-BuildContext context,
-) async {
-final firestore = FirebaseFirestore.instance;
+  Future<void> _approveRequest(
+    String id,
+    Map<String, dynamic> data,
+    BuildContext context,
+  ) async {
+    final firestore = FirebaseFirestore.instance;
 
-try {
-final String course = (data['course'] ?? '').toString().trim();
-final String size = (data['size'] ?? '').toString().trim();
-final String gender = (data['gender'] ?? '').toString().trim();
+    try {
+      final String course = (data['course'] ?? '').toString().trim();
+      final String size = (data['size'] ?? '').toString().trim();
+      final String gender = (data['gender'] ?? '').toString().trim();
 
-if (course.isEmpty || size.isEmpty || gender.isEmpty) {
-  throw Exception('Invalid course, size, or gender values.');
-}
+      if (course.isEmpty || size.isEmpty || gender.isEmpty) {
+        throw Exception('Invalid course, size, or gender values.');
+      }
 
-final uniformQuery = await firestore
-    .collection('uniforms')
-    .where('course', isEqualTo: course)
-    .where('gender', isEqualTo: gender)
-    .where('size', isEqualTo: size)
-    .limit(1)
-    .get();
+      final uniformQuery = await firestore
+          .collection('uniforms')
+          .where('course', isEqualTo: course)
+          .where('gender', isEqualTo: gender)
+          .where('size', isEqualTo: size)
+          .limit(1)
+          .get();
 
-if (uniformQuery.docs.isEmpty) {
-  throw Exception('No uniform found for $course - $gender - $size');
-}
+      if (uniformQuery.docs.isEmpty) {
+        throw Exception('No uniform found for $course - $gender - $size');
+      }
 
-final uniformDoc = uniformQuery.docs.first.reference;
-final requestRef = firestore.collection('uniform_requests').doc(id);
+      final uniformDoc = uniformQuery.docs.first.reference;
+      final requestRef = firestore.collection('uniform_requests').doc(id);
 
-int updatedStock = 0;
+      int updatedStock = 0;
 
-await firestore.runTransaction((transaction) async {
-  final uniformSnap = await transaction.get(uniformDoc);
-  if (!uniformSnap.exists) throw Exception('Uniform no longer exists!');
-  final currentStock = (uniformSnap.data()?['quantity'] ?? 0) as int;
-  if (currentStock <= 0) throw Exception('No stock available.');
+      await firestore.runTransaction((transaction) async {
+        final uniformSnap = await transaction.get(uniformDoc);
+        if (!uniformSnap.exists) throw Exception('Uniform no longer exists!');
+        final currentStock = (uniformSnap.data()?['quantity'] ?? 0) as int;
+        if (currentStock <= 0) throw Exception('No stock available.');
 
-  final requestSnap = await transaction.get(requestRef);
-  final currentStatus =
-      (requestSnap.data()?['status'] ?? 'Pending').toString();
-  if (currentStatus == 'Approved' || currentStatus == 'Completed') {
-    throw Exception('Request already approved or completed.');
-  }
+        final requestSnap = await transaction.get(requestRef);
+        final currentStatus =
+            (requestSnap.data()?['status'] ?? 'Pending').toString();
+        if (currentStatus == 'Approved' || currentStatus == 'Completed') {
+          throw Exception('Request already approved or completed.');
+        }
 
-  updatedStock = currentStock - (data['orderQuantity'] ?? 1) as int;
-  transaction.update(uniformDoc, {'quantity': updatedStock});
-  transaction.update(requestRef, {
-    'status': 'Approved',
-    'approvedAt': FieldValue.serverTimestamp(),
-  });
-});
+        updatedStock = currentStock - (data['orderQuantity'] ?? 1) as int;
+        transaction.update(uniformDoc, {'quantity': updatedStock});
+        transaction.update(requestRef, {
+          'status': 'Approved',
+          'approvedAt': FieldValue.serverTimestamp(),
+        });
+      });
 
 // ✅ Notify the student that their request was approved
-await EmailJsService.sendApprovalEmail(
-  toEmail: data['email'] ?? '',
-  toName: data['userName'] ?? '',
-  studentNumber: data['studentId'] ?? '',
-  studentName: data['userName'] ?? '',
-  gender: data['gender'] ?? '',
-  course: data['course'] ?? '',
-  size: data['size'] ?? '',
-  qrCode: data['qrCode'] ?? '',
-  orderQuantity: data['orderQuantity'] ?? 1,
-);
+      await EmailJsService.sendApprovalEmail(
+        toEmail: data['email'] ?? '',
+        toName: data['userName'] ?? '',
+        studentNumber: data['studentId'] ?? '',
+        studentName: data['userName'] ?? '',
+        gender: data['gender'] ?? '',
+        course: data['course'] ?? '',
+        size: data['size'] ?? '',
+        qrCode: data['qrCode'] ?? '',
+        orderQuantity: data['orderQuantity'] ?? 1,
+      );
 
 // 🚨 NEW: If stock is low (e.g., 5 or below), notify the admin
-if (updatedStock <= 5) {
-  await LowStockEmailService.sendLowStockAlert(
-    course: course,
-    gender: gender,
-    size: size,
-    remainingStock: updatedStock,
-    toEmail: 'ninipiegaming.karl@gmail.com', // ⚙️ Replace with actual admin email
-  );
-}
+      if (updatedStock <= 5) {
+        await LowStockEmailService.sendLowStockAlert(
+          course: course,
+          gender: gender,
+          size: size,
+          remainingStock: updatedStock,
+          toEmail:
+              'ninipiegaming.karl@gmail.com', // ⚙️ Replace with actual admin email
+        );
+      }
 
-ScaffoldMessenger.of(context).showSnackBar(
-  SnackBar(
-    content: Text(
-      '✅ Approved $course - $gender - $size. Stock deducted and email sent!'
-      '${updatedStock <= 5 ? ' (Low stock alert sent to admin!)' : ''}',
-    ),
-  ),
-);
-
-} catch (e) {
-ScaffoldMessenger.of(context).showSnackBar(
-SnackBar(content: Text('❌ Error approving request: $e')),
-);
-}
-}
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '✅ Approved $course - $gender - $size. Stock deducted and email sent!'
+            '${updatedStock <= 5 ? ' (Low stock alert sent to admin!)' : ''}',
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Error approving request: $e')),
+      );
+    }
+  }
 
   Future<void> _confirmApproval(
-  String id,
-  Map<String, dynamic> data,
-  BuildContext context,
-) async {
-  final bool? confirmed = await showDialog<bool>(
-    context: context,
-    barrierDismissible: false, // user must choose explicitly
-    builder: (context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        backgroundColor: Colors.white,
-        titlePadding: const EdgeInsets.only(top: 20),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        title: Row(
-          children: const [
-            Icon(Icons.check_circle_outline,
-                color: Color(0xFF00A86B), size: 28),
-            SizedBox(width: 8),
-            Text(
-              'Approve Request',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF00A86B),
+    String id,
+    Map<String, dynamic> data,
+    BuildContext context,
+  ) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // user must choose explicitly
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: Colors.white,
+          titlePadding: const EdgeInsets.only(top: 20),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          title: Row(
+            children: const [
+              Icon(Icons.check_circle_outline,
+                  color: Color(0xFF00A86B), size: 28),
+              SizedBox(width: 8),
+              Text(
+                'Approve Request',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF00A86B),
+                ),
               ),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to approve this uniform request? '
+            'This will deduct stock and notify the student via email.',
+            style: TextStyle(fontSize: 15),
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey[700],
+              ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.check, size: 18, color: Colors.white),
+              label: const Text(
+                'Approve',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00A86B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () => Navigator.pop(context, true),
             ),
           ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _approveRequest(id, data, context);
+    }
+  }
+
+  /// Cancel Request
+
+  Future<void> _cancelRequest(
+    String id,
+    Map<String, dynamic> data,
+    BuildContext context,
+  ) async {
+    final firestore = FirebaseFirestore.instance;
+
+    try {
+      final requestRef = firestore.collection('uniform_requests').doc(id);
+
+      // Check current status first
+      final requestSnap = await requestRef.get();
+      final currentStatus =
+          (requestSnap.data()?['status'] ?? 'Pending').toString();
+
+      if (currentStatus == 'Cancelled') {
+        throw Exception('Request already cancelled.');
+      }
+      if (currentStatus == 'Approved' || currentStatus == 'Completed') {
+        throw Exception('Approved or completed requests cannot be cancelled.');
+      }
+
+      // Update status to "Cancelled"
+      await requestRef.update({
+        'status': 'Cancelled',
+        'cancelledAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🚫 Request has been marked as cancelled.'),
+          backgroundColor: Colors.redAccent,
         ),
-        content: const Text(
-          'Are you sure you want to approve this uniform request? '
-          'This will deduct stock and notify the student via email.',
-          style: TextStyle(fontSize: 15),
-        ),
-        actionsPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey[700],
-            ),
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.check, size: 18, color: Colors.white),
-            label: const Text(
-              'Approve',
-              style: TextStyle(color: Colors.white),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00A86B),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
       );
-    },
-  );
-
-  if (confirmed == true) {
-    await _approveRequest(id, data, context);
-  }
-}
-
-/// Cancel Request
-
-Future<void> _cancelRequest(
-  String id,
-  Map<String, dynamic> data,
-  BuildContext context,
-) async {
-  final firestore = FirebaseFirestore.instance;
-
-  try {
-    final requestRef = firestore.collection('uniform_requests').doc(id);
-
-    // Check current status first
-    final requestSnap = await requestRef.get();
-    final currentStatus = (requestSnap.data()?['status'] ?? 'Pending').toString();
-
-    if (currentStatus == 'Cancelled') {
-      throw Exception('Request already cancelled.');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error cancelling request: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
-    if (currentStatus == 'Approved' || currentStatus == 'Completed') {
-      throw Exception('Approved or completed requests cannot be cancelled.');
-    }
-
-    // Update status to "Cancelled"
-    await requestRef.update({
-      'status': 'Cancelled',
-      'cancelledAt': FieldValue.serverTimestamp(),
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🚫 Request has been marked as cancelled.'),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('❌ Error cancelling request: $e'),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
   }
-}
 
-Future<void> _confirmCancellation(
-  String id,
-  Map<String, dynamic> data,
-  BuildContext context,
-) async {
-  final bool? confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: Colors.white,
-        titlePadding: const EdgeInsets.only(top: 20),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        title: Row(
-          children: const [
-            Icon(Icons.cancel_outlined, color: Colors.red, size: 28),
-            SizedBox(width: 8),
-            Text(
-              'Cancel Request',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
+  Future<void> _confirmCancellation(
+    String id,
+    Map<String, dynamic> data,
+    BuildContext context,
+  ) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          titlePadding: const EdgeInsets.only(top: 20),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          title: Row(
+            children: const [
+              Icon(Icons.cancel_outlined, color: Colors.red, size: 28),
+              SizedBox(width: 8),
+              Text(
+                'Cancel Request',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
               ),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to cancel this uniform request? '
+            'This action cannot be undone.',
+            style: TextStyle(fontSize: 15),
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('No'),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.cancel, color: Colors.white, size: 18),
+              label: const Text('Yes, Cancel'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () => Navigator.pop(context, true),
             ),
           ],
-        ),
-        content: const Text(
-          'Are you sure you want to cancel this uniform request? '
-          'This action cannot be undone.',
-          style: TextStyle(fontSize: 15),
-        ),
-        actionsPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
-          ),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.cancel, color: Colors.white, size: 18),
-            label: const Text('Yes, Cancel'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
-      );
-    },
-  );
+        );
+      },
+    );
 
-  if (confirmed == true) {
-    await _cancelRequest(id, data, context);
+    if (confirmed == true) {
+      await _cancelRequest(id, data, context);
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -1420,7 +1427,6 @@ Future<void> _confirmCancellation(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('uniform_requests')
-                        
                         .orderBy('timestamp', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
@@ -1501,10 +1507,9 @@ Future<void> _confirmCancellation(
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
-                                      headingRowColor:
-                                          MaterialStateProperty.all(
-                                              const Color(0xFF00A86B)
-                                                  .withOpacity(0.1)),
+                                      headingRowColor: WidgetStateProperty.all(
+                                          const Color(0xFF00A86B)
+                                              .withOpacity(0.1)),
                                       columnSpacing: 20,
                                       columns: const [
                                         DataColumn(
@@ -1582,26 +1587,41 @@ Future<void> _confirmCancellation(
                                                   data['timestamp']
                                                       as Timestamp?))),
                                               DataCell(
-  Row(
-    children: [
-      ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF00B4FF),
-        ),
-        onPressed: () => _confirmApproval(entry.value.id, data, context),
-        child: const Text('Approve'),
-      ),
-      const SizedBox(width: 8),
-      ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.redAccent,
-        ),
-        onPressed: () => _confirmCancellation(entry.value.id, data, context),
-        child: const Text('Cancel'),
-      ),
-    ],
-  ),
-),
+                                                Row(
+                                                  children: [
+                                                    ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            const Color(
+                                                                0xFF00B4FF),
+                                                      ),
+                                                      onPressed: () =>
+                                                          _confirmApproval(
+                                                              entry.value.id,
+                                                              data,
+                                                              context),
+                                                      child:
+                                                          const Text('Approve'),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    ElevatedButton(
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Colors.redAccent,
+                                                      ),
+                                                      onPressed: () =>
+                                                          _confirmCancellation(
+                                                              entry.value.id,
+                                                              data,
+                                                              context),
+                                                      child:
+                                                          const Text('Cancel'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                             ],
                                           );
                                         },
@@ -1918,10 +1938,9 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
-                                      headingRowColor:
-                                          MaterialStateProperty.all(
-                                              const Color(0xFF00A86B)
-                                                  .withOpacity(0.1)),
+                                      headingRowColor: WidgetStateProperty.all(
+                                          const Color(0xFF00A86B)
+                                              .withOpacity(0.1)),
                                       columnSpacing: 20,
                                       columns: const [
                                         DataColumn(
@@ -2280,10 +2299,9 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
-                                      headingRowColor:
-                                          MaterialStateProperty.all(
-                                              const Color(0xFF00A86B)
-                                                  .withOpacity(0.1)),
+                                      headingRowColor: WidgetStateProperty.all(
+                                          const Color(0xFF00A86B)
+                                              .withOpacity(0.1)),
                                       columnSpacing: 20,
                                       columns: const [
                                         DataColumn(
@@ -2463,332 +2481,324 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
 /// =============================== ///
 
 class CancelledOrdersListPage extends StatefulWidget {
-const CancelledOrdersListPage({super.key});
+  const CancelledOrdersListPage({super.key});
 
-@override
-State<CancelledOrdersListPage> createState() =>
-_CancelledOrdersListPageState();
+  @override
+  State<CancelledOrdersListPage> createState() =>
+      _CancelledOrdersListPageState();
 }
 
 class _CancelledOrdersListPageState extends State<CancelledOrdersListPage> {
-String searchQuery = '';
-int rowsPerPage = 10;
-int currentPage = 0;
+  String searchQuery = '';
+  int rowsPerPage = 10;
+  int currentPage = 0;
 
-String formatTimestamp(Timestamp? timestamp) {
-if (timestamp == null) return 'N/A';
-final date = timestamp.toDate();
-return DateFormat('MMM/dd/yyyy hh:mm a').format(date);
-}
+  String formatTimestamp(Timestamp? timestamp) {
+    if (timestamp == null) return 'N/A';
+    final date = timestamp.toDate();
+    return DateFormat('MMM/dd/yyyy hh:mm a').format(date);
+  }
 
-@override
-Widget build(BuildContext context) {
-return SafeArea(
-child: LayoutBuilder(
-builder: (context, constraints) {
-final isDesktop = constraints.maxWidth > 700;
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 700;
 
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              "Cancelled Orders",
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFFF4D4D), // 🔴 Red for Cancelled Orders
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 🔍 Search + Rows Per Page
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: isDesktop ? 250 : 180,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search',
-                      prefixIcon:
-                          const Icon(Icons.search, color: Color(0xFFFF4D4D)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value.toLowerCase();
-                        currentPage = 0;
-                      });
-                    },
+                const Text(
+                  "Cancelled Orders",
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFF4D4D), // 🔴 Red for Cancelled Orders
                   ),
                 ),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.black12),
-                  ),
-                  child: DropdownButton<int>(
-                    value: rowsPerPage,
-                    underline: const SizedBox(),
-                    items: const [
-                      DropdownMenuItem(value: 10, child: Text("10")),
-                      DropdownMenuItem(value: 50, child: Text("50")),
-                      DropdownMenuItem(value: 100, child: Text("100")),
-                      DropdownMenuItem(value: -1, child: Text("ALL")),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        rowsPerPage = value!;
-                        currentPage = 0;
-                      });
+                const SizedBox(height: 16),
+
+                // 🔍 Search + Rows Per Page
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: isDesktop ? 250 : 180,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search',
+                          prefixIcon: const Icon(Icons.search,
+                              color: Color(0xFFFF4D4D)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            searchQuery = value.toLowerCase();
+                            currentPage = 0;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black12),
+                      ),
+                      child: DropdownButton<int>(
+                        value: rowsPerPage,
+                        underline: const SizedBox(),
+                        items: const [
+                          DropdownMenuItem(value: 10, child: Text("10")),
+                          DropdownMenuItem(value: 50, child: Text("50")),
+                          DropdownMenuItem(value: 100, child: Text("100")),
+                          DropdownMenuItem(value: -1, child: Text("ALL")),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            rowsPerPage = value!;
+                            currentPage = 0;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // 🔹 Orders List
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('uniform_requests')
+                        .orderBy('timestamp', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                            child: CircularProgressIndicator(
+                                color: Color(0xFFFF4D4D)));
+                      }
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(
+                            child: Text('No cancelled orders found.'));
+                      }
+
+                      final allOrders = snapshot.data!.docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final status = data['status'] ?? '';
+
+                        // Search filter
+                        final name =
+                            (data['userName'] ?? '').toString().toLowerCase();
+                        final studentId =
+                            (data['studentId'] ?? '').toString().toLowerCase();
+                        final email =
+                            (data['email'] ?? '').toString().toLowerCase();
+                        final course =
+                            (data['course'] ?? '').toString().toLowerCase();
+                        final gender =
+                            (data['gender'] ?? '').toString().toLowerCase();
+                        final size =
+                            (data['size'] ?? '').toString().toLowerCase();
+                        final dateStr = data['timestamp'] != null
+                            ? formatTimestamp(data['timestamp'] as Timestamp)
+                                .toLowerCase()
+                            : '';
+
+                        final queryWords =
+                            searchQuery.split(RegExp(r'\s+')).toList();
+
+                        return status == 'Cancelled' &&
+                            queryWords.every((word) {
+                              if (word.isEmpty) return true;
+                              if (word == 'male' || word == 'female') {
+                                return gender == word;
+                              }
+                              return name.contains(word) ||
+                                  studentId.contains(word) ||
+                                  email.contains(word) ||
+                                  course.contains(word) ||
+                                  size.contains(word) ||
+                                  dateStr.contains(word);
+                            });
+                      }).toList();
+
+                      final totalPages = rowsPerPage == -1
+                          ? 1
+                          : (allOrders.length / rowsPerPage).ceil();
+                      final start = currentPage * rowsPerPage;
+                      final end = rowsPerPage == -1
+                          ? allOrders.length
+                          : (start + rowsPerPage).clamp(0, allOrders.length);
+                      final pageOrders = allOrders.sublist(start, end);
+
+                      if (isDesktop) {
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.vertical,
+                                child: Center(
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: DataTable(
+                                      headingRowColor: WidgetStateProperty.all(
+                                          const Color(0xFFFF4D4D)
+                                              .withOpacity(0.1)),
+                                      columnSpacing: 20,
+                                      columns: const [
+                                        DataColumn(label: Text('No.')),
+                                        DataColumn(label: Text('Name')),
+                                        DataColumn(label: Text('Student ID')),
+                                        DataColumn(label: Text('Email')),
+                                        DataColumn(label: Text('Course')),
+                                        DataColumn(label: Text('Sex Uniform')),
+                                        DataColumn(label: Text('Size')),
+                                        DataColumn(label: Text('Quantity')),
+                                        DataColumn(label: Text('Cancelled At')),
+                                      ],
+                                      rows: pageOrders
+                                          .asMap()
+                                          .entries
+                                          .map((entry) {
+                                        final index = start + entry.key + 1;
+                                        final data = entry.value.data()
+                                            as Map<String, dynamic>;
+                                        return DataRow(
+                                          color: WidgetStateProperty.all(
+                                              Colors.red.withOpacity(0.05)),
+                                          cells: [
+                                            DataCell(Text(index.toString())),
+                                            DataCell(
+                                                Text(data['userName'] ?? '')),
+                                            DataCell(
+                                                Text(data['studentId'] ?? '')),
+                                            DataCell(Text(data['email'] ?? '')),
+                                            DataCell(
+                                                Text(data['course'] ?? '')),
+                                            DataCell(
+                                                Text(data['gender'] ?? '')),
+                                            DataCell(Text(data['size'] ?? '')),
+                                            DataCell(Text(data['orderQuantity']
+                                                    ?.toString() ??
+                                                '1')),
+                                            DataCell(Text(formatTimestamp(
+                                                data['timestamp']
+                                                    as Timestamp?))),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: currentPage > 0
+                                      ? () => setState(() => currentPage--)
+                                      : null,
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFFF4D4D)),
+                                  child: const Text('Prev'),
+                                ),
+                                const SizedBox(width: 8),
+                                for (int i = 0; i < totalPages; i++)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    child: ElevatedButton(
+                                      onPressed: () =>
+                                          setState(() => currentPage = i),
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor: i == currentPage
+                                              ? const Color(0xFFFFA0A0)
+                                              : null),
+                                      child: Text('${i + 1}'),
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: currentPage < totalPages - 1
+                                      ? () => setState(() => currentPage++)
+                                      : null,
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFFF4D4D)),
+                                  child: const Text('Next'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        );
+                      }
+
+                      // 📱 Mobile view
+                      return ListView.builder(
+                        itemCount: pageOrders.length,
+                        itemBuilder: (context, index) {
+                          final data =
+                              pageOrders[index].data() as Map<String, dynamic>;
+                          return Card(
+                            elevation: 3,
+                            color: Colors.red[50],
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})',
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFFF4D4D)),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text('Email: ${data['email'] ?? ''}'),
+                                  Text('Course: ${data['course'] ?? ''}'),
+                                  Text('Gender: ${data['gender'] ?? ''}'),
+                                  Text('Size: ${data['size'] ?? ''}'),
+                                  Text(
+                                      'Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
+                                  Text(
+                                      'Cancelled At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
                     },
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-
-            // 🔹 Orders List
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('uniform_requests')
-                     
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator(
-                            color: Color(0xFFFF4D4D)));
-                  }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                        child: Text('No cancelled orders found.'));
-                  }
-
-                  final allOrders = snapshot.data!.docs.where((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final status = data['status'] ?? '';
-
-                    // Search filter
-                    final name = (data['userName'] ?? '')
-                        .toString()
-                        .toLowerCase();
-                    final studentId = (data['studentId'] ?? '')
-                        .toString()
-                        .toLowerCase();
-                    final email =
-                        (data['email'] ?? '').toString().toLowerCase();
-                    final course =
-                        (data['course'] ?? '').toString().toLowerCase();
-                    final gender =
-                        (data['gender'] ?? '').toString().toLowerCase();
-                    final size =
-                        (data['size'] ?? '').toString().toLowerCase();
-                    final dateStr = data['timestamp'] != null
-                        ? formatTimestamp(data['timestamp'] as Timestamp)
-                            .toLowerCase()
-                        : '';
-
-                    final queryWords =
-                        searchQuery.split(RegExp(r'\s+')).toList();
-
-                    return status == 'Cancelled' &&
-                        queryWords.every((word) {
-                          if (word.isEmpty) return true;
-                          if (word == 'male' || word == 'female') {
-                            return gender == word;
-                          }
-                          return name.contains(word) ||
-                              studentId.contains(word) ||
-                              email.contains(word) ||
-                              course.contains(word) ||
-                              size.contains(word) ||
-                              dateStr.contains(word);
-                        });
-                  }).toList();
-
-                  final totalPages = rowsPerPage == -1
-                      ? 1
-                      : (allOrders.length / rowsPerPage).ceil();
-                  final start = currentPage * rowsPerPage;
-                  final end = rowsPerPage == -1
-                      ? allOrders.length
-                      : (start + rowsPerPage).clamp(0, allOrders.length);
-                  final pageOrders = allOrders.sublist(start, end);
-
-                  if (isDesktop) {
-                    return Column(
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.vertical,
-                            child: Center(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: DataTable(
-                                  headingRowColor:
-                                      MaterialStateProperty.all(
-                                          const Color(0xFFFF4D4D)
-                                              .withOpacity(0.1)),
-                                  columnSpacing: 20,
-                                  columns: const [
-                                    DataColumn(label: Text('No.')),
-                                    DataColumn(label: Text('Name')),
-                                    DataColumn(label: Text('Student ID')),
-                                    DataColumn(label: Text('Email')),
-                                    DataColumn(label: Text('Course')),
-                                    DataColumn(label: Text('Sex Uniform')),
-                                    DataColumn(label: Text('Size')),
-                                    DataColumn(label: Text('Quantity')),
-                                    DataColumn(label: Text('Cancelled At')),
-                                  ],
-                                  rows: pageOrders
-                                      .asMap()
-                                      .entries
-                                      .map((entry) {
-                                    final index = start + entry.key + 1;
-                                    final data = entry.value.data()
-                                        as Map<String, dynamic>;
-                                    return DataRow(
-                                      color: MaterialStateProperty.all(
-                                          Colors.red.withOpacity(0.05)),
-                                      cells: [
-                                        DataCell(Text(index.toString())),
-                                        DataCell(
-                                            Text(data['userName'] ?? '')),
-                                        DataCell(
-                                            Text(data['studentId'] ?? '')),
-                                        DataCell(Text(data['email'] ?? '')),
-                                        DataCell(
-                                            Text(data['course'] ?? '')),
-                                        DataCell(
-                                            Text(data['gender'] ?? '')),
-                                        DataCell(Text(data['size'] ?? '')),
-                                        DataCell(Text(data['orderQuantity']
-                                                ?.toString() ??
-                                            '1')),
-                                        DataCell(Text(formatTimestamp(
-                                            data['timestamp']
-                                                as Timestamp?))),
-                                      ],
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ElevatedButton(
-                              onPressed: currentPage > 0
-                                  ? () => setState(() => currentPage--)
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      const Color(0xFFFF4D4D)),
-                              child: const Text('Prev'),
-                            ),
-                            const SizedBox(width: 8),
-                            for (int i = 0; i < totalPages; i++)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 4),
-                                child: ElevatedButton(
-                                  onPressed: () =>
-                                      setState(() => currentPage = i),
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: i == currentPage
-                                          ? const Color(0xFFFFA0A0)
-                                          : null),
-                                  child: Text('${i + 1}'),
-                                ),
-                              ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: currentPage < totalPages - 1
-                                  ? () => setState(() => currentPage++)
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      const Color(0xFFFF4D4D)),
-                              child: const Text('Next'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    );
-                  }
-
-                  // 📱 Mobile view
-                  return ListView.builder(
-                    itemCount: pageOrders.length,
-                    itemBuilder: (context, index) {
-                      final data =
-                          pageOrders[index].data() as Map<String, dynamic>;
-                      return Card(
-                        elevation: 3,
-                        color: Colors.red[50],
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${data['userName'] ?? 'Unknown'} (${data['studentId'] ?? ''})',
-                                style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFFF4D4D)),
-                              ),
-                              const SizedBox(height: 6),
-                              Text('Email: ${data['email'] ?? ''}'),
-                              Text('Course: ${data['course'] ?? ''}'),
-                              Text('Gender: ${data['gender'] ?? ''}'),
-                              Text('Size: ${data['size'] ?? ''}'),
-                              Text(
-                                  'Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
-                              Text(
-                                  'Cancelled At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  ),
-);
-
+          );
+        },
+      ),
+    );
+  }
 }
-}
-
 
 ///Inventory Management Page
 class InventoryPage extends StatefulWidget {
@@ -2822,63 +2832,60 @@ class _InventoryPageState extends State<InventoryPage>
 
   // ✅ Update stock and add history record if stock increases
   Future<void> _updateStockIn(
-  BuildContext context,
-  Uniform uniform,
-  int newQuantity,
-) async {
-  try {
-    final docRef =
-        FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
-    final docSnap = await docRef.get();
+    BuildContext context,
+    Uniform uniform,
+    int newQuantity,
+  ) async {
+    try {
+      final docRef =
+          FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
+      final docSnap = await docRef.get();
 
-    if (!docSnap.exists) return;
+      if (!docSnap.exists) return;
 
-    final data = docSnap.data()!;
-    final oldQuantity = data['quantity'] ?? 0;
+      final data = docSnap.data()!;
+      final oldQuantity = data['quantity'] ?? 0;
 
-    // Calculate the change
-    final quantityChange = newQuantity - oldQuantity;
+      // Calculate the change
+      final quantityChange = newQuantity - oldQuantity;
 
-    // ✅ Always update the stock
-    await docRef.update({
-      'quantity': newQuantity,
-      'lastEdited': FieldValue.serverTimestamp(),
-    });
+      // ✅ Always update the stock
+      await docRef.update({
+        'quantity': newQuantity,
+        'lastEdited': FieldValue.serverTimestamp(),
+      });
 
-    // ✅ Always add a history record
-    await FirebaseFirestore.instance.collection('inventory_history').add({
-      'course': data['course'] ?? '',
-      'gender': data['gender'] ?? '',
-      'size': data['size'] ?? '',
-      'stockIn': quantityChange > 0 ? quantityChange : 0,
-      'stockOut': quantityChange < 0 ? quantityChange.abs() : 0,
-      'remaining': newQuantity,
-      'editedBy': 'Admin', // optional: add current user or editor name
-      'remarks': quantityChange == 0
-          ? 'Stock edited (no change in quantity)'
-          : (quantityChange > 0
-              ? 'Stock increased'
-              : 'Stock decreased'),
-      'date': Timestamp.now(),
-    });
+      // ✅ Always add a history record
+      await FirebaseFirestore.instance.collection('inventory_history').add({
+        'course': data['course'] ?? '',
+        'gender': data['gender'] ?? '',
+        'size': data['size'] ?? '',
+        'stockIn': quantityChange > 0 ? quantityChange : 0,
+        'stockOut': quantityChange < 0 ? quantityChange.abs() : 0,
+        'remaining': newQuantity,
+        'editedBy': 'Admin', // optional: add current user or editor name
+        'remarks': quantityChange == 0
+            ? 'Stock edited (no change in quantity)'
+            : (quantityChange > 0 ? 'Stock increased' : 'Stock decreased'),
+        'date': Timestamp.now(),
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Stock updated successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  } catch (e) {
-    print('Error updating stock: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Failed to update stock: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Stock updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('Error updating stock: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update stock: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-}
-
 
   // ✅ Open form for add/edit uniform
   void _openForm([Uniform? uniform]) async {
@@ -2913,46 +2920,45 @@ class _InventoryPageState extends State<InventoryPage>
   }
 
   @override
-Widget build(BuildContext context) {
-  final courses = ['BSCS', 'ABCOM', 'BSCRIM'];
-  final isWide = MediaQuery.of(context).size.width > 800;
+  Widget build(BuildContext context) {
+    final courses = ['BSCS', 'ABCOM', 'BSCRIM'];
+    final isWide = MediaQuery.of(context).size.width > 800;
 
-  return DefaultTabController(
-    length: courses.length,
-    child: Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFF00B36B),
-        title: const Text(
-          'Inventory Management',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        bottom: const TabBar(
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white,
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+    return DefaultTabController(
+      length: courses.length,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F9FC),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: const Color(0xFF00B36B),
+          title: const Text(
+            'Inventory Management',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          tabs: [
-            Tab(text: 'BSCS'),
-            Tab(text: 'ABCOM'),
-            Tab(text: 'BSCRIM'),
-          ],
+          centerTitle: true,
+          bottom: const TabBar(
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white,
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+            tabs: [
+              Tab(text: 'BSCS'),
+              Tab(text: 'ABCOM'),
+              Tab(text: 'BSCRIM'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: courses
+              .map((course) => _buildCourseInventory(course, isWide))
+              .toList(),
         ),
       ),
-      body: TabBarView(
-        children: courses
-            .map((course) => _buildCourseInventory(course, isWide))
-            .toList(),
-      ),
-    ),
-  );
-}
-
+    );
+  }
 
   // ✅ Builds each course inventory tab
   Widget _buildCourseInventory(String course, bool isWide) {
@@ -3056,36 +3062,329 @@ Widget build(BuildContext context) {
   }
 }
 
-class HistoryStockReportTab extends StatelessWidget {
+class HistoryStockReportTab extends StatefulWidget {
   const HistoryStockReportTab({super.key});
+
+  @override
+  State<HistoryStockReportTab> createState() => _HistoryStockReportTabState();
+}
+
+class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
+  String? selectedMonth;
+  final months =
+      List.generate(12, (i) => DateFormat('MMMM').format(DateTime(0, i + 1)));
 
   String formatDate(dynamic ts) {
     if (ts == null) return '';
     try {
       final dt =
-          (ts is Timestamp) ? ts.toDate() : DateTime.parse(ts.toString());
+          (ts is Timestamp) ? ts.toDate() : DateTime.tryParse(ts.toString());
+      if (dt == null) return '';
       return DateFormat('MMM dd, yyyy hh:mm a').format(dt);
-    } catch (e) {
+    } catch (_) {
       return ts.toString();
+    }
+  }
+
+  bool isSameMonth(dynamic ts) {
+    if (selectedMonth == null) return true;
+    if (ts == null) return false;
+    DateTime? date =
+        (ts is Timestamp) ? ts.toDate() : DateTime.tryParse(ts.toString());
+    if (date == null) return false;
+    return DateFormat('MMMM').format(date) == selectedMonth;
+  }
+
+  Future<List<QueryDocumentSnapshot>> getFilteredDocs() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('inventory_history')
+        .orderBy('date', descending: true)
+        .get();
+    return snapshot.docs.where((d) => isSameMonth(d['date'])).toList();
+  }
+
+  Future<void> exportToPDF() async {
+    try {
+      final docs = await getFilteredDocs();
+      if (docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No data to export!')),
+        );
+        return;
+      }
+
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          build: (context) => [
+            pw.Center(
+              child: pw.Text(
+                'History Stock Report of School Uniforms - ${selectedMonth ?? "All Months"}',
+                style:
+                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+            pw.SizedBox(height: 10),
+            pw.TableHelper.fromTextArray(
+              headers: const [
+                'Course',
+                'Sex',
+                'Size',
+                'Stock In',
+                'Stock Out',
+                'Remaining',
+                'Date'
+              ],
+              data: docs.map((doc) {
+                final d = doc.data() as Map<String, dynamic>;
+                return [
+                  d['course'] ?? '',
+                  d['gender'] ?? '',
+                  d['size'] ?? '',
+                  d['stockIn']?.toString() ?? '0',
+                  d['stockOut']?.toString() ?? '0',
+                  d['remaining']?.toString() ?? '0',
+                  formatDate(d['date']),
+                ];
+              }).toList(),
+              cellAlignment: pw.Alignment.center,
+              cellStyle: const pw.TextStyle(fontSize: 10),
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+
+      final pdfBytes = await pdf.save();
+      final fileName =
+          'history_report_${selectedMonth?.toLowerCase() ?? "all"}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
+
+      await FileSaver.instance.saveFile(
+        name: fileName,
+        bytes: Uint8List.fromList(pdfBytes),
+        ext: "pdf",
+        mimeType: MimeType.pdf,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('PDF saved as $fileName')),
+      );
+    } catch (e, stack) {
+      debugPrint('PDF export error: $e');
+      debugPrint('Stack: $stack');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export PDF: $e')),
+      );
+    }
+  }
+
+  Future<void> exportToExcel() async {
+    try {
+      final docs = await getFilteredDocs();
+      if (docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No data to export!')),
+        );
+        return;
+      }
+
+      final excel = exl.Excel.createExcel();
+      final sheet = excel['Sheet1'];
+
+      final headers = [
+        'Course',
+        'Sex',
+        'Size',
+        'Stock In',
+        'Stock Out',
+        'Remaining',
+        'Date'
+      ];
+      sheet.appendRow(headers);
+
+      for (var doc in docs) {
+        final d = doc.data() as Map<String, dynamic>;
+        sheet.appendRow([
+          d['course'] ?? '',
+          d['gender'] ?? '',
+          d['size'] ?? '',
+          d['stockIn']?.toString() ?? '0',
+          d['stockOut']?.toString() ?? '0',
+          d['remaining']?.toString() ?? '0',
+          formatDate(d['date']),
+        ]);
+      }
+
+      final excelBytes = excel.encode();
+      if (excelBytes == null || excelBytes.isEmpty) {
+        throw Exception("Excel encoding failed.");
+      }
+
+      final fileName = 'History_Stock_Report_${selectedMonth ?? "All"}.xlsx';
+
+      if (kIsWeb) {
+        await FileSaver.instance.saveFile(
+          name: fileName,
+          bytes: Uint8List.fromList(excelBytes),
+          ext: 'xlsx',
+          mimeType: MimeType.microsoftExcel,
+        );
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        final path = '${dir.path}/$fileName';
+        final file = File(path);
+        await file.writeAsBytes(excelBytes);
+        await OpenFile.open(file.path);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Exported successfully: $fileName')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export Excel: $e')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text(
-          'History Stock Report',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF00A86B),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+    final isWide = MediaQuery.of(context).size.width > 800;
+
+    return Center(
+      child: Container(
+        width: isWide ? 1000 : double.infinity,
+        padding: EdgeInsets.all(isWide ? 24 : 12),
+        color: const Color(0xFFF8F9FA),
         child: Column(
           children: [
+            // ✅ Top Menu Bar (Responsive for Desktop)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 0, 114, 76),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "History Stock Report",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedMonth ?? 'All',
+                          dropdownColor: const Color.fromARGB(255, 0, 123, 255),
+                          iconEnabledColor:
+                              const Color.fromARGB(255, 255, 255, 255),
+                          style: const TextStyle(color: Colors.white),
+                          items: [
+                            const DropdownMenuItem(
+                              value: 'All',
+                              child: Text("All Months"),
+                            ),
+                            ...months
+                                .map((m) => DropdownMenuItem(
+                                      value: m,
+                                      child: Text(m),
+                                    ))
+                                .toList(),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              selectedMonth = (val == 'All') ? null : val;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.download, color: Colors.white),
+                        label: const Text('Export',
+                            style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 0, 123, 255),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              title: const Text(
+                                'Export Options',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.picture_as_pdf,
+                                        color: Colors.white),
+                                    label: const Text('Export PDF',
+                                        style: TextStyle(color: Colors.white)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.redAccent,
+                                      minimumSize:
+                                          const Size(double.infinity, 45),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      exportToPDF();
+                                    },
+                                  ),
+                                  const SizedBox(height: 10),
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.grid_on,
+                                        color: Colors.white),
+                                    label: const Text('Export Excel',
+                                        style: TextStyle(color: Colors.white)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      minimumSize:
+                                          const Size(double.infinity, 45),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      exportToExcel();
+                                    },
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ✅ Data Table
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -3095,17 +3394,20 @@ class HistoryStockReportTab extends StatelessWidget {
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(
-                        child: CircularProgressIndicator(
-                      color: Color(0xFF00B4FF),
-                    ));
+                      child:
+                          CircularProgressIndicator(color: Color(0xFF007BFF)),
+                    );
                   }
 
-                  final docs = snap.data?.docs ?? [];
+                  final docs = snap.data?.docs
+                          .where((d) => isSameMonth(d['date']))
+                          .toList() ??
+                      [];
 
                   if (docs.isEmpty) {
                     return const Center(
                       child: Text(
-                        'No data',
+                        'No data available',
                         style: TextStyle(fontSize: 18, color: Colors.grey),
                       ),
                     );
@@ -3113,42 +3415,39 @@ class HistoryStockReportTab extends StatelessWidget {
 
                   final rows = docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    final course = (data['course'] ?? '').toString();
-                    final gender = (data['gender'] ?? '').toString();
-                    final size = (data['size'] ?? '').toString();
-                    final stockIn = (data['stockIn'] ?? 0).toString();
-                    final stockOut = (data['stockOut'] ?? 0).toString();
-                    final remaining = ((data['remaining'] != null)
-                            ? data['remaining'].toString()
-                            : (int.tryParse(stockIn) ?? 0) -
-                                (int.tryParse(stockOut) ?? 0))
-                        .toString();
-                    final dateStr = formatDate(data['date']);
-
                     return DataRow(cells: [
-                      DataCell(Text(course)),
-                      DataCell(Text(gender)),
-                      DataCell(Text(size)),
-                      DataCell(Text(stockIn)),
-                      DataCell(Text(stockOut)),
-                      DataCell(Text(remaining)),
-                      DataCell(Text(dateStr)),
+                      DataCell(Text(data['course'] ?? '')),
+                      DataCell(Text(data['gender'] ?? '')),
+                      DataCell(Text(data['size'] ?? '')),
+                      DataCell(Text(data['stockIn']?.toString() ?? '0')),
+                      DataCell(Text(data['stockOut']?.toString() ?? '0')),
+                      DataCell(Text(data['remaining']?.toString() ?? '0')),
+                      DataCell(Text(formatDate(data['date']))),
                     ]);
                   }).toList();
 
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columns: const [
-                        DataColumn(label: Text('Course')),
-                        DataColumn(label: Text('Sex')),
-                        DataColumn(label: Text('Size')),
-                        DataColumn(label: Text('Stock In')),
-                        DataColumn(label: Text('Stock Out')),
-                        DataColumn(label: Text('Remaining Stock')),
-                        DataColumn(label: Text('Date')),
-                      ],
-                      rows: rows,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth:
+                            isWide ? 950 : MediaQuery.of(context).size.width,
+                      ),
+                      child: DataTable(
+                        headingRowColor: MaterialStateProperty.all(
+                          const Color(0xFF00A86B).withOpacity(0.1),
+                        ),
+                        columns: const [
+                          DataColumn(label: Text('Course')),
+                          DataColumn(label: Text('Sex')),
+                          DataColumn(label: Text('Size')),
+                          DataColumn(label: Text('Stock In')),
+                          DataColumn(label: Text('Stock Out')),
+                          DataColumn(label: Text('Remaining')),
+                          DataColumn(label: Text('Date')),
+                        ],
+                        rows: rows,
+                      ),
                     ),
                   );
                 },
