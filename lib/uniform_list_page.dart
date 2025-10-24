@@ -17,6 +17,11 @@ import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:io';
+import 'package:inventory_application/services/cancelled_email_service.dart';
+
+
+
+
 
 class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
@@ -1723,88 +1728,96 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
 
   // ✅ Cancel Order Logic
   Future<void> cancelOrder(DocumentSnapshot orderDoc) async {
-    try {
-      final data = orderDoc.data() as Map<String, dynamic>;
+  try {
+    final data = orderDoc.data() as Map<String, dynamic>;
 
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Cancel Order?'),
-          content: const Text(
-              'Are you sure you want to cancel this order? The stock will be restored.'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('No')),
-            TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Yes, Cancel')),
-          ],
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Order?'),
+        content: const Text(
+          'Are you sure you want to cancel this order? The stock will be restored.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // 🧩 Restore stock
+    final uniformQuery = await FirebaseFirestore.instance
+        .collection('uniforms')
+        .where('gender', isEqualTo: data['gender'])
+        .where('size', isEqualTo: data['size'])
+        .limit(1)
+        .get();
+
+    if (uniformQuery.docs.isNotEmpty) {
+      final uniformDoc = uniformQuery.docs.first;
+      final uniformData = uniformDoc.data();
+      final currentStock = uniformData['quantity'] ?? 0;
+      final orderQuantity = data['orderQuantity'] ?? 1;
+
+      await FirebaseFirestore.instance
+          .collection('uniforms')
+          .doc(uniformDoc.id)
+          .update({'quantity': currentStock + orderQuantity});
+    }
+
+    // 🔄 Update order status
+    await FirebaseFirestore.instance
+        .collection('uniform_requests')
+        .doc(orderDoc.id)
+        .update({
+      'status': 'Cancelled',
+      'cancelledAt': Timestamp.now(),
+    });
+
+    // 📧 Send cancellation email (no reason)
+    final emailSent = await CancelledEmailService.sendCancelledEmail(
+      studentNumber: data['studentId'] ?? '',
+      studentName: data['userName'] ?? '',
+      course: data['course'] ?? '',
+      gender: data['gender'] ?? '',
+      size: data['size'] ?? '',
+      orderQuantity: (data['orderQuantity'] ?? 1).toString(),
+      toEmail: data['email'] ?? '',
+    );
+
+    // ✅ Show result
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(emailSent
+              ? 'Order cancelled, stock restored, and email sent.'
+              : 'Order cancelled and stock restored, but email failed.'),
+          backgroundColor: emailSent ? Colors.green : Colors.orange,
+          behavior: SnackBarBehavior.floating,
         ),
       );
-
-      if (confirm != true) return;
-
-      // Restore stock
-      final uniformQuery = await FirebaseFirestore.instance
-          .collection('uniforms')
-          .where('gender', isEqualTo: data['gender'])
-          .where('size', isEqualTo: data['size'])
-          .limit(1)
-          .get();
-
-      if (uniformQuery.docs.isNotEmpty) {
-        final uniformDoc = uniformQuery.docs.first;
-        final uniformData = uniformDoc.data();
-        final currentStock = uniformData['quantity'] ?? 0;
-        final orderQuantity = data['orderQuantity'] ?? 1;
-
-        await FirebaseFirestore.instance
-            .collection('uniforms')
-            .doc(uniformDoc.id)
-            .update({'quantity': currentStock + orderQuantity});
-      }
-
-      // Update status
-      await FirebaseFirestore.instance
-          .collection('uniform_requests')
-          .doc(orderDoc.id)
-          .update({
-        'status': 'Cancelled',
-        'cancelledAt': Timestamp.now(),
-      });
-
-      await EmailJsService.sendCancellationEmail(
-        toEmail: data['email'] ?? '',
-        toName: data['userName'] ?? '',
-        studentNumber: data['studentId'] ?? '',
-        studentName: data['userName'] ?? '',
-        gender: data['gender'] ?? '',
-        course: data['course'] ?? '',
-        size: data['size'] ?? '',
-        orderQuantity: data['orderQuantity'] ?? 1,
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to cancel order: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order cancelled and stock restored.'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to cancel order: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
     }
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -2052,6 +2065,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                           ],
                         );
                       }
+                      
 
                       // Mobile
                       return ListView.builder(
