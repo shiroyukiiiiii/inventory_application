@@ -2004,7 +2004,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.red,
                                             ),
-                                            child: const Text('Cancel'),
+                                            child: const Text('Unclaimed'),
                                           ),
                                         ),
                                       ]);
@@ -3364,7 +3364,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: const Text('Cancel'),
+                                  child: const Text('Unclaimed'),
                                 ),
                               ],
                             ),
