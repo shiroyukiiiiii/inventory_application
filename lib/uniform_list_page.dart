@@ -715,21 +715,10 @@ class _UniformFormPageState extends State<UniformFormPage> {
     _quantity = widget.uniform?.quantity ?? 0;
   }
 
-  Future<void> _deleteUniform() async {
-    if (widget.uniform != null) {
-      await FirebaseFirestore.instance
-          .collection('uniforms')
-          .doc(widget.uniform!.id)
-          .delete();
-      if (mounted) Navigator.pop(context);
-    }
-  }
-
   Future<void> _saveUniform() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    // 🚫 Additional Validation
     if (_course.isEmpty || _gender.isEmpty || _size.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -766,7 +755,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
     String message = '';
 
     if (widget.uniform != null) {
-      // 🔹 Editing existing uniform
+      // Update existing uniform
       final docRef = uniformsRef.doc(widget.uniform!.id);
       final oldDoc = await docRef.get();
       final oldData = oldDoc.data() ?? {};
@@ -781,7 +770,6 @@ class _UniformFormPageState extends State<UniformFormPage> {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // ✅ Record edit in history
       await historyRef.add({
         'course': _course,
         'gender': _gender,
@@ -797,7 +785,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
 
       message = 'Stock updated successfully!';
     } else {
-      // 🔹 Adding new uniform
+      // Add new uniform or increase existing stock
       final existingQuery = await uniformsRef
           .where('course', isEqualTo: _course)
           .where('gender', isEqualTo: _gender)
@@ -815,7 +803,6 @@ class _UniformFormPageState extends State<UniformFormPage> {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // ✅ Record stock-in in history
         await historyRef.add({
           'course': _course,
           'gender': _gender,
@@ -829,7 +816,6 @@ class _UniformFormPageState extends State<UniformFormPage> {
 
         message = 'Stock updated successfully!';
       } else {
-        // 🔹 New uniform entry
         await uniformsRef.add({
           'course': _course,
           'gender': _gender,
@@ -839,7 +825,6 @@ class _UniformFormPageState extends State<UniformFormPage> {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // ✅ Record creation in history
         await historyRef.add({
           'course': _course,
           'gender': _gender,
@@ -855,57 +840,62 @@ class _UniformFormPageState extends State<UniformFormPage> {
       }
     }
 
+    // ✅ Show popup success message
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Success', style: TextStyle(color: Colors.teal)),
           content: Text(message),
-          backgroundColor: Colors.teal,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // close dialog
+                Navigator.pop(context); // go back
+              },
+              child: const Text('OK', style: TextStyle(color: Colors.teal)),
+            ),
+          ],
         ),
       );
-      Navigator.pop(context);
     }
   }
 
-  Widget _sectionTitle(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.teal),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRadioOptions(
-      {required String title,
-      required List<String> options,
-      required String groupValue,
-      required ValueChanged<String?> onChanged}) {
+  Widget _buildRadioOptions({
+    required String title,
+    required List<String> options,
+    required String groupValue,
+    required ValueChanged<String?> onChanged,
+  }) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title,
                 style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ...options.map((opt) => RadioListTile<String>(
-                  title: Text(opt),
-                  value: opt,
-                  groupValue: groupValue,
-                  onChanged: onChanged,
-                  activeColor: Colors.teal,
-                )),
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 10,
+              children: options
+                  .map((opt) => ChoiceChip(
+                        label: Text(opt),
+                        selected: groupValue == opt,
+                        onSelected: (_) => onChanged(opt),
+                        selectedColor: Colors.teal.shade400,
+                        labelStyle: TextStyle(
+                            color: groupValue == opt
+                                ? Colors.white
+                                : Colors.black87),
+                      ))
+                  .toList(),
+            ),
           ],
         ),
       ),
@@ -914,135 +904,109 @@ class _UniformFormPageState extends State<UniformFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width > 800;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.uniform == null ? 'Add Uniform' : 'Edit Uniform'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // Gender Section
-              _buildRadioOptions(
-                  title: 'Gender',
-                  options: ['Male', 'Female'],
-                  groupValue: _gender,
-                  onChanged: (val) => setState(() => _gender = val ?? '')),
-
-              // Course Section
-              _buildRadioOptions(
-                  title: 'Course',
-                  options: ['BSCRIM', 'ABCOM', 'BSCS'],
-                  groupValue: _course,
-                  onChanged: (val) => setState(() => _course = val ?? '')),
-
-              // Size Dropdown
-              Card(
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _size.isNotEmpty ? _size : null,
-                    decoration: InputDecoration(
-                      labelText: 'Size',
-                      prefixIcon:
-                          const Icon(Icons.straighten, color: Colors.teal),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isWide ? 600 : double.infinity),
+          child: Card(
+            margin: const EdgeInsets.all(24),
+            elevation: 5,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    const SizedBox(height: 8),
+                    _buildRadioOptions(
+                      title: 'Gender',
+                      options: ['Male', 'Female'],
+                      groupValue: _gender,
+                      onChanged: (val) => setState(() => _gender = val ?? ''),
                     ),
-                    items: ['S', 'M', 'L', 'XL', 'XXL']
-                        .map((size) => DropdownMenuItem(
-                              value: size,
-                              child: Text(size),
-                            ))
-                        .toList(),
-                    validator: (val) {
-                      if (val == null || val.isEmpty) {
-                        return 'Please select a size';
-                      }
-                      return null;
-                    },
-                    onChanged: (val) => setState(() => _size = val ?? ''),
-                  ),
-                ),
-              ),
-
-              // Quantity
-              Card(
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: TextFormField(
-                    initialValue: _quantity.toString(),
-                    decoration: InputDecoration(
-                      labelText: 'Quantity',
-                      prefixIcon: const Icon(Icons.confirmation_num,
-                          color: Colors.teal),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                    _buildRadioOptions(
+                      title: 'Course',
+                      options: ['BSCRIM', 'ABCOM', 'BSCS'],
+                      groupValue: _course,
+                      onChanged: (val) => setState(() => _course = val ?? ''),
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (val) {
-                      if (val == null || val.isEmpty) return 'Enter quantity';
-                      final n = int.tryParse(val);
-                      if (n == null || n < 0) return 'Enter a valid quantity';
-                      return null;
-                    },
-                    onSaved: (val) => _quantity = int.parse(val!),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _saveUniform,
-                      icon: const Icon(Icons.save, color: Colors.white),
-                      label: Text(
-                        widget.uniform == null ? 'Add Stock' : 'Update Stock',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: _size.isNotEmpty ? _size : null,
+                      decoration: InputDecoration(
+                        labelText: 'Size',
+                        prefixIcon:
+                            const Icon(Icons.straighten, color: Colors.teal),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      items: ['S', 'M', 'L', 'XL', 'XXL']
+                          .map(
+                              (s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (val) => setState(() => _size = val ?? ''),
+                      validator: (val) =>
+                          val == null || val.isEmpty ? 'Select a size' : null,
                     ),
-                  ),
-                  if (widget.uniform != null) ...[
-                    const SizedBox(width: 10),
-                    Expanded(
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: _quantity.toString(),
+                      decoration: InputDecoration(
+                        labelText: 'Quantity',
+                        prefixIcon:
+                            const Icon(Icons.inventory, color: Colors.teal),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (val) {
+                        if (val == null || val.isEmpty) {
+                          return 'Enter quantity';
+                        }
+                        final n = int.tryParse(val);
+                        if (n == null || n <= 0) {
+                          return 'Enter a valid quantity';
+                        }
+                        return null;
+                      },
+                      onSaved: (val) => _quantity = int.parse(val!),
+                    ),
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
                       child: ElevatedButton.icon(
-                        onPressed: _deleteUniform,
-                        icon: const Icon(Icons.delete),
-                        label: const Text('Delete Stock'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                        icon: const Icon(Icons.save, color: Colors.white),
+                        label: Text(
+                          widget.uniform == null ? 'Add Stock' : 'Update Stock',
+                          style: const TextStyle(color: Colors.white),
                         ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: _saveUniform,
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1750,12 +1714,96 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
   int rowsPerPage = 10;
   int currentPage = 0;
 
-  // ✅ Format timestamp to "MMM/dd/yyyy hh:mm a"
+  // ✅ Format timestamp
   String formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return 'N/A';
     final date = timestamp.toDate();
-    return DateFormat('MMM/dd/yyyy hh:mm a')
-        .format(date); // Oct/15/2025 03:45 PM
+    return DateFormat('MMM/dd/yyyy hh:mm a').format(date);
+  }
+
+  // ✅ Cancel Order Logic
+  Future<void> cancelOrder(DocumentSnapshot orderDoc) async {
+    try {
+      final data = orderDoc.data() as Map<String, dynamic>;
+
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Cancel Order?'),
+          content: const Text(
+              'Are you sure you want to cancel this order? The stock will be restored.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('No')),
+            TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Yes, Cancel')),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      // Restore stock
+      final uniformQuery = await FirebaseFirestore.instance
+          .collection('uniforms')
+          .where('gender', isEqualTo: data['gender'])
+          .where('size', isEqualTo: data['size'])
+          .limit(1)
+          .get();
+
+      if (uniformQuery.docs.isNotEmpty) {
+        final uniformDoc = uniformQuery.docs.first;
+        final uniformData = uniformDoc.data();
+        final currentStock = uniformData['quantity'] ?? 0;
+        final orderQuantity = data['orderQuantity'] ?? 1;
+
+        await FirebaseFirestore.instance
+            .collection('uniforms')
+            .doc(uniformDoc.id)
+            .update({'quantity': currentStock + orderQuantity});
+      }
+
+      // Update status
+      await FirebaseFirestore.instance
+          .collection('uniform_requests')
+          .doc(orderDoc.id)
+          .update({
+        'status': 'Cancelled',
+        'cancelledAt': Timestamp.now(),
+      });
+
+      await EmailJsService.sendCancellationEmail(
+        toEmail: data['email'] ?? '',
+        toName: data['userName'] ?? '',
+        studentNumber: data['studentId'] ?? '',
+        studentName: data['userName'] ?? '',
+        gender: data['gender'] ?? '',
+        course: data['course'] ?? '',
+        size: data['size'] ?? '',
+        orderQuantity: data['orderQuantity'] ?? 1,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order cancelled and stock restored.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to cancel order: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -1763,7 +1811,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
     return SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth > 700;
+          final isDesktop = constraints.maxWidth > 400;
 
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1776,29 +1824,6 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF00A86B),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ✅ QR Button
-                Center(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminQrConfirmationPage(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('QR Confirmation'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00A86B),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 20),
-                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1858,9 +1883,32 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // 🔹 Orders List / Table / Mobile List
+                // QR Confirmation Button
+                Center(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const AdminQrConfirmationPage()),
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('QR Confirmation'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00A86B),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 20),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Orders Table / List
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
@@ -1881,43 +1929,23 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                       final allOrders = snapshot.data!.docs.where((doc) {
                         final data = doc.data() as Map<String, dynamic>;
                         final status = data['status'] ?? '';
+                        if (status != 'Approved') return false;
 
-                        // search filter
-                        final name =
-                            (data['userName'] ?? '').toString().toLowerCase();
-                        final studentId =
-                            (data['studentId'] ?? '').toString().toLowerCase();
-                        final email =
-                            (data['email'] ?? '').toString().toLowerCase();
-                        final course =
-                            (data['course'] ?? '').toString().toLowerCase();
-                        final gender =
-                            (data['gender'] ?? '').toString().toLowerCase();
-                        final size =
-                            (data['size'] ?? '').toString().toLowerCase();
-                        final dateStr = data['approvedAt'] != null
-                            ? formatTimestamp(data['approvedAt'] as Timestamp)
+                        final query = searchQuery.toLowerCase();
+                        return (data['userName'] ?? '')
+                                .toString()
                                 .toLowerCase()
-                            : '';
-
-                        final queryWords = searchQuery.split(RegExp(r'\s+'));
-
-                        return status == 'Approved' &&
-                            queryWords.every((word) {
-                              if (word.isEmpty) return true;
-                              if (word == 'male' || word == 'female') {
-                                return gender == word;
-                              }
-                              return name.contains(word) ||
-                                  studentId.contains(word) ||
-                                  email.contains(word) ||
-                                  course.contains(word) ||
-                                  size.contains(word) ||
-                                  dateStr.contains(word);
-                            });
+                                .contains(query) ||
+                            (data['studentId'] ?? '')
+                                .toString()
+                                .toLowerCase()
+                                .contains(query) ||
+                            (data['email'] ?? '')
+                                .toString()
+                                .toLowerCase()
+                                .contains(query);
                       }).toList();
 
-                      // Pagination
                       final totalPages = rowsPerPage == -1
                           ? 1
                           : (allOrders.length / rowsPerPage).ceil();
@@ -1927,104 +1955,66 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                           : (start + rowsPerPage).clamp(0, allOrders.length);
                       final pageOrders = allOrders.sublist(start, end);
 
-                      // Desktop Table
+                      // Desktop
                       if (isDesktop) {
                         return Column(
                           children: [
                             Expanded(
                               child: SingleChildScrollView(
                                 scrollDirection: Axis.vertical,
-                                child: Center(
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: DataTable(
-                                      headingRowColor: WidgetStateProperty.all(
-                                          const Color(0xFF00A86B)
-                                              .withOpacity(0.1)),
-                                      columnSpacing: 20,
-                                      columns: const [
-                                        DataColumn(
-                                            label: Text('No.',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        DataColumn(
-                                            label: Text('Name',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        DataColumn(
-                                            label: Text('Student ID',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        DataColumn(
-                                            label: Text('Email',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        DataColumn(
-                                            label: Text('Course',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        DataColumn(
-                                            label: Text('Sex Uniform',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        DataColumn(
-                                            label: Text('Size',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        DataColumn(
-                                            label: Text('Quantity',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        DataColumn(
-                                            label: Text('Approved At',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                      ],
-                                      rows: pageOrders
-                                          .asMap()
-                                          .entries
-                                          .map((entry) {
-                                        final index = start + entry.key + 1;
-                                        final data = entry.value.data()
-                                            as Map<String, dynamic>;
-                                        return DataRow(
-                                          cells: [
-                                            DataCell(Text(index.toString())),
-                                            DataCell(
-                                                Text(data['userName'] ?? '')),
-                                            DataCell(
-                                                Text(data['studentId'] ?? '')),
-                                            DataCell(Text(data['email'] ?? '')),
-                                            DataCell(
-                                                Text(data['course'] ?? '')),
-                                            DataCell(
-                                                Text(data['gender'] ?? '')),
-                                            DataCell(Text(data['size'] ?? '')),
-                                            DataCell(Text(data['orderQuantity']
-                                                    ?.toString() ??
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: DataTable(
+                                    headingRowColor: MaterialStateProperty.all(
+                                        const Color(0xFF00A86B)
+                                            .withOpacity(0.1)),
+                                    columns: const [
+                                      DataColumn(label: Text('No.')),
+                                      DataColumn(label: Text('Name')),
+                                      DataColumn(label: Text('Student ID')),
+                                      DataColumn(label: Text('Email')),
+                                      DataColumn(label: Text('Course')),
+                                      DataColumn(label: Text('Gender')),
+                                      DataColumn(label: Text('Size')),
+                                      DataColumn(label: Text('Quantity')),
+                                      DataColumn(label: Text('Approved At')),
+                                      DataColumn(label: Text('Actions')),
+                                    ],
+                                    rows: pageOrders.asMap().entries.map((e) {
+                                      final index = start + e.key + 1;
+                                      final data = e.value.data()
+                                          as Map<String, dynamic>;
+                                      return DataRow(cells: [
+                                        DataCell(Text(index.toString())),
+                                        DataCell(Text(data['userName'] ?? '')),
+                                        DataCell(Text(data['studentId'] ?? '')),
+                                        DataCell(Text(data['email'] ?? '')),
+                                        DataCell(Text(data['course'] ?? '')),
+                                        DataCell(Text(data['gender'] ?? '')),
+                                        DataCell(Text(data['size'] ?? '')),
+                                        DataCell(Text(
+                                            data['orderQuantity']?.toString() ??
                                                 '1')),
-                                            DataCell(Text(formatTimestamp(
-                                                data['approvedAt']
-                                                    as Timestamp))),
-                                          ],
-                                        );
-                                      }).toList(),
-                                    ),
+                                        DataCell(Text(formatTimestamp(
+                                            data['approvedAt'] as Timestamp?))),
+                                        DataCell(
+                                          ElevatedButton(
+                                            onPressed: () =>
+                                                cancelOrder(e.value),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
+                                            child: const Text('Cancel'),
+                                          ),
+                                        ),
+                                      ]);
+                                    }).toList(),
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // Pagination buttons
+                            // Pagination
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -2045,7 +2035,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                       style: ElevatedButton.styleFrom(
                                           backgroundColor: i == currentPage
                                               ? const Color.fromARGB(
-                                                  255, 118, 255, 205)
+                                                  255, 93, 255, 196)
                                               : null),
                                       child: Text('${i + 1}'),
                                     ),
@@ -2059,12 +2049,11 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
                           ],
                         );
                       }
 
-                      // Mobile view
+                      // Mobile
                       return ListView.builder(
                         itemCount: pageOrders.length,
                         itemBuilder: (context, index) {
@@ -2095,7 +2084,15 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                   Text(
                                       'Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
                                   Text(
-                                      'Approved At: ${formatTimestamp(data['approvedAt'] as Timestamp)}'),
+                                      'Approved At: ${formatTimestamp(data['approvedAt'] as Timestamp?)}'),
+                                  const SizedBox(height: 8),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        cancelOrder(pageOrders[index]),
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red),
+                                    child: const Text('Cancel Order'),
+                                  ),
                                 ],
                               ),
                             ),
@@ -3292,12 +3289,10 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                               value: 'All',
                               child: Text("All Months"),
                             ),
-                            ...months
-                                .map((m) => DropdownMenuItem(
-                                      value: m,
-                                      child: Text(m),
-                                    ))
-                                .toList(),
+                            ...months.map((m) => DropdownMenuItem(
+                                  value: m,
+                                  child: Text(m),
+                                )),
                           ],
                           onChanged: (val) {
                             setState(() {
@@ -3434,7 +3429,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                             isWide ? 950 : MediaQuery.of(context).size.width,
                       ),
                       child: DataTable(
-                        headingRowColor: MaterialStateProperty.all(
+                        headingRowColor: WidgetStateProperty.all(
                           const Color(0xFF00A86B).withOpacity(0.1),
                         ),
                         columns: const [

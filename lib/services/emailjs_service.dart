@@ -5,6 +5,7 @@ class EmailJsService {
   static const String serviceId = 'service_rhy5ula';
   static const String templateId = 'template_es6tz3k';
   static const String userId = 'fkjnejUTrQGSFyntI';
+  static const String cancellationTemplateId = 'template_cancel_xyz';
 
   /// Sends an admin registration email with credentials
   static Future<void> sendAdminRegistrationEmail({
@@ -22,7 +23,8 @@ class EmailJsService {
       },
       body: json.encode({
         'service_id': serviceId,
-        'template_id': 'template_admin_registration', // ✅ make sure this exists in EmailJS
+        'template_id':
+            'template_admin_registration', // ✅ Make sure it exists in EmailJS
         'user_id': userId,
         'template_params': {
           'to_email': toEmail,
@@ -57,12 +59,12 @@ class EmailJsService {
     final response = await http.post(
       url,
       headers: {
-        'origin': 'http://localhost', // or your deployed domain
+        'origin': 'http://localhost',
         'Content-Type': 'application/json',
       },
       body: json.encode({
         'service_id': serviceId,
-        'template_id': templateId,
+        'template_id': templateId, // ✅ existing template for approvals
         'user_id': userId,
         'template_params': {
           'to_email': toEmail,
@@ -72,7 +74,7 @@ class EmailJsService {
           'gender': gender,
           'course': course,
           'size': size,
-          'order_quantity': orderQuantity, // ✅ Added this line
+          'order_quantity': orderQuantity,
           'qr_code': qrCode,
         }
       }),
@@ -83,5 +85,49 @@ class EmailJsService {
     }
 
     print('✅ Approval email sent successfully');
+  }
+
+  /// ✅ Sends cancellation email when an order is cancelled
+  static Future<void> sendCancellationEmail({
+    required String toEmail,
+    required String toName,
+    required String studentNumber,
+    required String studentName,
+    required String gender,
+    required String course,
+    required String size,
+    required int orderQuantity,
+    String? reason, // Optional cancellation reason
+  }) async {
+    final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
+    final response = await http.post(
+      url,
+      headers: {
+        'origin': 'http://localhost',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'service_id': serviceId,
+        'template_id': cancellationTemplateId, // ✅ Create this in EmailJS
+        'user_id': userId,
+        'template_params': {
+          'to_email': toEmail,
+          'to_name': toName,
+          'student_number': studentNumber,
+          'student_name': studentName,
+          'gender': gender,
+          'course': course,
+          'size': size,
+          'order_quantity': orderQuantity,
+          'reason': reason ?? 'Your order has been cancelled by the admin.',
+        }
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send cancellation email: ${response.body}');
+    }
+
+    print('✅ Cancellation email sent successfully');
   }
 }
