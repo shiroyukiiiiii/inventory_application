@@ -3397,7 +3397,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: const Text('Unclaimed'),
+                                  child: const Text('Cancel'),
                                 ),
                               ],
                             ),
