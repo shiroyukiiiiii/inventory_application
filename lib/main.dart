@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Google Sign-In Web',
+      title: 'Smart Inventory Application for School Uniform',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
@@ -61,19 +61,28 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Smart Inventory Application for School Uniform',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'Smart Inventory Application for School Uniform',
+            style: TextStyle(
+              fontSize:
+                  screenWidth < 350 ? 12 : 15, // ✅ Auto-adjust for small phones
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
         elevation: 3,
+        toolbarHeight: 60, // ✅ keeps height compact but readable
       ),
       body: Container(
         width: double.infinity,
@@ -98,13 +107,11 @@ class _SignInPageState extends State<SignInPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 🔹 Logo Image (Make sure your image path is correct)
                   Icon(
                     Icons.school_sharp,
-                    size: 100, // Adjust the size
-                    color: Colors.blue.shade700, // Adjust color
+                    size: 100,
+                    color: Colors.blue.shade700,
                   ),
-
                   const Text(
                     'Welcome to SIASU System',
                     style: TextStyle(
@@ -121,8 +128,6 @@ class _SignInPageState extends State<SignInPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 35),
-
-                  // 🔹 Google Sign-In Button
                   ElevatedButton.icon(
                     icon: const Icon(Icons.login, color: Colors.white),
                     label: const Text(
@@ -142,10 +147,7 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                     onPressed: _signInWithPopup,
                   ),
-
                   const SizedBox(height: 20),
-
-                  // 🔹 Admin Login Button (Fixed syntax)
                 ],
               ),
             ),
@@ -155,7 +157,6 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
-  // 🔹 Firebase Google Sign-In Function
   Future<void> _signInWithPopup() async {
     try {
       final provider = GoogleAuthProvider();

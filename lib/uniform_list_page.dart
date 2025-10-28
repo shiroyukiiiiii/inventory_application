@@ -19,10 +19,6 @@ import 'package:open_file/open_file.dart';
 import 'dart:io';
 import 'package:inventory_application/services/cancelled_email_service.dart';
 
-
-
-
-
 class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
 
@@ -241,7 +237,10 @@ class _UniformListPageState extends State<UniformListPage>
               // Logout button
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('Logout'),
+                title: const Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.black), // optional color
+                ),
                 onTap: () async {
                   final confirm = await showDialog<bool>(
                     context: context,
@@ -265,10 +264,26 @@ class _UniformListPageState extends State<UniformListPage>
                   );
 
                   if (confirm == true) {
-                    await FirebaseAuth.instance.signOut();
-                    if (mounted) {
-                      Navigator.of(context)
-                          .pushNamedAndRemoveUntil('/login', (route) => false);
+                    try {
+                      await FirebaseAuth.instance.signOut();
+
+                      // ✅ Ensure widget is still in the tree
+                      if (!context.mounted) return;
+
+                      // ✅ Close drawer first (if open)
+                      Navigator.of(context).pop();
+
+                      // ✅ Navigate to admin login and clear history
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        '/admin-login',
+                        (route) => false,
+                      );
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Logout failed: $e')),
+                        );
+                      }
                     }
                   }
                 },
@@ -308,7 +323,7 @@ class _UniformListPageState extends State<UniformListPage>
               color: const Color(0xFF00A86B),
               child: TabBar(
                 controller: _tabController,
-                indicatorColor: const Color.fromARGB(255, 0, 55, 255),
+                indicatorColor: const Color.fromARGB(255, 255, 0, 0),
                 labelColor: const Color.fromARGB(255, 0, 3, 5),
                 unselectedLabelColor: Colors.white,
                 labelStyle:
@@ -364,7 +379,7 @@ class _InventoryTab extends StatelessWidget {
           final uniforms = snapshot.data!;
           final totalStock = uniforms.fold<int>(0, (a, u) => a + u.quantity);
 
-          final List<String> courses = ['BSCS', 'BSCRIM', 'ABCOM'];
+          final List<String> courses = ['BSCS', 'BSCRIM', 'B.A COM'];
           final genders = ['Male', 'Female'];
 
           final Map<String, Map<String, Map<String, int>>> summary = {
@@ -943,13 +958,13 @@ class _UniformFormPageState extends State<UniformFormPage> {
                     ),
                     _buildRadioOptions(
                       title: 'Course',
-                      options: ['BSCRIM', 'ABCOM', 'BSCS'],
+                      options: ['BSCRIM', 'B.A COM', 'BSCS'],
                       groupValue: _course,
                       onChanged: (val) => setState(() => _course = val ?? ''),
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: _size.isNotEmpty ? _size : null,
+                      initialValue: _size.isNotEmpty ? _size : null,
                       decoration: InputDecoration(
                         labelText: 'Size',
                         prefixIcon:
@@ -1728,96 +1743,94 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
 
   // ✅ Cancel Order Logic
   Future<void> cancelOrder(DocumentSnapshot orderDoc) async {
-  try {
-    final data = orderDoc.data() as Map<String, dynamic>;
+    try {
+      final data = orderDoc.data() as Map<String, dynamic>;
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel Order?'),
-        content: const Text(
-          'Are you sure you want to cancel this order? The stock will be restored.',
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Cancel Order?'),
+          content: const Text(
+            'Are you sure you want to cancel this order? The stock will be restored.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Yes, Cancel'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes, Cancel'),
-          ),
-        ],
-      ),
-    );
+      );
 
-    if (confirm != true) return;
+      if (confirm != true) return;
 
-    // 🧩 Restore stock
-    final uniformQuery = await FirebaseFirestore.instance
-        .collection('uniforms')
-        .where('gender', isEqualTo: data['gender'])
-        .where('size', isEqualTo: data['size'])
-        .limit(1)
-        .get();
-
-    if (uniformQuery.docs.isNotEmpty) {
-      final uniformDoc = uniformQuery.docs.first;
-      final uniformData = uniformDoc.data();
-      final currentStock = uniformData['quantity'] ?? 0;
-      final orderQuantity = data['orderQuantity'] ?? 1;
-
-      await FirebaseFirestore.instance
+      // 🧩 Restore stock
+      final uniformQuery = await FirebaseFirestore.instance
           .collection('uniforms')
-          .doc(uniformDoc.id)
-          .update({'quantity': currentStock + orderQuantity});
-    }
+          .where('gender', isEqualTo: data['gender'])
+          .where('size', isEqualTo: data['size'])
+          .limit(1)
+          .get();
 
-    // 🔄 Update order status
-    await FirebaseFirestore.instance
-        .collection('uniform_requests')
-        .doc(orderDoc.id)
-        .update({
-      'status': 'Cancelled',
-      'cancelledAt': Timestamp.now(),
-    });
+      if (uniformQuery.docs.isNotEmpty) {
+        final uniformDoc = uniformQuery.docs.first;
+        final uniformData = uniformDoc.data();
+        final currentStock = uniformData['quantity'] ?? 0;
+        final orderQuantity = data['orderQuantity'] ?? 1;
 
-    // 📧 Send cancellation email (no reason)
-    final emailSent = await CancelledEmailService.sendCancelledEmail(
-      studentNumber: data['studentId'] ?? '',
-      studentName: data['userName'] ?? '',
-      course: data['course'] ?? '',
-      gender: data['gender'] ?? '',
-      size: data['size'] ?? '',
-      orderQuantity: (data['orderQuantity'] ?? 1).toString(),
-      toEmail: data['email'] ?? '',
-    );
+        await FirebaseFirestore.instance
+            .collection('uniforms')
+            .doc(uniformDoc.id)
+            .update({'quantity': currentStock + orderQuantity});
+      }
 
-    // ✅ Show result
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(emailSent
-              ? 'Order cancelled, stock restored, and email sent.'
-              : 'Order cancelled and stock restored, but email failed.'),
-          backgroundColor: emailSent ? Colors.green : Colors.orange,
-          behavior: SnackBarBehavior.floating,
-        ),
+      // 🔄 Update order status
+      await FirebaseFirestore.instance
+          .collection('uniform_requests')
+          .doc(orderDoc.id)
+          .update({
+        'status': 'Cancelled',
+        'cancelledAt': Timestamp.now(),
+      });
+
+      // 📧 Send cancellation email (no reason)
+      final emailSent = await CancelledEmailService.sendCancelledEmail(
+        studentNumber: data['studentId'] ?? '',
+        studentName: data['userName'] ?? '',
+        course: data['course'] ?? '',
+        gender: data['gender'] ?? '',
+        size: data['size'] ?? '',
+        orderQuantity: (data['orderQuantity'] ?? 1).toString(),
+        toEmail: data['email'] ?? '',
       );
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to cancel order: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+
+      // ✅ Show result
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(emailSent
+                ? 'Order cancelled, stock restored, and email sent.'
+                : 'Order cancelled and stock restored, but email failed.'),
+            backgroundColor: emailSent ? Colors.green : Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to cancel order: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -1896,7 +1909,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // QR Confirmation Button
                 Center(
@@ -1956,6 +1969,10 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                             (data['email'] ?? '')
                                 .toString()
                                 .toLowerCase()
+                                .contains(query) ||
+                            (data['course'] ?? '')
+                                .toString()
+                                .toLowerCase()
                                 .contains(query);
                       }).toList();
 
@@ -1978,7 +1995,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                 child: SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
                                   child: DataTable(
-                                    headingRowColor: MaterialStateProperty.all(
+                                    headingRowColor: WidgetStateProperty.all(
                                         const Color(0xFF00A86B)
                                             .withOpacity(0.1)),
                                     columns: const [
@@ -2065,7 +2082,6 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                           ],
                         );
                       }
-                      
 
                       // Mobile
                       return ListView.builder(
@@ -2341,7 +2357,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                                     fontWeight:
                                                         FontWeight.bold))),
                                         DataColumn(
-                                            label: Text('Sex Uniform',
+                                            label: Text('Gender',
                                                 style: TextStyle(
                                                     fontWeight:
                                                         FontWeight.bold))),
@@ -2932,7 +2948,7 @@ class _InventoryPageState extends State<InventoryPage>
 
   @override
   Widget build(BuildContext context) {
-    final courses = ['BSCS', 'ABCOM', 'BSCRIM'];
+    final courses = ['BSCS', 'B.A COM', 'BSCRIM'];
     final isWide = MediaQuery.of(context).size.width > 800;
 
     return DefaultTabController(
@@ -2944,11 +2960,14 @@ class _InventoryPageState extends State<InventoryPage>
           backgroundColor: const Color(0xFF00B36B),
           title: const Text(
             'Inventory Management',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Colors.white, // ✅ make text white
+              fontWeight: FontWeight.bold,
+            ),
           ),
           centerTitle: true,
           bottom: const TabBar(
-            indicatorColor: Colors.white,
+            indicatorColor: Color.fromARGB(255, 0, 102, 255),
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white,
             labelStyle: TextStyle(
@@ -2957,7 +2976,7 @@ class _InventoryPageState extends State<InventoryPage>
             ),
             tabs: [
               Tab(text: 'BSCS'),
-              Tab(text: 'ABCOM'),
+              Tab(text: 'B.A COM'),
               Tab(text: 'BSCRIM'),
             ],
           ),
@@ -3294,7 +3313,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                       DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: selectedMonth ?? 'All',
-                          dropdownColor: const Color.fromARGB(255, 0, 123, 255),
+                          dropdownColor: Color.fromARGB(255, 83, 166, 255),
                           iconEnabledColor:
                               const Color.fromARGB(255, 255, 255, 255),
                           style: const TextStyle(color: Colors.white),

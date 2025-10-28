@@ -100,7 +100,8 @@ class _WebUniformRequestPageState extends State<WebUniformRequestPage> {
                       decoration: const InputDecoration(labelText: 'Course'),
                       items: const [
                         DropdownMenuItem(value: 'BSCS', child: Text('BSCS')),
-                        DropdownMenuItem(value: 'ABCOM', child: Text('ABCOM')),
+                        DropdownMenuItem(
+                            value: 'B.A COM', child: Text('B.A COM')),
                         DropdownMenuItem(
                             value: 'BSCRIM', child: Text('BSCRIM')),
                       ],

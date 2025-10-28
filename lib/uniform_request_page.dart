@@ -225,22 +225,49 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
             ),
           ),
 
-          // 🔒 FULL NAME VALIDATION
+          // 🔒 FIRST NAME
           TextFormField(
-            controller: _fullNameController,
             decoration: const InputDecoration(
-              labelText: 'Full Name',
+              labelText: 'First Name',
               border: OutlineInputBorder(),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Enter your full name';
+              if (value == null || value.isEmpty)
+                return 'Enter your first name';
               final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
               if (!nameRegExp.hasMatch(value)) {
-                return 'Full name must only contain letters and spaces';
+                return 'First name must only contain letters';
               }
               return null;
             },
-            onSaved: (value) => _fullName = value ?? '',
+            onSaved: (value) => _fullName =
+                '${value ?? ''} ${_fullName.split(' ').length > 1 ? _fullName.split(' ')[1] : ''}'
+                    .trim(),
+            onChanged: (value) {
+              // Temporarily store first name in _fullName before last name is added
+              _fullName = value;
+            },
+          ),
+
+          const SizedBox(height: 15),
+
+// 🔒 LAST NAME
+          TextFormField(
+            decoration: const InputDecoration(
+              labelText: 'Last Name',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Enter your last name';
+              final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
+              if (!nameRegExp.hasMatch(value)) {
+                return 'Last name must only contain letters';
+              }
+              return null;
+            },
+            onSaved: (value) {
+              _fullName = '${_fullName.trim()} ${value ?? ''}'.trim();
+            },
           ),
 
           const SizedBox(height: 15),
@@ -273,26 +300,31 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               border: OutlineInputBorder(),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Enter Student Number';
+              if (value == null || value.isEmpty) {
+                return 'Enter Student Number';
+              }
+
+              // ✅ Allow only 4 digits, a dash, then 4 digits (e.g. 2022-1234)
+              final pattern = RegExp(r'^\d{4}-\d{4}$');
+
+              if (!pattern.hasMatch(value)) {
+                return 'Invalid format. Use 4 digits, dash, then 4 digits (e.g. 2022-1234)';
+              }
+
+              // ✅ Optional: Check year validity
+              final enteredYear = int.tryParse(value.substring(0, 4));
               final currentYear = DateTime.now().year;
-              final pattern = RegExp(r'^(20\d{2})([-]?\d+)?$');
-              final match = pattern.firstMatch(value);
-              if (match == null) {
-                return 'Invalid student number format. Use format like 2022-12345';
+              if (enteredYear == null || enteredYear > currentYear) {
+                return 'Invalid or future year in student number';
               }
-              final enteredYear = int.tryParse(match.group(1) ?? '');
-              if (enteredYear == null) return 'Invalid year in student number';
-              if (enteredYear > currentYear) {
-                return 'Year cannot be in the future';
-              }
+
               return null;
             },
             onSaved: (value) => _studentId = value ?? '',
             onChanged: (value) {
-              _studentId = value; // store locally, no setState()
+              _studentId = value;
             },
           ),
-
           const SizedBox(height: 10),
 
           if (_studentId.isNotEmpty)
@@ -534,9 +566,20 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                   ),
                   value: size,
                   groupValue: _size,
-                  onChanged: qty > 0
-                      ? (value) => setState(() => _size = value ?? '')
-                      : null,
+                  onChanged: (value) {
+                    if (qty > 0) {
+                      setState(() => _size = value ?? '');
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'No stock available for $size at the moment.'),
+                          backgroundColor: Colors.redAccent,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
                   activeColor: Colors.teal,
                   secondary: qty == 0
                       ? const Icon(Icons.block, color: Colors.redAccent)

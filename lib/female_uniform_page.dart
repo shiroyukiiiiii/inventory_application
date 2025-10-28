@@ -132,7 +132,7 @@ class FemaleUniformPage extends StatelessWidget {
                         ),
                         _buildCourseItem(
                           context,
-                          'ABCOM',
+                          'B.A COM',
                           Colors.blue,
                           user,
                           'assets/images/femaleabbs.png',

@@ -58,6 +58,7 @@ class HomePage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout', // ✅ Tooltip added here
             onPressed: () {
               showDialog(
                 context: context,
@@ -76,7 +77,8 @@ class HomePage extends StatelessWidget {
                           FirebaseAuth.instance.signOut().then((_) {
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                  builder: (context) => const SignInPage()),
+                                builder: (context) => const SignInPage(),
+                              ),
                               (Route<dynamic> route) => false,
                             );
                           });
@@ -192,7 +194,7 @@ class HomePage extends StatelessWidget {
                         _buildCourseButton(
                           context,
                           user,
-                          'ABCOM',
+                          'B.A COM',
                           const Color(0xFF42A5F5),
                           'assets/images/abbs.png',
                           screenWidth,
