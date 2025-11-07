@@ -211,7 +211,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           const SizedBox(height: 15),
 
                           // Register Button
-                          
                         ],
                       ),
                     ),
