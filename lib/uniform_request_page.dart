@@ -231,9 +231,11 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               labelText: 'First Name',
               border: OutlineInputBorder(),
             ),
+            maxLength: 20,
             validator: (value) {
-              if (value == null || value.isEmpty)
+              if (value == null || value.isEmpty) {
                 return 'Enter your first name';
+              }
               final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
               if (!nameRegExp.hasMatch(value)) {
                 return 'First name must only contain letters';
@@ -257,6 +259,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               labelText: 'Last Name',
               border: OutlineInputBorder(),
             ),
+            maxLength: 20,
             validator: (value) {
               if (value == null || value.isEmpty) return 'Enter your last name';
               final nameRegExp = RegExp(r'^[A-Za-z\s]+$');
@@ -299,6 +302,9 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               labelText: 'Student Number',
               border: OutlineInputBorder(),
             ),
+            maxLength: 9, // ✅ Format: 2022-1234 = 9 characters
+            buildCounter:
+                (_, {currentLength = 0, maxLength, isFocused = false}) => null,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Enter Student Number';

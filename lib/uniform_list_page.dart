@@ -9,8 +9,6 @@ import 'package:flutter/gestures.dart';
 import 'package:inventory_application/services/lowstockemail.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
-import 'dart:typed_data';
 import 'package:excel/excel.dart' as exl;
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart'; // for kIsWeb
@@ -1358,6 +1356,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                     SizedBox(
                       width: isDesktop ? 250 : 180,
                       child: TextField(
+                        maxLength: 30,
                         decoration: InputDecoration(
                           hintText: 'Search',
                           prefixIcon: const Icon(Icons.search,
@@ -1861,6 +1860,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                     SizedBox(
                       width: isDesktop ? 250 : 180,
                       child: TextField(
+                        maxLength: 30,
                         decoration: InputDecoration(
                           hintText: 'Search',
                           prefixIcon: const Icon(Icons.search,
@@ -2193,6 +2193,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                     SizedBox(
                       width: isDesktop ? 250 : 180,
                       child: TextField(
+                        maxLength: 30,
                         decoration: InputDecoration(
                           hintText: 'Search',
                           prefixIcon: const Icon(Icons.search,
@@ -2555,6 +2556,7 @@ class _CancelledOrdersListPageState extends State<CancelledOrdersListPage> {
                     SizedBox(
                       width: isDesktop ? 250 : 180,
                       child: TextField(
+                        maxLength: 30,
                         decoration: InputDecoration(
                           hintText: 'Search',
                           prefixIcon: const Icon(Icons.search,
