@@ -41,6 +41,8 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
   bool _isSubmitting = false;
   String? _message;
   bool _showQRCode = false;
+  bool _agreedToPrivacy = false;
+
 
   @override
   void initState() {
@@ -383,39 +385,68 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
 
           const SizedBox(height: 25),
 
-          _isSubmitting
-              ? const Center(child: CircularProgressIndicator())
-              : SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.send),
-                    label: const Text(
-                      'Submit Request',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    onPressed: _submitRequest,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-
-          if (_message != null) ...[
-            const SizedBox(height: 20),
-            Text(
-              _message!,
-              style: TextStyle(
-                color: _message!.startsWith('Request submitted')
-                    ? Colors.green
-                    : Colors.red,
-              ),
+          CheckboxListTile(
+            title: const Text(
+              'I agree to the collection and processing of my personal data in accordance with the Data Privacy Act of 2012. My information will be used only for uniform request purposes.',
+              style: TextStyle(fontSize: 13),
             ),
-          ],
+            value: _agreedToPrivacy,
+            onChanged: (bool? value) {
+              setState(() {
+                _agreedToPrivacy = value ?? false;
+              });
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
+
+
+
+          _isSubmitting
+    ? const Center(child: CircularProgressIndicator())
+    : SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.send),
+          label: const Text(
+            'Submit Request',
+            style: TextStyle(fontSize: 16),
+          ),
+          // ✅ Prevent submission unless the user agrees
+          onPressed: _agreedToPrivacy
+              ? _submitRequest
+              : () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Please agree to the Data Privacy statement before submitting.',
+                      ),
+                      backgroundColor: Colors.redAccent,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blueAccent,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+
+if (_message != null) ...[
+  const SizedBox(height: 20),
+  Text(
+    _message!,
+    style: TextStyle(
+      color: _message!.startsWith('Request submitted')
+          ? Colors.green
+          : Colors.red,
+    ),
+  ),
+],
         ],
       ),
     );
