@@ -18,7 +18,7 @@ class SelectSexPage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Color(0xFF012060).withOpacity(0.9),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -86,13 +86,8 @@ class SelectSexPage extends StatelessWidget {
 
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF50E3C2), Color(0xFF4A90E2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+         decoration: const BoxDecoration(
+    color: Color(0xFF98CB0E)),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -144,7 +139,7 @@ class SelectSexPage extends StatelessWidget {
                     _buildSexButton(
                       context,
                       'Male',
-                      Colors.blueAccent,
+                      Color(0xFF012060),
                       Icons.male,
                       user,
                       course,
@@ -155,7 +150,7 @@ class SelectSexPage extends StatelessWidget {
                     _buildSexButton(
                       context,
                       'Female',
-                      Colors.pinkAccent,
+                      const Color.fromARGB(255, 204, 37, 25),
                       Icons.female,
                       user,
                       course,

@@ -16,8 +16,10 @@ class StudentManageRequestsPage extends StatelessWidget {
       length: 3,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F6FA),
+        
         appBar: AppBar(
-          backgroundColor: const Color.fromARGB(255, 0, 126, 61),
+          backgroundColor: const Color(0xFF012060),
+          foregroundColor: Colors.white,
           elevation: 2,
           titleSpacing: 0,
           title: Row(
@@ -43,7 +45,7 @@ class StudentManageRequestsPage extends StatelessWidget {
                         ? NetworkImage(user.photoURL!)
                         : null,
                 radius: isPhone ? 14 : 16,
-                backgroundColor: Colors.white24,
+                backgroundColor: Colors.white,
                 child: (user.photoURL == null || user.photoURL!.isEmpty)
                     ? const Icon(Icons.person, color: Colors.white)
                     : null,
@@ -183,7 +185,7 @@ class StudentManageRequestsPage extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 0, 150, 60),
+                      color: Color(0xFF012060),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -232,7 +234,7 @@ class StudentManageRequestsPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Color(0xFF1976D2)),
+          Icon(icon, size: 16, color: Color(0xFF012060)),
           const SizedBox(width: 6),
           Text(
             '$label:',
@@ -260,9 +262,9 @@ class StudentManageRequestsPage extends StatelessWidget {
       case 'pending':
         return Colors.orange;
       case 'approved':
-        return Color.fromARGB(255, 2, 149, 56);
+        return Color(0xFF98C93E);
       case 'completed':
-        return const Color(0xFF1976D2);
+        return const Color(0xFF012060);
       case 'cancelled':
         return Colors.redAccent;
       default:

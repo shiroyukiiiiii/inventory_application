@@ -17,12 +17,12 @@ class UniformPreviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryColor = Colors.green.shade700;
-    final Color secondaryColor = Colors.blue.shade700;
+    final Color primaryColor = Color(0xFF012060);
+    final Color secondaryColor = Color(0xFF012060);
     final Color accentColor = Colors.greenAccent.shade100;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xff98cb0e),
       appBar: AppBar(
         backgroundColor: primaryColor,
         elevation: 4,
@@ -76,13 +76,9 @@ class UniformPreviewPage extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue.shade50, Colors.green.shade50],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+          decoration: const BoxDecoration(
+      color: Color(0xFF98CB0E), // ✅ Solid green background
+    ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -121,7 +117,7 @@ class UniformPreviewPage extends StatelessWidget {
               const SizedBox(height: 15),
               Text(
                     'NOTE: Prices for Each Uniform Set 1000 PHP\n(Includes Shirt, Pants/Skirt)',
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 16, color: Color(0xFF012060)),
                     textAlign: TextAlign.center, // ✅ correct parameter
                   ),
 

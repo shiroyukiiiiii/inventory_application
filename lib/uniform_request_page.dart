@@ -149,7 +149,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
       backgroundColor: Colors.blueGrey[50],
       appBar: AppBar(
         title: const Text('Request Uniform'),
-        backgroundColor: Colors.teal,
+        backgroundColor: Color(0xFF012060),
         foregroundColor: Colors.white,
         elevation: 2,
         actions: [
@@ -212,14 +212,14 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
           Center(
             child: Column(
               children: [
-                Icon(Icons.checkroom, color: Colors.teal, size: 80),
+                Icon(Icons.checkroom, color: Color(0xFF012060), size: 50),
                 const SizedBox(height: 10),
                 const Text(
                   'Uniform Request Form',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.teal,
+                    color: Color(0xff012060),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -335,7 +335,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
               icon: const Icon(Icons.qr_code),
               label: const Text('Preview QR Code'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: Color(0xFF98CB0E),
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 45),
                 shape: RoundedRectangleBorder(
@@ -427,7 +427,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
                   );
                 },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blueAccent,
+            backgroundColor: Color(0xFF012060),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -540,7 +540,7 @@ if (_message != null) ...[
                   icon: const Icon(Icons.info_outline),
                   label: const Text('Size Chart'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Color(0xFF98CB0E),
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 45),
                     shape: RoundedRectangleBorder(
@@ -555,7 +555,7 @@ if (_message != null) ...[
               decoration: BoxDecoration(
                 color: Colors.teal.shade50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.teal.shade200),
+                border: Border.all(color: Color(0xff012060)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -563,12 +563,12 @@ if (_message != null) ...[
                   const Text(
                     'Total Stock Available:',
                     style: TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.teal),
+                        fontWeight: FontWeight.bold, color: Color(0xff012060)),
                   ),
                   Text(
                     '$totalStock pcs',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                        fontWeight: FontWeight.bold, color: Color(0xff012060)),
                   ),
                 ],
               ),

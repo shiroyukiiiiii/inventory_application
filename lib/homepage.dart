@@ -20,7 +20,7 @@ class HomePage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Color(0xFF012060).withOpacity(0.9),
         title: Row(
           children: [
             const Icon(Icons.home_outlined, color: Colors.white),
@@ -95,12 +95,8 @@ class HomePage extends StatelessWidget {
       ),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF4A90E2), Color(0xFF50E3C2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+    color: Color(0xFF98CB0E), // your single background color
+  ),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -171,7 +167,7 @@ class HomePage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF4A90E2),
+                        color: Color(0xFF336699),
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -186,7 +182,7 @@ class HomePage extends StatelessWidget {
                           context,
                           user,
                           'BSCRIM',
-                          const Color(0xFF4CAF50),
+                          const Color(0xFF336699),
                           'assets/images/crim.png',
                           screenWidth,
                           isPhone,
@@ -195,7 +191,7 @@ class HomePage extends StatelessWidget {
                           context,
                           user,
                           'B.A COM',
-                          const Color(0xFF42A5F5),
+                          const Color(0xFF4f8ac5),
                           'assets/images/abbs.png',
                           screenWidth,
                           isPhone,
@@ -204,7 +200,7 @@ class HomePage extends StatelessWidget {
                           context,
                           user,
                           'BSCS',
-                          const Color(0xFF26C6DA),
+                          const Color(0xFF336699),
                           'assets/images/abbs.png',
                           screenWidth,
                           isPhone,
@@ -221,18 +217,18 @@ class HomePage extends StatelessWidget {
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(
-                              color: Color(0xFF4A90E2), width: 2),
+                              color: Color(0xFF336699), width: 2),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
                         ),
                         icon: const Icon(Icons.request_page_outlined,
-                            color: Color(0xFF4A90E2)),
+                            color: Color(0xFF336699)),
                         label: const Text(
                           'Manage My Requests',
                           style: TextStyle(
                             fontSize: 18,
-                            color: Color(0xFF4A90E2),
+                            color: Color(0xFF336699),
                             fontWeight: FontWeight.bold,
                           ),
                         ),

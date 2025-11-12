@@ -65,7 +65,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     final isDesktop = size.width > 800;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F5F2),
+      backgroundColor: const Color(0xFF98cb0e),
       body: SafeArea(
         child: Stack(
           children: [
@@ -75,7 +75,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               left: 10,
               child: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new,
-                    color: Color(0xFF1A5F7A)),
+                    color: Colors.white),
                 iconSize: 26,
                 onPressed: () => Navigator.pop(context),
               ),
@@ -112,7 +112,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           Icon(
                             Icons.admin_panel_settings_rounded,
                             size: 70,
-                            color: Colors.green.shade700,
+                            color: Color(0xFF012060),
                           ),
                           const SizedBox(height: 10),
                           const Text(
@@ -120,7 +120,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A5F7A),
+                              color: Color(0xFF012060),
                               letterSpacing: 1.2,
                             ),
                           ),
@@ -131,13 +131,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                             decoration: InputDecoration(
                               labelText: 'Username',
                               prefixIcon: const Icon(Icons.person_outline,
-                                  color: Color(0xFF1A5F7A)),
+                                  color: Color(0xFF012060)),
                               filled: true,
                               fillColor: const Color(0xFFF5F9F8),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
                                 borderSide: const BorderSide(
-                                    color: Color(0xFF1A5F7A), width: 1.5),
+                                    color: Color(0xFF012060), width: 1.5),
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
@@ -156,13 +156,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                             decoration: InputDecoration(
                               labelText: 'Password',
                               prefixIcon: const Icon(Icons.lock_outline,
-                                  color: Color(0xFF1A5F7A)),
+                                  color: Color(0xFF012060)),
                               filled: true,
                               fillColor: const Color(0xFFF5F9F8),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
                                 borderSide: const BorderSide(
-                                    color: Color(0xFF1A5F7A), width: 1.5),
+                                    color: Color(0xFF012060), width: 1.5),
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
@@ -194,7 +194,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                   height: 50,
                                   child: ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF1A5F7A),
+                                      backgroundColor: const Color(0xFF012060),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(15),
                                       ),

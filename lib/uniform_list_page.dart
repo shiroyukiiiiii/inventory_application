@@ -295,7 +295,7 @@ class _UniformListPageState extends State<UniformListPage>
 
       // AppBar
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00A86B),
+        backgroundColor: const Color(0xFF012060),
         title: const Text(
           'Uniform Management',
           style: TextStyle(
@@ -320,11 +320,11 @@ class _UniformListPageState extends State<UniformListPage>
       // Bottom Tab Bar
       bottomNavigationBar: _selectedPage == 'tabs'
           ? Container(
-              color: const Color(0xFF00A86B),
+              color: const Color(0xFF012060),
               child: TabBar(
                 controller: _tabController,
-                indicatorColor: const Color.fromARGB(255, 255, 0, 0),
-                labelColor: const Color.fromARGB(255, 0, 3, 5),
+                indicatorColor: const Color(0xFFE5E5E5),
+                labelColor: const Color(0xFF98cb0e),
                 unselectedLabelColor: Colors.white,
                 labelStyle:
                     const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -1172,13 +1172,13 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
           title: Row(
             children: const [
               Icon(Icons.check_circle_outline,
-                  color: Color(0xFF00A86B), size: 28),
+                  color: Color(0xFF98CB0E), size: 28),
               SizedBox(width: 8),
               Text(
                 'Approve Request',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF00A86B),
+                  color: Color(0xFF90C695),
                 ),
               ),
             ],
@@ -1205,7 +1205,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                 style: TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00A86B),
+                backgroundColor: const Color(0xFFe5e5e5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1346,7 +1346,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF00A86B),
+                    color: Color(0xFF012060),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1361,7 +1361,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                         decoration: InputDecoration(
                           hintText: 'Search',
                           prefixIcon: const Icon(Icons.search,
-                              color: Color(0xFF00B4FF)),
+                              color: Color(0xFF012060)),
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(
@@ -1492,7 +1492,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
                                       headingRowColor: WidgetStateProperty.all(
-                                          const Color(0xFF00A86B)
+                                          const Color(0xFF012060)
                                               .withOpacity(0.1)),
                                       columnSpacing: 20,
                                       columns: const [
@@ -1578,7 +1578,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                           .styleFrom(
                                                         backgroundColor:
                                                             const Color(
-                                                                0xFF00B4FF),
+                                                                0xFF012060),
                                                       ),
                                                       onPressed: () =>
                                                           _confirmApproval(
@@ -2957,7 +2957,7 @@ class _InventoryPageState extends State<InventoryPage>
         backgroundColor: const Color(0xFFF7F9FC),
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: const Color(0xFF00B36B),
+          backgroundColor: const Color(0xFF012060),
           title: const Text(
             'Inventory Management',
             style: TextStyle(

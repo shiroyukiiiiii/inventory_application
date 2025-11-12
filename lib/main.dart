@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Smart Inventory Application for School Uniform',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF98CB0E)),
         useMaterial3: true,
         textTheme: const TextTheme(
           bodyMedium: TextStyle(fontFamily: 'Poppins'),
@@ -71,7 +71,7 @@ class _SignInPageState extends State<SignInPage> {
             'Smart Inventory Application for School Uniform',
             style: TextStyle(
               fontSize:
-                  screenWidth < 350 ? 12 : 15, // ✅ Auto-adjust for small phones
+                  screenWidth < 350 ? 15 : 25, // ✅ Auto-adjust for small phones
               fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
             ),
@@ -79,21 +79,17 @@ class _SignInPageState extends State<SignInPage> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: Color(0xFF012060),
         foregroundColor: Colors.white,
         elevation: 3,
-        toolbarHeight: 60, // ✅ keeps height compact but readable
+        toolbarHeight: 80, // ✅ keeps height compact but readable
       ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green.shade300, Colors.blue.shade400],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+         decoration: const BoxDecoration(
+    color: Color(0xFF98cb0e), // your single background color
+  ),
         child: Center(
           child: Card(
             elevation: 10,
@@ -110,7 +106,7 @@ class _SignInPageState extends State<SignInPage> {
                   Icon(
                     Icons.school_sharp,
                     size: 100,
-                    color: Colors.blue.shade700,
+                    color: Color(0xFF012060),
                   ),
                   const Text(
                     'Welcome to SIASU System',
@@ -136,7 +132,7 @@ class _SignInPageState extends State<SignInPage> {
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
+                      backgroundColor: Color(0xFF012060),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                           vertical: 14, horizontal: 25),
