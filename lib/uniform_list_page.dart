@@ -164,7 +164,7 @@ class _UniformListPageState extends State<UniformListPage>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               DrawerHeader(
-                decoration: const BoxDecoration(color: Color(0xFF00A86B)),
+                decoration: const BoxDecoration(color: Color(0xFF012060)),
                 child: const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -179,13 +179,13 @@ class _UniformListPageState extends State<UniformListPage>
               ),
 
               ListTile(
-                leading: const Icon(Icons.summarize, color: Colors.green),
+                leading: const Icon(Icons.summarize, color: Color(0xFF98CB0E)),
                 title: const Text('Inventory Summary'),
                 onTap: () => _openDrawerOption(context, 'inventorySummary'),
               ),
 
               ListTile(
-                leading: const Icon(Icons.check_circle, color: Colors.green),
+                leading: const Icon(Icons.check_circle, color: Color(0xFF98CB0E)),
                 title: const Text('Approved Orders'),
                 onTap: () {
                   Navigator.pop(context);
@@ -197,7 +197,7 @@ class _UniformListPageState extends State<UniformListPage>
               ),
 
               ListTile(
-                leading: const Icon(Icons.done_all, color: Colors.blue),
+                leading: const Icon(Icons.done_all, color: Color(0xFF012060)),
                 title: const Text('Completed Orders'),
                 onTap: () {
                   Navigator.pop(context);
@@ -296,6 +296,7 @@ class _UniformListPageState extends State<UniformListPage>
       // AppBar
       appBar: AppBar(
         backgroundColor: const Color(0xFF012060),
+        foregroundColor: Colors.white,
         title: const Text(
           'Uniform Management',
           style: TextStyle(
@@ -426,7 +427,7 @@ class _InventoryTab extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF00A86B),
+                              color: Color(0xFF98CB0E),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -439,13 +440,13 @@ class _InventoryTab extends StatelessWidget {
                                 title: "Total Uniforms",
                                 value: uniforms.length.toString(),
                                 icon: Icons.inventory_2_outlined,
-                                color: const Color(0xFF00A86B),
+                                color: const Color(0xFF98CB0E),
                               ),
                               _SummaryCard(
                                 title: "Total Stock",
                                 value: totalStock.toString(),
                                 icon: Icons.check_circle_outline,
-                                color: const Color(0xFF00B4FF),
+                                color: const Color(0xFF012060),
                               ),
                             ],
                           ),
@@ -455,7 +456,7 @@ class _InventoryTab extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF00A86B),
+                              color: Color(0xFF98CB0E),
                             ),
                           ),
                           const SizedBox(height: 15),
@@ -490,7 +491,7 @@ class _InventoryTab extends StatelessWidget {
                                       style: const TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF00A86B),
+                                        color: Color(0xFF012060),
                                       ),
                                     ),
                                     const SizedBox(height: 15),
@@ -498,8 +499,8 @@ class _InventoryTab extends StatelessWidget {
                                       final gender = g.key;
                                       final data = g.value;
                                       final color = gender == 'Male'
-                                          ? const Color(0xFF00A86B)
-                                          : const Color(0xFF00B4FF);
+                                          ? const Color(0xFF98CB0E)
+                                          : const Color(0xFF98CB0E);
                                       return Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.center,
@@ -1579,6 +1580,8 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                         backgroundColor:
                                                             const Color(
                                                                 0xFF012060),
+                                                        foregroundColor:
+                                                            Colors.white,
                                                       ),
                                                       onPressed: () =>
                                                           _confirmApproval(
@@ -1594,6 +1597,8 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                           .styleFrom(
                                                         backgroundColor:
                                                             Colors.redAccent,
+                                                        foregroundColor:
+                                                            Colors.white,
                                                       ),
                                                       onPressed: () =>
                                                           _confirmCancellation(
@@ -1636,7 +1641,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                       style: ElevatedButton.styleFrom(
                                           backgroundColor: i == currentPage
                                               ? const Color.fromARGB(
-                                                  255, 136, 255, 212)
+                                                  255, 1, 32, 96)
                                               : null),
                                       child: Text('${i + 1}'),
                                     ),
@@ -1849,7 +1854,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF00A86B),
+                    color: Color(0xFF012060),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1864,7 +1869,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                         decoration: InputDecoration(
                           hintText: 'Search',
                           prefixIcon: const Icon(Icons.search,
-                              color: Color(0xFF00B4FF)),
+                              color: Color(0xFF012060)),
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(
@@ -1925,7 +1930,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                     icon: const Icon(Icons.qr_code_scanner),
                     label: const Text('QR Confirmation'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00A86B),
+                      backgroundColor: const Color(0xFF98CB0E),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                           vertical: 14, horizontal: 20),
@@ -1996,7 +2001,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                   scrollDirection: Axis.horizontal,
                                   child: DataTable(
                                     headingRowColor: WidgetStateProperty.all(
-                                        const Color(0xFF00A86B)
+                                        const Color(0xFF98CB0E)
                                             .withOpacity(0.1)),
                                     columns: const [
                                       DataColumn(label: Text('No.')),
@@ -2033,6 +2038,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
                                                 cancelOrder(e.value),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.red,
+                                              foregroundColor: Colors.white,
                                             ),
                                             child: const Text('Unclaimed'),
                                           ),
@@ -2181,7 +2187,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF00A86B),
+                    color: Color(0xFF012060),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -2196,7 +2202,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                         decoration: InputDecoration(
                           hintText: 'Search',
                           prefixIcon: const Icon(Icons.search,
-                              color: Color(0xFF00B4FF)),
+                              color: Color(0xFF012060)),
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(
@@ -2254,7 +2260,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
                             child: CircularProgressIndicator(
-                                color: Color(0xFF00B4FF)));
+                                color: Color(0xFF012060)));
                       }
                       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                         return const Center(
@@ -2327,7 +2333,7 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
                                       headingRowColor: WidgetStateProperty.all(
-                                          const Color(0xFF00A86B)
+                                          const Color(0xFF98CB0E)
                                               .withOpacity(0.1)),
                                       columnSpacing: 20,
                                       columns: const [
@@ -2900,7 +2906,7 @@ class _InventoryPageState extends State<InventoryPage>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Stock updated successfully!'),
-          backgroundColor: Colors.green,
+          backgroundColor: Color(0xFF012060),
         ),
       );
     } catch (e) {
@@ -3294,7 +3300,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 0, 114, 76),
+                color: const Color.fromARGB(255, 152, 203, 14),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -3341,7 +3347,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                             style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              const Color.fromARGB(255, 0, 123, 255),
+                              const Color.fromARGB(255, 1, 32, 96),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 12),
                           shape: RoundedRectangleBorder(

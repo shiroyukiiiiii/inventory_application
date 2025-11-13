@@ -211,19 +211,23 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
         children: [
           Center(
             child: Column(
-              children: [
-                Icon(Icons.checkroom, color: Color(0xFF012060), size: 50),
-                const SizedBox(height: 10),
-                const Text(
-                  'Uniform Request Form',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xff012060),
-                  ),
+             children: [
+              Image.asset(
+                'assets/images/eclaroacademy.png',
+                width: 400, // adjust as needed
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Uniform Request Form',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xff012060),
                 ),
-                const SizedBox(height: 20),
-              ],
+              ),
+              const SizedBox(height: 20),
+            ],
             ),
           ),
 
