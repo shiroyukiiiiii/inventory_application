@@ -18,6 +18,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:io';
 import 'package:inventory_application/services/cancelled_email_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class UniformListPage extends StatefulWidget {
   const UniformListPage({super.key});
@@ -86,6 +88,7 @@ class _UniformListPageState extends State<UniformListPage>
             'Edit History',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
+          
           content: SizedBox(
             width: double.maxFinite,
             height: 400,
@@ -116,6 +119,7 @@ class _UniformListPageState extends State<UniformListPage>
                     final stockOut = data['stockOut'] ?? 0;
                     final remaining = data['remaining'] ?? 0;
                     final remarks = data['remarks'] ?? '';
+                    final updatedBy = data['updatedBy'] ?? 'Unknown'; // ✅ Add here
                     final date = (data['date'] as Timestamp?)?.toDate();
 
                     return ListTile(
@@ -127,8 +131,10 @@ class _UniformListPageState extends State<UniformListPage>
                       ),
                       title: Text('$course - $gender - $size'),
                       subtitle: Text(
-                        'In: $stockIn | Out: $stockOut | Remaining: $remaining\nRemarks: $remarks',
-                      ),
+                          'In: $stockIn | Out: $stockOut | Remaining: $remaining\n'
+                          'Remarks: $remarks\n'
+                          'Updated by: $updatedBy', // ✅ Show here
+                        ),
                       trailing: Text(
                         date != null
                             ? '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}'
@@ -726,6 +732,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
   late String _course;
   late String _size;
   late int _quantity;
+  String currentUsername = 'Admin'; // default fallback
 
   @override
   void initState() {
@@ -734,6 +741,12 @@ class _UniformFormPageState extends State<UniformFormPage> {
     _course = widget.uniform?.course ?? '';
     _size = widget.uniform?.size ?? '';
     _quantity = widget.uniform?.quantity ?? 0;
+    
+    // Get current user's name
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      currentUsername = user.displayName ?? user.email ?? 'Admin';
+    }
   }
 
   Future<void> _saveUniform() async {
@@ -801,6 +814,8 @@ class _UniformFormPageState extends State<UniformFormPage> {
         'remarks': quantityChange == 0
             ? 'Stock edited (no quantity change)'
             : (quantityChange > 0 ? 'Stock increased' : 'Stock decreased'),
+        'updatedBy': currentUsername,
+        'editedBy': currentUsername,
         'date': Timestamp.now(),
       });
 
@@ -832,6 +847,8 @@ class _UniformFormPageState extends State<UniformFormPage> {
           'stockOut': 0,
           'remaining': newQuantity,
           'remarks': 'Stock increased (new batch added)',
+          'updatedBy': currentUsername,
+          'editedBy': currentUsername,
           'date': Timestamp.now(),
         });
 
@@ -854,6 +871,8 @@ class _UniformFormPageState extends State<UniformFormPage> {
           'stockOut': 0,
           'remaining': _quantity,
           'remarks': 'New uniform stock added',
+          'updatedBy': currentUsername,
+          'editedBy': currentUsername,
           'date': Timestamp.now(),
         });
 
@@ -909,7 +928,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
                         label: Text(opt),
                         selected: groupValue == opt,
                         onSelected: (_) => onChanged(opt),
-                        selectedColor: Colors.teal.shade400,
+                        selectedColor: Color(0xFF012060),
                         labelStyle: TextStyle(
                             color: groupValue == opt
                                 ? Colors.white
@@ -928,9 +947,10 @@ class _UniformFormPageState extends State<UniformFormPage> {
     final isWide = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF98CB0E),
       appBar: AppBar(
         title: Text(widget.uniform == null ? 'Add Uniform' : 'Edit Uniform'),
-        backgroundColor: Colors.teal,
+        backgroundColor: Color(0xFF012060),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -969,7 +989,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
                       decoration: InputDecoration(
                         labelText: 'Size',
                         prefixIcon:
-                            const Icon(Icons.straighten, color: Colors.teal),
+                            const Icon(Icons.straighten, color: Color(0xFF012060)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -988,7 +1008,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
                       decoration: InputDecoration(
                         labelText: 'Quantity',
                         prefixIcon:
-                            const Icon(Icons.inventory, color: Colors.teal),
+                            const Icon(Icons.inventory, color: Color(0xFF012060)),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
@@ -1016,7 +1036,7 @@ class _UniformFormPageState extends State<UniformFormPage> {
                           style: const TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
+                          backgroundColor: Color(0xFF012060),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -2846,10 +2866,21 @@ class _InventoryPageState extends State<InventoryPage>
   late TabController _tabController;
   String searchQuery = '';
 
+  // ✅ Add this
+    User? currentUser;
+    String currentUsername = 'Admin'; // default fallback
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+
+      currentUser = FirebaseAuth.instance.currentUser;
+
+  // Fallback: use email if displayName is not set
+  if (currentUser != null) {
+    currentUsername = currentUser!.displayName ?? currentUser!.email ?? 'Admin';
+  }
   }
 
   // ✅ Get all uniforms by course
@@ -2870,6 +2901,7 @@ class _InventoryPageState extends State<InventoryPage>
     int newQuantity,
   ) async {
     try {
+
       final docRef =
           FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
       final docSnap = await docRef.get();
@@ -2900,6 +2932,7 @@ class _InventoryPageState extends State<InventoryPage>
         'remarks': quantityChange == 0
             ? 'Stock edited (no change in quantity)'
             : (quantityChange > 0 ? 'Stock increased' : 'Stock decreased'),
+          'updatedBy': currentUsername,  // ✅ Use the current user's email
         'date': Timestamp.now(),
       });
 
@@ -2922,6 +2955,8 @@ class _InventoryPageState extends State<InventoryPage>
 
   // ✅ Open form for add/edit uniform
   void _openForm([Uniform? uniform]) async {
+
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => UniformFormPage(uniform: uniform)),
@@ -2947,6 +2982,7 @@ class _InventoryPageState extends State<InventoryPage>
           'stockOut': 0,
           'remaining': newUniform.quantity,
           'date': FieldValue.serverTimestamp(),
+            'updatedBy': currentUsername, 
         });
       }
     }
@@ -3170,7 +3206,8 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                 'Stock In',
                 'Stock Out',
                 'Remaining',
-                'Date'
+                'Date',
+                'Updated By',
               ],
               data: docs.map((doc) {
                 final d = doc.data() as Map<String, dynamic>;
@@ -3182,6 +3219,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                   d['stockOut']?.toString() ?? '0',
                   d['remaining']?.toString() ?? '0',
                   formatDate(d['date']),
+                   d['updatedBy'] ?? 'Unknown',
                 ];
               }).toList(),
               cellAlignment: pw.Alignment.center,
@@ -3235,7 +3273,8 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
         'Stock In',
         'Stock Out',
         'Remaining',
-        'Date'
+        'Date',
+        'Updated By',
       ];
       sheet.appendRow(headers);
 
@@ -3249,6 +3288,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
           d['stockOut']?.toString() ?? '0',
           d['remaining']?.toString() ?? '0',
           formatDate(d['date']),
+          d['updatedBy'] ?? 'Unknown',
         ]);
       }
 
@@ -3457,6 +3497,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                       DataCell(Text(data['stockOut']?.toString() ?? '0')),
                       DataCell(Text(data['remaining']?.toString() ?? '0')),
                       DataCell(Text(formatDate(data['date']))),
+                       DataCell(Text(data['updatedBy'] ?? 'Unknown')),
                     ]);
                   }).toList();
 
@@ -3479,6 +3520,7 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                           DataColumn(label: Text('Stock Out')),
                           DataColumn(label: Text('Remaining')),
                           DataColumn(label: Text('Date')),
+                           DataColumn(label: Text('Updated By')),
                         ],
                         rows: rows,
                       ),
