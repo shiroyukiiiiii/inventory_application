@@ -109,11 +109,16 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                           Image.asset(
+                              'assets/images/eclaroacademy.png',
+                              height: 90, // optional
+                            ),
                           Icon(
                             Icons.admin_panel_settings_rounded,
                             size: 70,
                             color: Color(0xFF012060),
                           ),
+                          
                           const SizedBox(height: 10),
                           const Text(
                             "ADMIN LOGIN",

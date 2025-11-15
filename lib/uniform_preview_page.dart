@@ -27,12 +27,20 @@ class UniformPreviewPage extends StatelessWidget {
         backgroundColor: primaryColor,
         elevation: 4,
         centerTitle: true,
-        title: Text(
-          '$gender Uniform Preview - $course',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        toolbarHeight: 140,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/eclaroacademy.png',
+              height: 250,
+              width: 250,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 12),
+            
+          ],
         ),
         iconTheme: const IconThemeData(color: Colors.white),
 

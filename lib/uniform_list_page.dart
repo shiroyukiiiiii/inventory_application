@@ -9,7 +9,6 @@ import 'package:flutter/gestures.dart';
 import 'package:inventory_application/services/lowstockemail.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
 import 'dart:typed_data';
 import 'package:excel/excel.dart' as exl;
 import 'package:file_saver/file_saver.dart';
@@ -18,7 +17,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:io';
 import 'package:inventory_application/services/cancelled_email_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 
 class UniformListPage extends StatefulWidget {
@@ -428,6 +426,10 @@ class _InventoryTab extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          Image.asset(
+                              'assets/images/eclaroacademy.png',
+                              height: 90, // optional
+                            ),
                           const Text(
                             "Inventory Summary",
                             style: TextStyle(
@@ -977,6 +979,17 @@ class _UniformFormPageState extends State<UniformFormPage> {
                       groupValue: _gender,
                       onChanged: (val) => setState(() => _gender = val ?? ''),
                     ),
+                    const SizedBox(height: 20),
+                    // Logo after gender selection
+                    Center(
+                      child: Image.asset(
+                        'assets/images/eclaroacademy.png',
+                        height: 80,
+                        width: 80,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     _buildRadioOptions(
                       title: 'Course',
                       options: ['BSCRIM', 'B.A COM', 'BSCS'],
@@ -1362,6 +1375,10 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Image.asset(
+                              'assets/images/eclaroacademy.png',
+                              height: 90, // optional
+                            ),
                 const Text(
                   "Uniform Requests",
                   style: TextStyle(
@@ -1592,7 +1609,11 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                   data['timestamp']
                                                       as Timestamp?))),
                                               DataCell(
-                                                Row(
+                                                // Use Wrap so buttons can wrap to next line
+                                                // when the cell becomes too narrow on small screens.
+                                                Wrap(
+                                                  spacing: 8,
+                                                  runSpacing: 4,
                                                   children: [
                                                     ElevatedButton(
                                                       style: ElevatedButton
@@ -1611,7 +1632,6 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                                                       child:
                                                           const Text('Approve'),
                                                     ),
-                                                    const SizedBox(width: 8),
                                                     ElevatedButton(
                                                       style: ElevatedButton
                                                           .styleFrom(
@@ -1869,6 +1889,10 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Image.asset(
+                              'assets/images/eclaroacademy.png',
+                              height: 90, // optional
+                            ),
                 const Text(
                   "Approved Orders",
                   style: TextStyle(
@@ -2202,6 +2226,10 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Image.asset(
+                              'assets/images/eclaroacademy.png',
+                              height: 90, // optional
+                            ),
                 const Text(
                   "Completed Orders",
                   style: TextStyle(
@@ -2564,6 +2592,10 @@ class _CancelledOrdersListPageState extends State<CancelledOrdersListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Image.asset(
+                              'assets/images/eclaroacademy.png',
+                              height: 90, // optional
+                            ),
                 const Text(
                   "Cancelled Orders",
                   style: TextStyle(
@@ -2861,9 +2893,7 @@ class InventoryPage extends StatefulWidget {
   State<InventoryPage> createState() => _InventoryPageState();
 }
 
-class _InventoryPageState extends State<InventoryPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _InventoryPageState extends State<InventoryPage> {
   String searchQuery = '';
 
   // ✅ Add this
@@ -2873,9 +2903,8 @@ class _InventoryPageState extends State<InventoryPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
 
-      currentUser = FirebaseAuth.instance.currentUser;
+    currentUser = FirebaseAuth.instance.currentUser;
 
   // Fallback: use email if displayName is not set
   if (currentUser != null) {
@@ -2997,30 +3026,39 @@ class _InventoryPageState extends State<InventoryPage>
       length: courses.length,
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F9FC),
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: const Color(0xFF012060),
-          title: const Text(
-            'Inventory Management',
-            style: TextStyle(
-              color: Colors.white, // ✅ make text white
-              fontWeight: FontWeight.bold,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(120),
+          child: AppBar(
+            automaticallyImplyLeading: false,
+            backgroundColor: const Color(0xFF012060),
+            centerTitle: true,
+            title: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/images/eclaroacademy.png',
+                  height: 300,
+                  width: 150,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 4),
+              ],
             ),
-          ),
-          centerTitle: true,
-          bottom: const TabBar(
-            indicatorColor: Color.fromARGB(255, 0, 102, 255),
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white,
-            labelStyle: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+            bottom: const TabBar(
+              indicatorColor: Color.fromARGB(255, 0, 102, 255),
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white,
+              labelStyle: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              tabs: [
+                Tab(text: 'BSCS'),
+                Tab(text: 'B.A COM'),
+                Tab(text: 'BSCRIM'),
+              ],
             ),
-            tabs: [
-              Tab(text: 'BSCS'),
-              Tab(text: 'B.A COM'),
-              Tab(text: 'BSCRIM'),
-            ],
           ),
         ),
         body: TabBarView(
@@ -3084,7 +3122,7 @@ class _InventoryPageState extends State<InventoryPage>
                             final uniforms = entry.value;
                             final totalQty = uniforms.fold<int>(
                               0,
-                              (sum, u) => sum + (u.quantity ?? 0),
+                              (sum, u) => sum + u.quantity,
                             );
 
                             return Card(
@@ -3324,53 +3362,111 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width > 800;
+  Widget _buildExportDialog(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      title: const Text('Export Options', style: TextStyle(fontWeight: FontWeight.bold)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ElevatedButton.icon(
+            icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+            label: const Text('Export PDF', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, minimumSize: const Size(double.infinity, 45)),
+            onPressed: () {
+              Navigator.pop(context);
+              exportToPDF();
+            },
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.grid_on, color: Colors.white),
+            label: const Text('Export Excel', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, minimumSize: const Size(double.infinity, 45)),
+            onPressed: () {
+              Navigator.pop(context);
+              exportToExcel();
+            },
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+      ],
+    );
+  }
 
-    return Center(
-      child: Container(
-        width: isWide ? 1000 : double.infinity,
-        padding: EdgeInsets.all(isWide ? 24 : 12),
-        color: const Color(0xFFF8F9FA),
-        child: Column(
-          children: [
-            // ✅ Top Menu Bar (Responsive for Desktop)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 152, 203, 14),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "History Stock Report",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+ @override
+Widget build(BuildContext context) {
+  final isWide = MediaQuery.of(context).size.width > 1000;
+
+ final screenWidth = MediaQuery.of(context).size.width;
+
+return Center(
+  child: Container(
+    width: isWide ? screenWidth * 0.95 : double.infinity, // 95% of screen
+    padding: EdgeInsets.all(isWide ? 24 : 12),
+    margin: EdgeInsets.all(isWide ? 16 : 8
+  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // =====================
+          // HEADER BAR
+          // =====================
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 1, 32, 96),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                )
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Image.asset(
+                              'assets/images/eclaroacademy.png',
+                              height: 90, // optional
+                            ),
+                const Text(
+                  "History Stock Report",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Row(
-                    children: [
-                      DropdownButtonHideUnderline(
+                ),
+                Row(
+                  children: [
+                    // MONTH DROPDOWN
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF0147A3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: selectedMonth ?? 'All',
-                          dropdownColor: Color.fromARGB(255, 83, 166, 255),
-                          iconEnabledColor:
-                              const Color.fromARGB(255, 255, 255, 255),
+                          dropdownColor: Color(0xFF0147A3),
+                          iconEnabledColor: Colors.white,
                           style: const TextStyle(color: Colors.white),
                           items: [
                             const DropdownMenuItem(
                               value: 'All',
-                              child: Text("All Months"),
+                              child: Text("All Months",
+                                  style: TextStyle(color: Colors.white)),
                             ),
                             ...months.map((m) => DropdownMenuItem(
                                   value: m,
-                                  child: Text(m),
+                                  child: Text(m,
+                                      style: const TextStyle(color: Colors.white)),
                                 )),
                           ],
                           onChanged: (val) {
@@ -3380,86 +3476,53 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.download, color: Colors.white),
-                        label: const Text('Export',
-                            style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 1, 32, 96),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                    ),
+                    const SizedBox(width: 16),
+                    // EXPORT BUTTON
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.download, color: Colors.white),
+                      label: const Text("Export",
+                          style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF98CB0E),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              title: const Text(
-                                'Export Options',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ElevatedButton.icon(
-                                    icon: const Icon(Icons.picture_as_pdf,
-                                        color: Colors.white),
-                                    label: const Text('Export PDF',
-                                        style: TextStyle(color: Colors.white)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.redAccent,
-                                      minimumSize:
-                                          const Size(double.infinity, 45),
-                                    ),
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      exportToPDF();
-                                    },
-                                  ),
-                                  const SizedBox(height: 10),
-                                  ElevatedButton.icon(
-                                    icon: const Icon(Icons.grid_on,
-                                        color: Colors.white),
-                                    label: const Text('Export Excel',
-                                        style: TextStyle(color: Colors.white)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      minimumSize:
-                                          const Size(double.infinity, 45),
-                                    ),
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      exportToExcel();
-                                    },
-                                  ),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Cancel'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                        elevation: 3,
                       ),
-                    ],
-                  ),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => _buildExportDialog(context),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+              
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // =====================
+          // DATA TABLE
+          // =====================
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 5,
+                    offset: Offset(0, 3),
+                  )
                 ],
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ✅ Data Table
-            Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('inventory_history')
@@ -3468,9 +3531,8 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child:
-                          CircularProgressIndicator(color: Color(0xFF007BFF)),
-                    );
+                        child: CircularProgressIndicator(
+                            color: Color(0xFF007BFF)));
                   }
 
                   final docs = snap.data?.docs
@@ -3481,57 +3543,63 @@ class _HistoryStockReportTabState extends State<HistoryStockReportTab> {
                   if (docs.isEmpty) {
                     return const Center(
                       child: Text(
-                        'No data available',
+                        "No records found",
                         style: TextStyle(fontSize: 18, color: Colors.grey),
                       ),
                     );
                   }
 
-                  final rows = docs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return DataRow(cells: [
-                      DataCell(Text(data['course'] ?? '')),
-                      DataCell(Text(data['gender'] ?? '')),
-                      DataCell(Text(data['size'] ?? '')),
-                      DataCell(Text(data['stockIn']?.toString() ?? '0')),
-                      DataCell(Text(data['stockOut']?.toString() ?? '0')),
-                      DataCell(Text(data['remaining']?.toString() ?? '0')),
-                      DataCell(Text(formatDate(data['date']))),
-                       DataCell(Text(data['updatedBy'] ?? 'Unknown')),
-                    ]);
-                  }).toList();
-
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth:
-                            isWide ? 950 : MediaQuery.of(context).size.width,
-                      ),
-                      child: DataTable(
-                        headingRowColor: WidgetStateProperty.all(
-                          const Color(0xFF00A86B).withOpacity(0.1),
+                  return Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(
+                              Color(0xFF98CB0E).withOpacity(0.15)),
+                          columnSpacing: isWide ? 60 : 20,
+                          dataRowHeight: 60,
+                          headingTextStyle: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF012060),
+                          ),
+                          columns: const [
+                            DataColumn(label: Text('Course')),
+                            DataColumn(label: Text('Sex')),
+                            DataColumn(label: Text('Size')),
+                            DataColumn(label: Text('Stock In')),
+                            DataColumn(label: Text('Stock Out')),
+                            DataColumn(label: Text('Remaining')),
+                            DataColumn(label: Text('Date')),
+                            DataColumn(label: Text('Updated By')),
+                          ],
+                          rows: docs.map((doc) {
+                            final d = doc.data() as Map<String, dynamic>;
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(d['course'] ?? "")),
+                                DataCell(Text(d['gender'] ?? "")),
+                                DataCell(Text(d['size'] ?? "")),
+                                DataCell(Text(d['stockIn']?.toString() ?? "0")),
+                                DataCell(Text(d['stockOut']?.toString() ?? "0")),
+                                DataCell(Text(d['remaining']?.toString() ?? "0")),
+                                DataCell(Text(formatDate(d['date']))),
+                                DataCell(Text(d['updatedBy'] ?? "Unknown")),
+                              ],
+                            );
+                          }).toList(),
                         ),
-                        columns: const [
-                          DataColumn(label: Text('Course')),
-                          DataColumn(label: Text('Sex')),
-                          DataColumn(label: Text('Size')),
-                          DataColumn(label: Text('Stock In')),
-                          DataColumn(label: Text('Stock Out')),
-                          DataColumn(label: Text('Remaining')),
-                          DataColumn(label: Text('Date')),
-                           DataColumn(label: Text('Updated By')),
-                        ],
-                        rows: rows,
                       ),
                     ),
                   );
                 },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
