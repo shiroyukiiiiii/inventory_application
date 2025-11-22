@@ -90,7 +90,31 @@ class _EditUniformRequestPageState extends State<EditUniformRequestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Uniform Request')),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Edit Uniform Request',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Color(0xFF012060),
+              ),
+            ),
+            SizedBox(
+              height: kToolbarHeight - 10,
+              child: Image.asset(
+                'assets/images/eclaroacademy.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(

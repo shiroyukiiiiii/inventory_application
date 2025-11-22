@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class AdminQrConfirmationPage extends StatefulWidget {
@@ -43,18 +44,24 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
           final studentNumber = data['studentId'] ?? '(unknown)';
           final orderId = data['orderId'] ?? '(no order id)';
 
+          // get current user (admin) info
+          final user = FirebaseAuth.instance.currentUser;
+          final confirmer = user?.displayName ?? user?.email ?? 'Admin';
+
           if (data['status'] == 'Completed') {
             statusMessage =
                 "ℹ️ Request for $studentNumber (Order ID: $orderId) is already completed.";
             statusColor = Colors.blue;
           } else {
+            // mark completed and record confirmer + server timestamp
             await doc.reference.update({
               'status': 'Completed',
               'completedAt': FieldValue.serverTimestamp(),
+              'confirmedBy': confirmer,
             });
 
             statusMessage =
-                "✅ Request for $studentNumber (Order ID: $orderId) marked as completed!";
+                "✅ Request for $studentNumber (Order ID: $orderId) marked as completed by $confirmer!";
             statusColor = Colors.green;
           }
         } else {
@@ -92,7 +99,31 @@ class _AdminQrConfirmationPageState extends State<AdminQrConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("QR Confirmation")),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'QR Confirmation',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Color(0xFF012060),
+              ),
+            ),
+            SizedBox(
+              height: kToolbarHeight - 10,
+              child: Image.asset(
+                'assets/images/eclaroacademy.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           // QR Scanner Section

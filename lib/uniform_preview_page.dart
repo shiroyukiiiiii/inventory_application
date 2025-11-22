@@ -24,70 +24,46 @@ class UniformPreviewPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xff98cb0e),
       appBar: AppBar(
-        backgroundColor: primaryColor,
-        elevation: 4,
-        centerTitle: true,
-        toolbarHeight: 140,
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/eclaroacademy.png',
-              height: 250,
-              width: 250,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(height: 12),
-            
-          ],
+        elevation: 0,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF012060)),
+          onPressed: () => Navigator.pop(context),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-
+        title: SizedBox(
+          height: kToolbarHeight - 10,
+          child: Image.asset(
+            'assets/images/eclaroacademy.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+        centerTitle: true,
         actions: [
-  IconButton(
-    icon: const Icon(Icons.logout, color: Colors.white),
-    onPressed: () {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Confirm Logout'),
-            content: const Text('Are you sure you want to exit?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  FirebaseAuth.instance.signOut().then((_) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const SignInPage()),
-                      (Route<dynamic> route) => false,
-                    );
-                  });
-                },
-                child: const Text('Logout'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  ),
-],
-
+          CircleAvatar(
+            backgroundImage: NetworkImage(user.photoURL ?? ''),
+            radius: 16,
+            backgroundColor: Colors.white24,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            user.displayName ?? '',
+            style: const TextStyle(fontSize: 14, color: Color(0xFF012060)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Color(0xFF012060)),
+            onPressed: () {
+              FirebaseAuth.instance.signOut().then((_) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const SignInPage()),
+                  (Route<dynamic> route) => false,
+                );
+              });
+            },
+          ),
+        ],
       ),
       body: Center(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-      color: Color(0xFF98CB0E), // ✅ Solid green background
-    ),
-          child: Column(
+        child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
@@ -166,7 +142,7 @@ class UniformPreviewPage extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
+

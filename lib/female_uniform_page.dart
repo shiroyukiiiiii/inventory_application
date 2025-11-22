@@ -14,51 +14,46 @@ class FemaleUniformPage extends StatelessWidget {
     final bool isDesktop = screenWidth > 800;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF012060)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.female, color: Colors.white),
-            const SizedBox(width: 10),
-            const Text(
-              'Female Uniform',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            CircleAvatar(
-              backgroundImage: NetworkImage(user.photoURL ?? ''),
-              radius: 18,
-              backgroundColor: Colors.white24,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              user.displayName ?? '',
-              style: const TextStyle(fontSize: 18, color: Colors.white),
-            ),
-          ],
+        title: SizedBox(
+          height: kToolbarHeight - 10,
+          child: Image.asset(
+            'assets/images/eclaroacademy.png',
+            fit: BoxFit.contain,
+          ),
         ),
+        centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () {
-              FirebaseAuth.instance.signOut().then((_) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const SignInPage()),
-                  (Route<dynamic> route) => false,
-                );
-              });
-            },
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: NetworkImage(user.photoURL ?? ''),
+                radius: 16,
+                backgroundColor: Colors.white24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                user.displayName ?? '',
+                style: const TextStyle(fontSize: 14, color: Color(0xFF012060)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Color(0xFF012060)),
+                onPressed: () {
+                  FirebaseAuth.instance.signOut().then((_) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const SignInPage()),
+                      (Route<dynamic> route) => false,
+                    );
+                  });
+                },
+              ),
+            ],
           ),
         ],
       ),

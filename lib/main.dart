@@ -62,28 +62,44 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
+    final isTablet = screenWidth > 500 && screenWidth <= 800;
+    final isPhone = screenWidth <= 500;
 
     return Scaffold(
-      appBar: AppBar(
-        title: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            'Smart Inventory Application for School Uniform',
-            style: TextStyle(
-              fontSize:
-                  screenWidth < 350 ? 15 : 25, // ✅ Auto-adjust for small phones
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8,
-            ),
-            textAlign: TextAlign.center,
+     appBar: AppBar(
+  elevation: 0,
+  backgroundColor: Colors.white,
+  automaticallyImplyLeading: false,
+
+  title: Stack(
+    alignment: Alignment.center,
+    children: [
+      // Centered Logo
+      SizedBox(
+        height: kToolbarHeight - 10,
+        child: Image.asset(
+          'assets/images/eclaroacademy.png',
+          fit: BoxFit.contain,
+        ),
+      ),
+
+      // Left-aligned text
+      Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Smart Inventory Application for School Uniform',
+          style: TextStyle(
+            fontSize: screenWidth < 350 ? 15 : 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF012060),
           ),
         ),
-        centerTitle: true,
-        backgroundColor: Color(0xFF012060),
-        foregroundColor: Colors.white,
-        elevation: 3,
-        toolbarHeight: 80, // ✅ keeps height compact but readable
       ),
+    ],
+  ),
+),
+
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -103,11 +119,7 @@ class _SignInPageState extends State<SignInPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.school_sharp,
-                    size: 100,
-                    color: Color(0xFF012060),
-                  ),
+                  
                   const Text(
                     'Welcome to SIASU System',
                     style: TextStyle(

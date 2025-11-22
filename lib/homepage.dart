@@ -18,47 +18,62 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Color(0xFF012060).withOpacity(0.9),
-        title: Row(
-          children: [
-            const Icon(Icons.home_outlined, color: Colors.white),
-            const SizedBox(width: 10),
-            const Text(
-              'Home Page',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-                color: Colors.white,
-              ),
+ appBar: AppBar(
+  elevation: 0,
+  backgroundColor: Colors.white,
+  automaticallyImplyLeading: false, // so layout stays clean
+  title: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      // ---------- LEFT SIDE ----------
+      Row(
+        children: const [
+          Icon(Icons.home_outlined, color: Color(0xFF012060)),
+          SizedBox(width: 10),
+          Text(
+            'Home Page',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              color: Color(0xFF012060),
             ),
-            const Spacer(),
-            CircleAvatar(
-              backgroundImage:
-                  user.photoURL != null && user.photoURL!.isNotEmpty
-                      ? NetworkImage(user.photoURL!)
-                      : null,
-              radius: 18,
-              backgroundColor: Colors.white24,
-              child: user.photoURL == null || user.photoURL!.isEmpty
-                  ? const Icon(Icons.person, color: Colors.white)
-                  : null,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                user.displayName ?? '',
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
-          ],
+          ),
+        ],
+      ),
+
+      // ---------- CENTER (LOGO) ----------
+      SizedBox(
+        height: kToolbarHeight - 10,
+        child: Image.asset(
+          'assets/images/eclaroacademy.png',
+          fit: BoxFit.contain,
         ),
-        actions: [
+      ),
+
+      // ---------- RIGHT SIDE ----------
+      Row(
+        children: [
+          CircleAvatar(
+            backgroundImage: user.photoURL != null && user.photoURL!.isNotEmpty
+                ? NetworkImage(user.photoURL!)
+                : null,
+            radius: 18,
+            backgroundColor: Colors.white24,
+            child: user.photoURL == null || user.photoURL!.isEmpty
+                ? const Icon(Icons.person, color: Color(0xFF012060))
+                : null,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            user.displayName ?? '',
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, color: Color(0xFF012060)),
+          ),
+          const SizedBox(width: 10),
+
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: 'Logout', // ✅ Tooltip added here
+            icon: const Icon(Icons.logout, color: Color(0xFF012060)),
+            tooltip: 'Logout',
             onPressed: () {
               showDialog(
                 context: context,
@@ -77,8 +92,7 @@ class HomePage extends StatelessWidget {
                           FirebaseAuth.instance.signOut().then((_) {
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                builder: (context) => const SignInPage(),
-                              ),
+                                  builder: (context) => const SignInPage()),
                               (Route<dynamic> route) => false,
                             );
                           });
@@ -93,6 +107,10 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
+    ],
+  ),
+),
+
       body: Container(
         decoration: const BoxDecoration(
     color: Color(0xFF98CB0E), // your single background color
@@ -127,13 +145,7 @@ class HomePage extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // 🔹 Smaller logo on mobile
-                    Image.asset(
-                      'assets/images/eclaroacademy.png',
-                      width: isPhone
-                          ? screenWidth * 0.35
-                          : screenWidth * 0.22, // smaller for phones
-                      fit: BoxFit.contain,
-                    ),
+                    
                     const SizedBox(height: 10),
                     Text(
                       'Welcome to SIASU!',

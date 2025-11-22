@@ -148,13 +148,33 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
     return Scaffold(
       backgroundColor: Colors.blueGrey[50],
       appBar: AppBar(
-        title: const Text('Request Uniform'),
-        backgroundColor: Color(0xFF012060),
-        foregroundColor: Colors.white,
-        elevation: 2,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Request Uniform',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Color(0xFF012060),
+              ),
+            ),
+            SizedBox(
+              height: kToolbarHeight - 10,
+              child: Image.asset(
+                'assets/images/eclaroacademy.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+            SizedBox(width: 50),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.logout, color: Color(0xFF012060)),
             onPressed: () {
               showDialog(
                 context: context,
@@ -212,11 +232,7 @@ class _UniformRequestPageState extends State<UniformRequestPage> {
           Center(
             child: Column(
              children: [
-              Image.asset(
-                'assets/images/eclaroacademy.png',
-                width: 400, // adjust as needed
-                fit: BoxFit.contain,
-              ),
+              
               const SizedBox(height: 20),
               const Text(
                 'Uniform Request Form',

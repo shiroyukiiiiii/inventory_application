@@ -17,74 +17,91 @@ class SelectSexPage extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Color(0xFF012060).withOpacity(0.9),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.school, color: Colors.white),
-            const SizedBox(width: 10),
-            Text(
-              '$course Uniform',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            CircleAvatar(
-              backgroundImage: NetworkImage(user.photoURL ?? ''),
-              radius: 18,
-              backgroundColor: Colors.white24,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              user.displayName ?? '',
-              style: const TextStyle(fontSize: 18, color: Colors.white),
-            ),
-          ],
-        ),
-        actions: [
-  IconButton(
-    icon: const Icon(Icons.logout, color: Colors.white),
-    onPressed: () {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Confirm Logout'),
-            content: const Text('Are you sure you want to exit?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  FirebaseAuth.instance.signOut().then((_) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const SignInPage()),
-                      (Route<dynamic> route) => false,
-                    );
-                  });
-                },
-                child: const Text('Logout'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  ),
-],
-
+  elevation: 0,
+  backgroundColor: Colors.white,
+  automaticallyImplyLeading: false,
+  titleSpacing: 0,
+  title: Row(
+    children: [
+      // LEFT SIDE: Back + Uniform Text
+      IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF012060)),
+        onPressed: () => Navigator.pop(context),
       ),
+
+      Text(
+        '$course Uniform',
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF012060),
+          fontSize: 20,
+        ),
+      ),
+
+      const Spacer(), // pushes the logo to the center
+      // CENTER LOGO
+      Image.asset(
+        'assets/images/eclaroacademy.png',
+        width: isDesktop ? 160 : 130,
+        height: isDesktop ? 55 : 40,
+        fit: BoxFit.contain,
+      ),
+      const Spacer(), // balances left/right spacing
+
+      // RIGHT SIDE: Profile
+      CircleAvatar(
+        backgroundImage: NetworkImage(user.photoURL ?? ''),
+        radius: 18,
+        backgroundColor: Colors.white24,
+      ),
+      const SizedBox(width: 5),
+      Text(
+        user.displayName ?? '',
+        style: const TextStyle(fontSize: 18, color: Color(0xFF012060)),
+      ),
+    ],
+  ),
+
+  // LOGOUT BUTTON
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.logout, color: Color(0xFF012060)),
+      onPressed: () {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Confirm Logout'),
+              content: const Text('Are you sure you want to exit?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    FirebaseAuth.instance.signOut().then((_) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const SignInPage(),
+                        ),
+                        (Route<dynamic> route) => false,
+                      );
+                    });
+                  },
+                  child: const Text('Logout'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ),
+  ],
+),
+
+
       body: Container(
          decoration: const BoxDecoration(
     color: Color(0xFF98CB0E)),
@@ -117,12 +134,7 @@ class SelectSexPage extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(15),
-                      child: Image.asset(
-                        'assets/images/eclaroacademy.png',
-                        width: isDesktop ? 160 : 130,
-                        height: isDesktop ? 55 : 40,
-                        fit: BoxFit.contain,
-                      ),
+                      
                     ),
                     const SizedBox(height: 20),
                     const Text(

@@ -298,26 +298,44 @@ class _UniformListPageState extends State<UniformListPage>
       ),
 
       // AppBar
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF012060),
-        foregroundColor: Colors.white,
-        title: const Text(
+     appBar: AppBar(
+  backgroundColor: Colors.white,
+  elevation: 0,
+
+  title: Stack(
+    alignment: Alignment.center,
+    children: [
+      // Centered Icon (Logo)
+      SizedBox(
+        height: kToolbarHeight - 10,
+        child: Image.asset(
+          'assets/images/eclaroacademy.png',
+          fit: BoxFit.contain,
+        ),
+      ),
+
+      // Left Text – positioned using Align left
+      Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
           'Uniform Management',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Color(0xFF012060),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history, color: Colors.white),
-            tooltip: 'View Edit History',
-            onPressed: () {
-              _showHistoryDialog(context);
-            },
-          ),
-        ],
       ),
+    ],
+  ),
+
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.history, color: Color(0xFF012060)),
+      onPressed: () => _showHistoryDialog(context),
+    ),
+  ],
+),
+
 
       // Body
       body: _getSelectedPage(),
@@ -947,6 +965,10 @@ class _UniformFormPageState extends State<UniformFormPage> {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width > 800;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
+    final isTablet = screenWidth > 500 && screenWidth <= 800;
+    final isPhone = screenWidth <= 500;
 
     return Scaffold(
       backgroundColor: const Color(0xFF98CB0E),
@@ -972,6 +994,15 @@ class _UniformFormPageState extends State<UniformFormPage> {
                 child: ListView(
                   shrinkWrap: true,
                   children: [
+                    Center(
+                      child: Image.asset(
+                        'assets/images/eclaroacademy.png',
+                        width: isPhone
+                            ? screenWidth * 0.35
+                            : screenWidth * 0.22, // smaller for phones
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _buildRadioOptions(
                       title: 'Gender',
@@ -979,16 +1010,8 @@ class _UniformFormPageState extends State<UniformFormPage> {
                       groupValue: _gender,
                       onChanged: (val) => setState(() => _gender = val ?? ''),
                     ),
-                    const SizedBox(height: 20),
                     // Logo after gender selection
-                    Center(
-                      child: Image.asset(
-                        'assets/images/eclaroacademy.png',
-                        height: 80,
-                        width: 80,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
+                    
                     const SizedBox(height: 20),
                     _buildRadioOptions(
                       title: 'Course',
@@ -1227,7 +1250,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
           actions: [
             TextButton(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.grey[700],
+                foregroundColor: Color(0xFF012060),
               ),
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Cancel'),
@@ -1239,7 +1262,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
                 style: TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFe5e5e5),
+                backgroundColor: const Color(0xFF012060),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1375,10 +1398,7 @@ class _UniformRequestsListPageState extends State<UniformRequestsListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Image.asset(
-                              'assets/images/eclaroacademy.png',
-                              height: 90, // optional
-                            ),
+                
                 const Text(
                   "Uniform Requests",
                   style: TextStyle(
@@ -1889,10 +1909,7 @@ class _ApprovedOrdersListPageState extends State<ApprovedOrdersListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Image.asset(
-                              'assets/images/eclaroacademy.png',
-                              height: 90, // optional
-                            ),
+                
                 const Text(
                   "Approved Orders",
                   style: TextStyle(
@@ -2226,10 +2243,6 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Image.asset(
-                              'assets/images/eclaroacademy.png',
-                              height: 90, // optional
-                            ),
                 const Text(
                   "Completed Orders",
                   style: TextStyle(
@@ -2455,8 +2468,8 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                                     ?.toString() ??
                                                 '1')),
                                             DataCell(Text(formatTimestamp(
-                                                data['timestamp']
-                                                    as Timestamp?))),
+                                              data['completedAt'] ??
+                                                data['timestamp']))),
                                           ],
                                         );
                                       }).toList(),
@@ -2537,8 +2550,8 @@ class _CompletedOrdersListPageState extends State<CompletedOrdersListPage> {
                                   Text('Size: ${data['size'] ?? ''}'),
                                   Text(
                                       'Quantity: ${data['orderQuantity']?.toString() ?? '1'}'),
-                                  Text(
-                                      'Completed At: ${formatTimestamp(data['timestamp'] as Timestamp?)}'),
+                                    Text(
+                                      'Completed At: ${formatTimestamp(data['completedAt'] ?? data['timestamp'])}'),
                                 ],
                               ),
                             ),
@@ -2592,10 +2605,7 @@ class _CancelledOrdersListPageState extends State<CancelledOrdersListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Image.asset(
-                              'assets/images/eclaroacademy.png',
-                              height: 90, // optional
-                            ),
+                
                 const Text(
                   "Cancelled Orders",
                   style: TextStyle(
@@ -2923,98 +2933,15 @@ class _InventoryPageState extends State<InventoryPage> {
             .toList());
   }
 
-  // ✅ Update stock and add history record if stock increases
-  Future<void> _updateStockIn(
-    BuildContext context,
-    Uniform uniform,
-    int newQuantity,
-  ) async {
-    try {
-
-      final docRef =
-          FirebaseFirestore.instance.collection('uniforms').doc(uniform.id);
-      final docSnap = await docRef.get();
-
-      if (!docSnap.exists) return;
-
-      final data = docSnap.data()!;
-      final oldQuantity = data['quantity'] ?? 0;
-
-      // Calculate the change
-      final quantityChange = newQuantity - oldQuantity;
-
-      // ✅ Always update the stock
-      await docRef.update({
-        'quantity': newQuantity,
-        'lastEdited': FieldValue.serverTimestamp(),
-      });
-
-      // ✅ Always add a history record
-      await FirebaseFirestore.instance.collection('inventory_history').add({
-        'course': data['course'] ?? '',
-        'gender': data['gender'] ?? '',
-        'size': data['size'] ?? '',
-        'stockIn': quantityChange > 0 ? quantityChange : 0,
-        'stockOut': quantityChange < 0 ? quantityChange.abs() : 0,
-        'remaining': newQuantity,
-        'editedBy': 'Admin', // optional: add current user or editor name
-        'remarks': quantityChange == 0
-            ? 'Stock edited (no change in quantity)'
-            : (quantityChange > 0 ? 'Stock increased' : 'Stock decreased'),
-          'updatedBy': currentUsername,  // ✅ Use the current user's email
-        'date': Timestamp.now(),
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stock updated successfully!'),
-          backgroundColor: Color(0xFF012060),
-        ),
-      );
-    } catch (e) {
-      print('Error updating stock: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update stock: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  // ✅ Open form for add/edit uniform
+// ✅ Open form for add/edit uniform
   void _openForm([Uniform? uniform]) async {
-
-
-    final result = await Navigator.push(
+    // The form handles all stock updates and history recording internally
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => UniformFormPage(uniform: uniform)),
     );
-
-    if (result != null) {
-      if (uniform != null && result is int) {
-        // Edited existing uniform → update stock
-        await _updateStockIn(context, uniform, result); // ✅ use result
-      } else if (uniform == null && result is Uniform) {
-        // Added new uniform → save and record in history
-        final newUniform = result;
-        final docRef = FirebaseFirestore.instance
-            .collection('uniforms')
-            .doc(newUniform.id);
-        await docRef.set(newUniform.toMap());
-
-        await FirebaseFirestore.instance.collection('inventory_history').add({
-          'course': newUniform.course,
-          'gender': newUniform.gender,
-          'size': newUniform.size,
-          'stockIn': newUniform.quantity,
-          'stockOut': 0,
-          'remaining': newUniform.quantity,
-          'date': FieldValue.serverTimestamp(),
-            'updatedBy': currentUsername, 
-        });
-      }
-    }
+    // Form pops twice in success dialog, so no return value to check
+    // History and stock updates are already recorded in the form's _saveUniform method
   }
 
   @override
@@ -3036,17 +2963,11 @@ class _InventoryPageState extends State<InventoryPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset(
-                  'assets/images/eclaroacademy.png',
-                  height: 300,
-                  width: 150,
-                  fit: BoxFit.contain,
-                ),
                 const SizedBox(height: 4),
               ],
             ),
             bottom: const TabBar(
-              indicatorColor: Color.fromARGB(255, 0, 102, 255),
+              indicatorColor: Colors.white,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white,
               labelStyle: TextStyle(

@@ -286,28 +286,41 @@ class _AdminDashboardAppState extends State<AdminDashboardApp> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => debugPrint("Back pressed"),
-        ),
-        title: Text(
-          [
-            "Dashboard",
-            "Sales",
-            "Inventory",
-            "Requests",
-            "More"
-          ][_selectedIndex],
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              [
+                "Dashboard",
+                "Sales",
+                "Inventory",
+                "Requests",
+                "More"
+              ][_selectedIndex],
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Color(0xFF012060),
+              ),
+            ),
+            SizedBox(
+              height: kToolbarHeight - 10,
+              child: Image.asset(
+                'assets/images/eclaroacademy.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(Icons.notifications, color: Color(0xFF012060)),
             onPressed: () => debugPrint("Notifications clicked"),
           )
         ],
-        backgroundColor: Colors.green.shade700,
-        elevation: 6,
       ),
       body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(

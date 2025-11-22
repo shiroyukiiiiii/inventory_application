@@ -18,64 +18,64 @@ class StudentManageRequestsPage extends StatelessWidget {
         backgroundColor: const Color(0xFFF5F6FA),
         
         appBar: AppBar(
-          backgroundColor: const Color(0xFF012060),
-          foregroundColor: Colors.white,
-          elevation: 2,
-          titleSpacing: 0,
-          title: Row(
-            children: [
-              const SizedBox(width: 8),
-              const Icon(Icons.shopping_bag_rounded, color: Colors.white),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'My Uniform Requests',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (!isPhone) const SizedBox(width: 4),
-              CircleAvatar(
-                backgroundImage:
-                    user.photoURL != null && user.photoURL!.isNotEmpty
-                        ? NetworkImage(user.photoURL!)
-                        : null,
-                radius: isPhone ? 14 : 16,
-                backgroundColor: Colors.white,
-                child: (user.photoURL == null || user.photoURL!.isEmpty)
-                    ? const Icon(Icons.person, color: Colors.white)
-                    : null,
-              ),
-              if (!isPhone) ...[
-                const SizedBox(width: 6),
-                Text(
-                  user.displayName ?? '',
-                  style: const TextStyle(fontSize: 14, color: Colors.white),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              const SizedBox(width: 8),
-            ],
-          ),
-          bottom: TabBar(
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            labelStyle: TextStyle(
-              fontSize: isPhone ? 12 : 14,
-              fontWeight: FontWeight.bold,
-            ),
-            tabs: const [
-              Tab(icon: Icon(Icons.list_alt_rounded), text: 'Orders'),
-              Tab(icon: Icon(Icons.check_circle_outline), text: 'Completed'),
-              Tab(icon: Icon(Icons.cancel_outlined), text: 'Cancelled'),
-            ],
-          ),
+  elevation: 0,
+  backgroundColor: Colors.white,
+  automaticallyImplyLeading: false,
+
+  title: Stack(
+    alignment: Alignment.center,
+    children: [
+      // Centered Logo
+      SizedBox(
+        height: kToolbarHeight - 10,
+        child: Image.asset(
+          'assets/images/eclaroacademy.png',
+          fit: BoxFit.contain,
         ),
+      ),
+
+      // Left Text
+      
+      Align(
+  alignment: Alignment.centerLeft,
+  child: Row(
+    mainAxisSize: MainAxisSize.min, // prevents row from stretching
+    children: [
+      IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF012060)),
+        onPressed: () => Navigator.pop(context),
+      ),
+      const Text(
+        'My Requests',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+          color: Color(0xFF012060),
+        ),
+      ),
+    ],
+  ),
+)
+
+    ],
+  ),
+
+  bottom: TabBar(
+    indicatorColor: Colors.white,
+    labelColor: Colors.white,
+    unselectedLabelColor: Colors.white70,
+    labelStyle: TextStyle(
+      fontSize: isPhone ? 12 : 14,
+      fontWeight: FontWeight.bold,
+    ),
+    tabs: const [
+      Tab(icon: Icon(Icons.list_alt_rounded), text: 'Orders'),
+      Tab(icon: Icon(Icons.check_circle_outline), text: 'Completed'),
+      Tab(icon: Icon(Icons.cancel_outlined), text: 'Cancelled'),
+    ],
+  ),
+),
+
         body: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('uniform_requests')

@@ -90,16 +90,28 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Admin Registration"),
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue, Colors.green],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Admin Registration',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Color(0xFF012060),
+              ),
             ),
-          ),
+            SizedBox(
+              height: kToolbarHeight - 10,
+              child: Image.asset(
+                'assets/images/eclaroacademy.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
         ),
       ),
       body: Container(
