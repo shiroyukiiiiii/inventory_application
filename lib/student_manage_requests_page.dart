@@ -61,9 +61,9 @@ class StudentManageRequestsPage extends StatelessWidget {
   ),
 
   bottom: TabBar(
-    indicatorColor: Colors.white,
-    labelColor: Colors.white,
-    unselectedLabelColor: Colors.white70,
+    indicatorColor: Color(0xFF012060),
+    labelColor: Color(0xFF012060),
+    unselectedLabelColor: Color(0xFF012060),
     labelStyle: TextStyle(
       fontSize: isPhone ? 12 : 14,
       fontWeight: FontWeight.bold,

@@ -444,10 +444,7 @@ class _InventoryTab extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Image.asset(
-                              'assets/images/eclaroacademy.png',
-                              height: 90, // optional
-                            ),
+                         
                           const Text(
                             "Inventory Summary",
                             style: TextStyle(
@@ -3351,10 +3348,7 @@ return Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Image.asset(
-                              'assets/images/eclaroacademy.png',
-                              height: 90, // optional
-                            ),
+                
                 const Text(
                   "History Stock Report",
                   style: TextStyle(
