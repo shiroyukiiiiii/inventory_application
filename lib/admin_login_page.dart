@@ -16,7 +16,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
   // For demo: hardcoded admin credentials
   final String _adminUser = 'admin';
-  final String _adminPass = 'admin1234';
+  final String _adminPass = 'admin123;
 
   void _login() async {
     setState(() {
